@@ -1,0 +1,5 @@
+body { font-family: sans-serif; }
+h1 { color: {{ branding.primary_hex if branding and branding.primary_hex else '#333' }}; }
+table { border-collapse: collapse; width: 100%; }
+th, td { border: 1px solid #999; padding: 4px; font-size: 12px; }
+.note { color: red; }

@@ -1,0 +1,25 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Western Natal Report</title>
+  <style>{{ css }}</style>
+</head>
+<body>
+  <h1>Western Natal Report</h1>
+  <p>Date: {{ req.chart_input.date }} Time: {% if req.chart_input.time_known %}{{ req.chart_input.time }}{% else %}unknown{% endif %}</p>
+  <p>Place: {{ req.chart_input.place.lat }}, {{ req.chart_input.place.lon }}</p>
+  {% if not req.chart_input.time_known %}
+  <p class="note">Birth time unknown</p>
+  {% endif %}
+  <h2>Chart Wheel</h2>
+  {{ wheel_svg | safe }}
+  <h2>Planets</h2>
+  <table>
+    <tr><th>Body</th><th>Sign</th><th>Lon</th></tr>
+    {% for b in chart.bodies %}
+    <tr><td>{{ b.name }}</td><td>{{ b.sign }}</td><td>{{ b.lon }}</td></tr>
+    {% endfor %}
+  </table>
+</body>
+</html>

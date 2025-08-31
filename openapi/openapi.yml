@@ -1,0 +1,386 @@
+openapi: 3.1.0
+info:
+  title: wh-ephemeris (dev)
+  version: 0.1.0
+paths:
+  /v1/charts/compute:
+    post:
+      tags:
+      - charts
+      summary: Compute Chart
+      operationId: compute_chart_v1_charts_compute_post
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ComputeRequest'
+        required: true
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ComputeResponse'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /v1/reports:
+    post:
+      tags:
+      - reports
+      summary: Create Report
+      operationId: create_report_v1_reports_post
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ReportCreateRequest'
+        required: true
+      responses:
+        '202':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ReportCreateResponse'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /v1/reports/{report_id}:
+    get:
+      tags:
+      - reports
+      summary: Get Report
+      operationId: get_report_v1_reports__report_id__get
+      parameters:
+      - name: report_id
+        in: path
+        required: true
+        schema:
+          type: string
+          title: Report Id
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ReportStatus'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /__health:
+    get:
+      summary: Health
+      operationId: health___health_get
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema: {}
+  /dev-assets/{path}:
+    get:
+      summary: Dev Assets
+      operationId: dev_assets_dev_assets__path__get
+      parameters:
+      - name: path
+        in: path
+        required: true
+        schema:
+          type: string
+          title: Path
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema: {}
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /:
+    get:
+      summary: Root
+      operationId: root__get
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema: {}
+components:
+  schemas:
+    BodyOut:
+      properties:
+        name:
+          type: string
+          title: Name
+        lon:
+          type: number
+          title: Lon
+        sign:
+          type: string
+          title: Sign
+        house:
+          anyOf:
+          - type: integer
+          - type: 'null'
+          title: House
+      type: object
+      required:
+      - name
+      - lon
+      - sign
+      title: BodyOut
+    Branding:
+      properties:
+        logo_url:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Logo Url
+        primary_hex:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Primary Hex
+      type: object
+      title: Branding
+    ComputeRequest:
+      properties:
+        system:
+          type: string
+          enum:
+          - western
+          - vedic
+          title: System
+        date:
+          type: string
+          title: Date
+        time:
+          type: string
+          title: Time
+        time_known:
+          type: boolean
+          title: Time Known
+          default: true
+        place:
+          $ref: '#/components/schemas/Place'
+        options:
+          anyOf:
+          - additionalProperties: true
+            type: object
+          - type: 'null'
+          title: Options
+      type: object
+      required:
+      - system
+      - date
+      - time
+      - place
+      title: ComputeRequest
+    ComputeResponse:
+      properties:
+        chart_id:
+          type: string
+          title: Chart Id
+        meta:
+          $ref: '#/components/schemas/MetaOut'
+        angles:
+          anyOf:
+          - additionalProperties: true
+            type: object
+          - type: 'null'
+          title: Angles
+        houses:
+          anyOf:
+          - items: {}
+            type: array
+          - type: 'null'
+          title: Houses
+        bodies:
+          items:
+            $ref: '#/components/schemas/BodyOut'
+          type: array
+          title: Bodies
+        aspects:
+          items: {}
+          type: array
+          title: Aspects
+      type: object
+      required:
+      - chart_id
+      - meta
+      - bodies
+      - aspects
+      title: ComputeResponse
+    HTTPValidationError:
+      properties:
+        detail:
+          items:
+            $ref: '#/components/schemas/ValidationError'
+          type: array
+          title: Detail
+      type: object
+      title: HTTPValidationError
+    MetaOut:
+      properties:
+        engine:
+          type: string
+          title: Engine
+          default: mock
+        engine_version:
+          type: string
+          title: Engine Version
+          default: 0.0.1-stub
+        zodiac:
+          type: string
+          title: Zodiac
+        house_system:
+          type: string
+          title: House System
+        ayanamsha:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Ayanamsha
+      type: object
+      required:
+      - zodiac
+      - house_system
+      title: MetaOut
+    Place:
+      properties:
+        lat:
+          type: number
+          title: Lat
+        lon:
+          type: number
+          title: Lon
+        tz:
+          type: string
+          title: Tz
+        query:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Query
+      type: object
+      required:
+      - lat
+      - lon
+      - tz
+      title: Place
+    ReportCreateRequest:
+      properties:
+        product:
+          $ref: '#/components/schemas/ReportProduct'
+        chart_input:
+          $ref: '#/components/schemas/ComputeRequest'
+        branding:
+          anyOf:
+          - $ref: '#/components/schemas/Branding'
+          - type: 'null'
+        idempotency_key:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Idempotency Key
+      type: object
+      required:
+      - product
+      - chart_input
+      title: ReportCreateRequest
+    ReportCreateResponse:
+      properties:
+        report_id:
+          type: string
+          title: Report Id
+        status:
+          $ref: '#/components/schemas/ReportStatusEnum'
+        queued_at:
+          type: string
+          format: date-time
+          title: Queued At
+      type: object
+      required:
+      - report_id
+      - status
+      - queued_at
+      title: ReportCreateResponse
+    ReportProduct:
+      type: string
+      enum:
+      - western_natal_pdf
+      title: ReportProduct
+    ReportStatus:
+      properties:
+        report_id:
+          type: string
+          title: Report Id
+        status:
+          $ref: '#/components/schemas/ReportStatusEnum'
+        download_url:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Download Url
+        expires_at:
+          anyOf:
+          - type: string
+            format: date-time
+          - type: 'null'
+          title: Expires At
+        error:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Error
+      type: object
+      required:
+      - report_id
+      - status
+      title: ReportStatus
+    ReportStatusEnum:
+      type: string
+      enum:
+      - queued
+      - processing
+      - done
+      - error
+      title: ReportStatusEnum
+    ValidationError:
+      properties:
+        loc:
+          items:
+            anyOf:
+            - type: string
+            - type: integer
+          type: array
+          title: Location
+        msg:
+          type: string
+          title: Message
+        type:
+          type: string
+          title: Error Type
+      type: object
+      required:
+      - loc
+      - msg
+      - type
+      title: ValidationError

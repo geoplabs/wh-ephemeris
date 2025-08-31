@@ -1,15 +1,8 @@
-import time
-import api.report_queue  # noqa: F401
+from api.report_queue import worker_loop
 
 
-def main():
-    print("[worker] starting report worker loop...", flush=True)
-    try:
-        while True:
-            time.sleep(5)
-            print("[worker] heartbeat", flush=True)
-    except KeyboardInterrupt:
-        print("[worker] stopping.", flush=True)
+def main() -> None:
+    worker_loop()
 
 
 if __name__ == "__main__":
