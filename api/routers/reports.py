@@ -1,6 +1,6 @@
 """Endpoints for report generation and status retrieval."""
 
-from fastapi import APIRouter, HTTPException, Request
+from fastapi import APIRouter, HTTPException, Request, Body
 
 from ..schemas import ReportCreateRequest, ReportStatus
 from ..services.job_store import STORE
@@ -37,13 +37,36 @@ def _rate_limit_ok(request: Request) -> bool:
 
 
 @router.post("", response_model=ReportStatus, status_code=202)
-def create_report(req: ReportCreateRequest, request: Request) -> ReportStatus:
-    """Enqueue a western natal PDF report for rendering."""
+def create_report(
+    request: Request,
+    req: ReportCreateRequest = Body(
+        ...,
+        example={
+            "product": "western_natal_pdf",
+            "chart_input": {
+                "system": "western",
+                "date": "1990-08-18",
+                "time": "14:32:00",
+                "time_known": True,
+                "place": {"lat": 17.385, "lon": 78.4867, "tz": "Asia/Kolkata"},
+            },
+        },
+    ),
+) -> ReportStatus:
+    """Enqueue a PDF report for rendering."""
 
     if not _rate_limit_ok(request):
         raise HTTPException(status_code=429, detail="RATE_LIMIT")
 
-    if req.product != "western_natal_pdf":
+    allowed = {
+        "western_natal_pdf",
+        "yearly_forecast_pdf",
+        "monthly_horoscope_pdf",
+        "compatibility_pdf",
+        "remedies_pdf",
+        "spiritual_mission_pdf",
+    }
+    if req.product not in allowed:
         raise HTTPException(status_code=400, detail="UNKNOWN_PRODUCT")
 
     rid = STORE.create(payload=req.model_dump(), idempotency_key=req.idempotency_key)

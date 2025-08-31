@@ -1,0 +1,19 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8"/>
+  <title>Monthly Horoscope</title>
+  <link rel="stylesheet" href="{{ css_href }}"/>
+</head>
+<body>
+  <header><h1>Monthly Horoscope</h1></header>
+  <section>
+    <h2>Highlights</h2>
+    <ul>
+    {% for e in data.highlights %}
+      <li>{{ e.date }} - {{ e.transit_body }} {{ e.aspect }} {{ e.natal_body }}</li>
+    {% endfor %}
+    </ul>
+  </section>
+</body>
+</html>

@@ -5,3 +5,15 @@ from .transits import TransitsComputeRequest, TransitsComputeResponse
 
 from .reports import ReportCreateRequest, ReportStatus, Branding, Product
 
+from .forecasts import (
+    YearlyForecastRequest,
+    YearlyForecastResponse,
+    MonthlyForecastRequest,
+    MonthlyForecastResponse,
+)
+from .compatibility import (
+    CompatibilityComputeRequest,
+    CompatibilityComputeResponse,
+)
+from .remedies import RemediesComputeRequest, RemediesComputeResponse
+
