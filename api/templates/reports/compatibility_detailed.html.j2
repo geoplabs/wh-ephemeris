@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8" />
+    <link rel="stylesheet" href="{{css_href}}" />
+    <title>Compatibility Report</title>
+</head>
+<body>
+<h1>Compatibility Report</h1>
+<p>{{ data.summary }}</p>
+<h2>Strengths</h2>
+<ul>
+{% for s in data.strengths %}
+<li>{{ s }}</li>
+{% endfor %}
+</ul>
+<h2>Challenges</h2>
+<ul>
+{% for c in data.challenges %}
+<li>{{ c }}</li>
+{% endfor %}
+</ul>
+<p>Score: {{ data.score }}</p>
+</body>
+</html>

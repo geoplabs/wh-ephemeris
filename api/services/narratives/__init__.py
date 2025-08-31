@@ -1,0 +1,2 @@
+"""Narrative generation helpers."""
+

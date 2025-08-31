@@ -40,6 +40,26 @@ def worker_loop() -> None:
             if product == "western_natal_pdf":
                 data = _build_payload(payload)
                 render_western_natal_pdf(data, str(out), branding=brand)
+            elif product == "advanced_natal_pdf":
+                from ..services.narratives.assembler import interpret_natal
+
+                data = interpret_natal(ci, payload.get("options") or {})
+                render_western_natal_pdf(
+                    data, str(out), branding=brand, template_name="advanced_natal.html.j2"
+                )
+            elif product == "transit_forecast_pdf":
+                from ..services.narratives.assembler import interpret_transits
+
+                window = payload.get(
+                    "window", {"from": "2025-01-01", "to": "2025-01-31"}
+                )
+                data = interpret_transits(ci, window, payload.get("options") or {})
+                render_western_natal_pdf(
+                    data,
+                    str(out),
+                    branding=brand,
+                    template_name="transit_forecast.html.j2",
+                )
             elif product == "yearly_forecast_pdf":
                 from ..services.forecast_builders import yearly_payload
                 data = yearly_payload(ci, payload.get("options", {"year": 2025}))
@@ -59,22 +79,15 @@ def worker_loop() -> None:
                     template_name="monthly_horoscope.html.j2",
                 )
             elif product == "compatibility_pdf":
-                from ..services.compatibility_engine import (
-                    synastry,
-                    midpoint_composite,
-                    aggregate_score,
-                )
-                other = payload["partner_chart_input"]
-                types = ["conjunction", "opposition", "square", "trine", "sextile"]
-                syn = synastry(ci, other, types, 4.0)
-                score = aggregate_score(syn)
-                comp = midpoint_composite(ci, other)
-                data = {"synastry": syn, "score": score, "composite": comp}
+                from ..services.narratives.assembler import interpret_compatibility
+
+                other = payload.get("partner_chart_input") or {}
+                data = interpret_compatibility(ci, other, payload.get("options") or {})
                 render_western_natal_pdf(
                     data,
                     str(out),
                     branding=brand,
-                    template_name="compatibility.html.j2",
+                    template_name="compatibility_detailed.html.j2",
                 )
             elif product == "remedies_pdf":
                 from ..services.remedies_engine import compute_remedies
