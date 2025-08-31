@@ -1,0 +1,22 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Natal Chart Report</title>
+  <style>
+    body { font-family: sans-serif; }
+    h1 { font-size: 24px; }
+    ul { list-style: none; padding: 0; }
+    li { margin-bottom: 4px; }
+  </style>
+</head>
+<body>
+  <h1>Natal Chart Report</h1>
+  <p>Chart ID: {{ chart.chart_id }}</p>
+  <ul>
+  {% for b in chart.bodies %}
+    <li>{{ b.name }}: {{ b.lon }}° {{ b.sign }}</li>
+  {% endfor %}
+  </ul>
+</body>
+</html>
