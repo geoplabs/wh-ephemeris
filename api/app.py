@@ -2,9 +2,11 @@ from fastapi import FastAPI
 from fastapi.responses import JSONResponse, FileResponse
 from pathlib import Path
 from .routers import charts as charts_router
+from .routers import reports as reports_router
 
 app = FastAPI(title="wh-ephemeris (dev)", version="0.1.0")
 app.include_router(charts_router.router)
+app.include_router(reports_router.router)
 
 @app.get("/__health")
 def health():
