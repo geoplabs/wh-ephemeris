@@ -12,10 +12,18 @@ from .routers import compatibility as compatibility_router
 from .routers import remedies as remedies_router
 from .routers import interpret as interpret_router
 from .jobs.render_report import ensure_worker_started
+from .middleware.auth import APIKeyMiddleware
+from .middleware.ratelimit import RateLimitMiddleware
+from .middleware.logging import LoggingMiddleware
 
 
 
 app = FastAPI(title="wh-ephemeris (dev)", version="0.2.0")
+
+app.add_middleware(APIKeyMiddleware)
+app.add_middleware(RateLimitMiddleware)
+app.add_middleware(LoggingMiddleware)
+
 app.include_router(charts_router.router)
 
 app.include_router(dashas_router.router)

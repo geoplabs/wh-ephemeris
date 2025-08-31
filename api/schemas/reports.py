@@ -1,19 +1,8 @@
 from pydantic import BaseModel
-from typing import Optional, Literal, Dict, Any
+from typing import Optional, Dict, Any, Literal
 
 from .charts import ChartInput
 
-# Supported report product identifiers
-Product = Literal[
-    "western_natal_pdf",
-    "advanced_natal_pdf",
-    "transit_forecast_pdf",
-    "yearly_forecast_pdf",
-    "monthly_horoscope_pdf",
-    "compatibility_pdf",
-    "remedies_pdf",
-    "spiritual_mission_pdf",
-]
 
 
 class Branding(BaseModel):
@@ -26,7 +15,7 @@ class Branding(BaseModel):
 class ReportCreateRequest(BaseModel):
     """Request payload for enqueuing a report render job."""
 
-    product: Product = "western_natal_pdf"
+    product: str = "western_natal_pdf"
     chart_input: ChartInput
     partner_chart_input: Optional[ChartInput] = None
     options: Optional[Dict[str, Any]] = None
