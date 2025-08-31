@@ -1,0 +1,128 @@
+name: CI
+
+on: 
+  push:
+    branches: [ main, staging ]
+  pull_request:
+    branches: [ main, staging ]
+
+jobs:
+  ci:
+    name: "CI"
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        
+      - name: Setup environment
+        run: cp .env.example .env
+        
+      - name: Build and start services
+        run: docker compose up --build -d
+        
+      - name: Wait for services to be ready
+        run: |
+          echo "Waiting for services to start..."
+          sleep 30
+          
+      - name: Seed LocalStack
+        run: docker compose exec -T -e AWS_REGION=us-east-1 -e AWS_ENDPOINT_URL=http://localstack:4566 api python -m api.scripts.init_localstack
+        
+      - name: Health check
+        run: curl -sSf http://localhost:8080/__health
+        
+      - name: Run tests
+        run: docker compose exec -T api pytest -q
+        
+      - name: Cleanup
+        if: always()
+        run: docker compose down -v
+
+  tests:
+    name: "Tests"
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        
+      - name: Setup environment
+        run: cp .env.example .env
+        
+      - name: Build and start services
+        run: docker compose up --build -d
+        
+      - name: Wait for services
+        run: sleep 30
+        
+      - name: Run comprehensive tests
+        run: docker compose exec -T api pytest tests/ -v --tb=short
+        
+      - name: Cleanup
+        if: always()
+        run: docker compose down -v
+
+  lint:
+    name: "Lint"
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        
+      - name: Setup environment
+        run: cp .env.example .env
+        
+      - name: Build API service
+        run: docker compose build api
+        
+      - name: Run linting checks
+        run: |
+          echo "✅ Python syntax check"
+          docker compose run --rm api python -m py_compile api/app.py
+          docker compose run --rm api python -m py_compile api/routers/charts.py
+          docker compose run --rm api python -m py_compile api/schemas/charts.py
+          echo "✅ Basic linting completed"
+
+  openapi:
+    name: "OpenAPI"
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        
+      - name: Setup environment
+        run: cp .env.example .env
+        
+      - name: Build and start services
+        run: docker compose up --build -d
+        
+      - name: Wait for API to be ready
+        run: sleep 30
+        
+      - name: Generate and validate OpenAPI spec
+        run: |
+          echo "🔍 Fetching OpenAPI spec..."
+          curl -sSf http://localhost:8080/openapi.json > openapi.json
+          echo "✅ OpenAPI spec generated successfully"
+          
+          # Basic validation - check if it's valid JSON and has required fields
+          if command -v jq &> /dev/null; then
+            echo "🔍 Validating OpenAPI structure..."
+            jq -e '.info.title' openapi.json
+            jq -e '.paths' openapi.json
+            echo "✅ OpenAPI spec structure is valid"
+          else
+            echo "ℹ️ jq not available, skipping detailed validation"
+          fi
+          
+      - name: Test API endpoints
+        run: |
+          echo "🧪 Testing charts compute endpoint..."
+          curl -sSf -X POST http://localhost:8080/v1/charts/compute \
+            -H "Content-Type: application/json" \
+            -d '{"system":"western","date":"1990-08-18","time":"14:32:00","time_known":true,"place":{"lat":17.385,"lon":78.4867,"tz":"Asia/Kolkata","query":"Hyderabad, IN"}}' \
+            | jq -e '.chart_id'
+          echo "✅ Charts API endpoint working correctly"
+        
+      - name: Cleanup
+        if: always()
+        run: docker compose down -v
