@@ -1,0 +1,16 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8"/>
+  <title>Spiritual Mission</title>
+  <link rel="stylesheet" href="{{ css_href }}"/>
+</head>
+<body>
+  <header><h1>Spiritual Mission Themes</h1></header>
+  <ul>
+  {% for t in data.themes %}
+    <li>{{ t }}</li>
+  {% endfor %}
+  </ul>
+</body>
+</html>

@@ -1,0 +1,16 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8"/>
+  <title>Remedies Report</title>
+  <link rel="stylesheet" href="{{ css_href }}"/>
+</head>
+<body>
+  <header><h1>Recommended Remedies</h1></header>
+  <ul>
+  {% for item in data.items %}
+    <li><strong>{{ item.planet }}</strong>: {{ item.recommendation }}{% if item.gemstone %} (Gemstone: {{ item.gemstone }}){% endif %}</li>
+  {% endfor %}
+  </ul>
+</body>
+</html>

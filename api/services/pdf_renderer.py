@@ -27,9 +27,11 @@ def _render_reportlab(out_path: Path, payload: Dict[str, Any]) -> None:
     c.drawString(2 * cm, H - 2 * cm, "Western Natal Report (Dev)")
 
     c.setFont("Helvetica", 10)
-    meta = payload["meta"]
+    meta = payload.get("meta", {})
+    tz = payload.get("chart_input", {}).get("place", {}).get("tz", "")
     c.drawString(2 * cm, H - 3 * cm, f"System: {meta.get('zodiac','tropical')}  House: {meta.get('house_system','placidus')}")
-    c.drawString(2 * cm, H - 3.6 * cm, f"Place tz: {payload['chart_input']['place']['tz']}")
+    if tz:
+        c.drawString(2 * cm, H - 3.6 * cm, f"Place tz: {tz}")
 
     # bodies table (first 8)
     y = H - 5 * cm
@@ -37,7 +39,7 @@ def _render_reportlab(out_path: Path, payload: Dict[str, Any]) -> None:
     c.drawString(2 * cm, y, "Bodies")
     y -= 0.5 * cm
     c.setFont("Helvetica", 10)
-    for b in payload["bodies"][:8]:
+    for b in payload.get("bodies", [])[:8]:
         c.drawString(
             2 * cm,
             y,
@@ -51,7 +53,7 @@ def _render_reportlab(out_path: Path, payload: Dict[str, Any]) -> None:
     c.drawString(2 * cm, y, "Aspects")
     y -= 0.5 * cm
     c.setFont("Helvetica", 10)
-    for a in payload["aspects"][:8]:
+    for a in payload.get("aspects", [])[:8]:
         c.drawString(2 * cm, y, f"{a['p1']} {a['type']} {a['p2']} (orb {a['orb']}°)")
         y -= 0.45 * cm
         if y < 2 * cm:
@@ -66,8 +68,9 @@ def render_western_natal_pdf(
     payload: Dict[str, Any],
     out_path: str,
     branding: Optional[Dict[str, Any]] = None,
+    template_name: str = "western_natal.html.j2",
 ) -> str:
-    """Render a western natal PDF to ``out_path`` and return the path."""
+    """Render a PDF to ``out_path`` using the selected template."""
 
     out = Path(out_path)
     out.parent.mkdir(parents=True, exist_ok=True)
@@ -80,7 +83,7 @@ def render_western_natal_pdf(
         env = Environment(
             loader=FileSystemLoader(str(tpl_dir)), autoescape=select_autoescape()
         )
-        html = env.get_template("western_natal.html.j2").render(
+        html = env.get_template(template_name).render(
             data=payload, branding=branding or {}, css_href="report.css"
         )
         # CSS path is provided for completeness; WeasyPrint will load it via base_url

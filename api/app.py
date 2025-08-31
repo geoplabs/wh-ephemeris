@@ -7,6 +7,9 @@ from .routers import dashas as dashas_router
 from .routers import transits as transits_router
 
 from .routers import reports as reports_router
+from .routers import forecasts as forecasts_router
+from .routers import compatibility as compatibility_router
+from .routers import remedies as remedies_router
 from .jobs.render_report import ensure_worker_started
 
 
@@ -18,6 +21,9 @@ app.include_router(dashas_router.router)
 app.include_router(transits_router.router)
 
 app.include_router(reports_router.router)
+app.include_router(forecasts_router.router)
+app.include_router(compatibility_router.router)
+app.include_router(remedies_router.router)
 
 
 @app.on_event("startup")

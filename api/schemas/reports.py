@@ -4,7 +4,14 @@ from typing import Optional, Literal, Dict, Any
 from .charts import ChartInput
 
 # Supported report product identifiers
-Product = Literal["western_natal_pdf"]
+Product = Literal[
+    "western_natal_pdf",
+    "yearly_forecast_pdf",
+    "monthly_horoscope_pdf",
+    "compatibility_pdf",
+    "remedies_pdf",
+    "spiritual_mission_pdf",
+]
 
 
 class Branding(BaseModel):
@@ -19,6 +26,8 @@ class ReportCreateRequest(BaseModel):
 
     product: Product = "western_natal_pdf"
     chart_input: ChartInput
+    partner_chart_input: Optional[ChartInput] = None
+    options: Optional[Dict[str, Any]] = None
     branding: Optional[Branding] = Branding()
     idempotency_key: Optional[str] = None
 
