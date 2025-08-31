@@ -1,4 +1,6 @@
 import time
+import os
+os.environ.setdefault("EPHEMERIS_BACKEND", "moseph")
 from fastapi.testclient import TestClient
 
 from api.app import app
