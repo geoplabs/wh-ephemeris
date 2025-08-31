@@ -10,6 +10,7 @@ from .routers import reports as reports_router
 from .routers import forecasts as forecasts_router
 from .routers import compatibility as compatibility_router
 from .routers import remedies as remedies_router
+from .routers import interpret as interpret_router
 from .jobs.render_report import ensure_worker_started
 
 
@@ -24,6 +25,11 @@ app.include_router(reports_router.router)
 app.include_router(forecasts_router.router)
 app.include_router(compatibility_router.router)
 app.include_router(remedies_router.router)
+app.include_router(interpret_router.router)
+
+# Start worker immediately to support tests that instantiate TestClient
+# without lifespan events.
+ensure_worker_started()
 
 
 @app.on_event("startup")

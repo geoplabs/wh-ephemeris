@@ -6,6 +6,8 @@ from .charts import ChartInput
 # Supported report product identifiers
 Product = Literal[
     "western_natal_pdf",
+    "advanced_natal_pdf",
+    "transit_forecast_pdf",
     "yearly_forecast_pdf",
     "monthly_horoscope_pdf",
     "compatibility_pdf",

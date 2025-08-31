@@ -17,3 +17,12 @@ from .compatibility import (
 )
 from .remedies import RemediesComputeRequest, RemediesComputeResponse
 
+from .interpret import (
+    NatalInterpretRequest,
+    NatalInterpretResponse,
+    TransitsInterpretRequest,
+    TransitsInterpretResponse,
+    CompatibilityInterpretRequest,
+    CompatibilityInterpretResponse,
+)
+
