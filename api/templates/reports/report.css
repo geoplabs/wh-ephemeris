@@ -1,3 +1,49 @@
+
+body {
+  font-family: sans-serif;
+  margin: 0.5in;
+}
+
+h1, h2 {
+  color: var(--brand-color, #000);
+}
+
+.cover {
+  text-align: center;
+  page-break-after: always;
+}
+
+.logo {
+  max-width: 200px;
+  margin-bottom: 1em;
+}
+
+.planets table,
+.aspects table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-bottom: 1em;
+}
+
+.planets th,
+.planets td,
+.aspects th,
+.aspects td {
+  border: 1px solid #000;
+  padding: 0.25em;
+}
+
+.chart-wheel {
+  text-align: center;
+  page-break-before: always;
+}
+
+@media print {
+  @page {
+    margin: 0.5in;
+  }
+}
+
 @page { size: A4; margin: 20mm; }
 body { font-family: system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif; color: #111; }
 h1, h2 { color: var(--brand, #4A3AFF); margin: 0.2cm 0; }
@@ -5,4 +51,5 @@ table { width: 100%; border-collapse: collapse; margin: 0.3cm 0; }
 th, td { border: 1px solid #ddd; padding: 6px 8px; font-size: 12px; }
 thead th { background: #f5f7ff; }
 header { border-bottom: 2px solid var(--brand, #4A3AFF); margin-bottom: 0.5cm; }
+
 

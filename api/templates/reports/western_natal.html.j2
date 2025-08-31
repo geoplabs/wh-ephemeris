@@ -1,3 +1,45 @@
+
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <title>Western Natal Report</title>
+  <link rel="stylesheet" href="report.css" />
+</head>
+<body style="--brand-color: {{ hex_color }};">
+  <!-- Cover Page -->
+  <section class="cover">
+    <img src="{{ branding_logo }}" alt="Brand Logo" class="logo" />
+    <h1>{{ name }}</h1>
+    <p><strong>Date of Birth:</strong> {{ dob }}</p>
+    <p><strong>Time of Birth:</strong> {{ tob }}</p>
+    <p><strong>Place of Birth:</strong> {{ pob }}</p>
+  </section>
+
+  <!-- Planetary Table -->
+  <section class="planets">
+    <h2>Planetary Positions</h2>
+    <table>
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Sign</th>
+          <th>House</th>
+          <th>Degree</th>
+          <th>Retro</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for p in planets %}
+        <tr>
+          <td>{{ p.name }}</td>
+          <td>{{ p.sign }}</td>
+          <td>{{ p.house }}</td>
+          <td>{{ p.degree }}</td>
+          <td>{% if p.retro %}R{% endif %}</td>
+        </tr>
+        {% endfor %}
+
 <!doctype html>
 <html>
 <head>
@@ -31,9 +73,33 @@
       {% for b in data.bodies %}
         <tr><td>{{ b.name }}</td><td>{{ b.sign }}</td><td>{{ b.house or "-" }}</td><td>{{ "%.2f"|format(b.lon) }}°</td></tr>
       {% endfor %}
+
       </tbody>
     </table>
   </section>
+
+
+  <!-- Aspects Table -->
+  <section class="aspects">
+    <h2>Aspects</h2>
+    <table>
+      <thead>
+        <tr>
+          <th>Body 1</th>
+          <th>Aspect</th>
+          <th>Body 2</th>
+          <th>Orb</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for a in aspects %}
+        <tr>
+          <td>{{ a.body1 }}</td>
+          <td>{{ a.aspect }}</td>
+          <td>{{ a.body2 }}</td>
+          <td>{{ a.orb }}</td>
+        </tr>
+        {% endfor %}
 
   <section>
     <h2>Aspects</h2>
@@ -43,9 +109,28 @@
       {% for a in data.aspects %}
         <tr><td>{{ a.p1 }}</td><td>{{ a.type }}</td><td>{{ a.p2 }}</td><td>{{ a.orb }}°</td></tr>
       {% endfor %}
+
       </tbody>
     </table>
   </section>
+
+
+  <!-- Chart Wheel -->
+  <section class="chart-wheel">
+    <h2>Chart Wheel</h2>
+    <svg width="300" height="300" viewBox="0 0 300 300">
+      <circle cx="150" cy="150" r="140" stroke="var(--brand-color)" stroke-width="2" fill="none" />
+      <!-- TODO: Replace with generated chart wheel -->
+    </svg>
+  </section>
+
+  <!-- Interpretation -->
+  <section class="interpretation">
+    <h2>Interpretation</h2>
+    <p>TODO: AI narrative</p>
+  </section>
+</body>
+</html>
 
   {% if data.meta.get("warnings") %}
   <section>
@@ -59,4 +144,5 @@
   {% endif %}
 </body>
 </html>
+
 
