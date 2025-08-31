@@ -1,11 +1,16 @@
-from pydantic import BaseModel
 from typing import Optional
 
-class ReportCreateResponse(BaseModel):
-    id: str
-    status: str
+from pydantic import BaseModel
 
-class ReportStatusResponse(BaseModel):
+from .charts import ChartInput
+
+
+class ReportCreateRequest(ChartInput):
+    """Payload for requesting a new report."""
+
+
+class ReportStatus(BaseModel):
     id: str
     status: str
     download_url: Optional[str] = None
+

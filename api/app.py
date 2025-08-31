@@ -1,6 +1,7 @@
 from fastapi import FastAPI
-from fastapi.responses import JSONResponse, FileResponse
+from fastapi.responses import FileResponse, JSONResponse
 from pathlib import Path
+
 from .routers import charts as charts_router
 from .routers import reports as reports_router
 
@@ -12,8 +13,8 @@ app.include_router(reports_router.router)
 def health():
     return {"ok": True}
 
-# Dev assets static serve (for quick PDF/SVG previews saved under /app/data/dev-assets)
-DEV_ASSETS_DIR = Path("/app/data/dev-assets")
+# Dev assets static serve (for quick PDF/SVG previews saved under data/dev-assets)
+DEV_ASSETS_DIR = Path(__file__).resolve().parents[1] / "data" / "dev-assets"
 DEV_ASSETS_DIR.mkdir(parents=True, exist_ok=True)
 
 @app.get("/dev-assets/{path:path}")

@@ -1,2 +1,2 @@
 from .charts import ChartInput, Place, ComputeRequest, ComputeResponse, BodyOut, MetaOut
-from .reports import ReportCreateResponse, ReportStatusResponse
+from .reports import ReportCreateRequest, ReportStatus

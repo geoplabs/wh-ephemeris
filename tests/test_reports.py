@@ -1,5 +1,8 @@
 import time
+from pathlib import Path
+
 from fastapi.testclient import TestClient
+
 from api.app import app
 
 client = TestClient(app)
@@ -14,7 +17,7 @@ sample_payload = {
 
 def test_report_lifecycle():
     res = client.post("/v1/reports", json=sample_payload)
-    assert res.status_code == 200, res.text
+    assert res.status_code == 202, res.text
     data = res.json()
     rid = data["id"]
     assert data["status"] == "queued"
@@ -35,3 +38,10 @@ def test_report_lifecycle():
     res = client.get(url)
     assert res.status_code == 200
     assert res.headers["content-type"] == "application/pdf"
+
+    # Ensure file exists on disk and looks like a PDF
+    pdf_path = Path("data/dev-assets/reports") / f"{rid}.pdf"
+    assert pdf_path.exists()
+    with pdf_path.open("rb") as fh:
+        header = fh.read(4)
+    assert header == b"%PDF"

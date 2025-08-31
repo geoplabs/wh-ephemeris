@@ -8,9 +8,12 @@ from typing import Dict, Any
 from .schemas import ComputeRequest
 from .routers import charts as charts_router
 
-DEV_ASSETS_DIR = Path("/app/data/dev-assets")
-DEV_ASSETS_DIR.mkdir(parents=True, exist_ok=True)
+# Where generated PDFs are stored during development
+DEV_ASSETS_ROOT = Path(__file__).resolve().parents[1] / "data" / "dev-assets"
+REPORTS_DIR = DEV_ASSETS_ROOT / "reports"
+REPORTS_DIR.mkdir(parents=True, exist_ok=True)
 
+# simple in-memory report metadata store
 reports: Dict[str, Dict[str, Any]] = {}
 queue: Queue = Queue()
 
@@ -26,7 +29,7 @@ def _worker_loop():
         try:
             chart = charts_router.compute_chart(ComputeRequest(**payload))
             html = template.render(chart=chart)
-            pdf_path = DEV_ASSETS_DIR / f"{report_id}.pdf"
+            pdf_path = REPORTS_DIR / f"{report_id}.pdf"
             HTML(string=html).write_pdf(pdf_path)
             reports[report_id]["status"] = "done"
             reports[report_id]["file"] = pdf_path.name
