@@ -3,7 +3,7 @@ from .charts import ChartInput, Place, ComputeRequest, ComputeResponse, BodyOut,
 from .dashas import DashaComputeRequest, DashaComputeResponse
 from .transits import TransitsComputeRequest, TransitsComputeResponse
 
-from .reports import ReportCreateRequest, ReportStatus, Branding, Product
+from .reports import ReportCreateRequest, ReportStatus, Branding
 
 from .forecasts import (
     YearlyForecastRequest,

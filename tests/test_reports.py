@@ -18,7 +18,6 @@ def _make_chart_input():
 
 def test_enqueue_and_get_pdf():
     with TestClient(app) as client:
-        app.state.rate = {}
         r = client.post(
             "/v1/reports",
             json={"product": "western_natal_pdf", "chart_input": _make_chart_input()},
@@ -46,10 +45,13 @@ def test_enqueue_and_get_pdf():
         assert pdf.content[:4] == b"%PDF"
 
 
-def test_rate_limit():
+def test_rate_limit(monkeypatch):
+    from api.middleware.ratelimit import _counters
+
     with TestClient(app) as client:
-        app.state.rate = {}
-        # hit it 12 times quickly; expect at least one 429
+        _counters.clear()
+        monkeypatch.setenv("RATE_LIMIT_ENABLED", "true")
+        monkeypatch.setenv("RATE_LIMIT_PER_MINUTE", "10")
         codes = []
         for _ in range(12):
             r = client.post(
@@ -61,7 +63,6 @@ def test_rate_limit():
 
 def test_idempotency_key():
     with TestClient(app) as client:
-        app.state.rate = {}
         payload = {
             "product": "western_natal_pdf",
             "chart_input": _make_chart_input(),
