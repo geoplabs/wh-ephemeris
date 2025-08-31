@@ -1,0 +1,54 @@
+# Swiss Ephemeris Data Files (Large binary files - download separately)
+data/ephemeris/*.se1
+data/ephemeris/*.eph
+data/ephemeris/*.cat
+data/ephemeris/de*.eph
+data/ephemeris/seas_*.se1
+data/ephemeris/semo_*.se1
+data/ephemeris/sepl_*.se1
+
+# Keep instructions and placeholders
+!data/ephemeris/README.md
+!data/ephemeris/DOWNLOAD_INSTRUCTIONS.md
+!data/ephemeris/.gitkeep
+
+# Environment files
+.env
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
+
+# Docker
+.dockerignore
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+logs/
+
+# Temporary files
+*.tmp
+*.temp
+
+# Test coverage
+.coverage
+htmlcov/
+.pytest_cache/
