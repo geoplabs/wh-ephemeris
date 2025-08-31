@@ -1,0 +1,62 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8"/>
+  <title>Western Natal Report</title>
+  <link rel="stylesheet" href="report.css"/>
+  <style>
+    :root { --brand: {{ branding.primary_hex or '#4A3AFF' }}; }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Western Natal Report</h1>
+    <p>System: {{ data.meta.zodiac }} • House: {{ data.meta.house_system }}</p>
+  </header>
+
+  <section>
+    <h2>Chart Wheel</h2>
+    {% if data.wheel_svg %}
+      {{ data.wheel_svg | safe }}
+    {% else %}
+      <p>(wheel placeholder)</p>
+    {% endif %}
+  </section>
+
+  <section>
+    <h2>Planetary Positions</h2>
+    <table>
+      <thead><tr><th>Body</th><th>Sign</th><th>House</th><th>Longitude</th></tr></thead>
+      <tbody>
+      {% for b in data.bodies %}
+        <tr><td>{{ b.name }}</td><td>{{ b.sign }}</td><td>{{ b.house or "-" }}</td><td>{{ "%.2f"|format(b.lon) }}°</td></tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </section>
+
+  <section>
+    <h2>Aspects</h2>
+    <table>
+      <thead><tr><th>P1</th><th>Type</th><th>P2</th><th>Orb</th></tr></thead>
+      <tbody>
+      {% for a in data.aspects %}
+        <tr><td>{{ a.p1 }}</td><td>{{ a.type }}</td><td>{{ a.p2 }}</td><td>{{ a.orb }}°</td></tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </section>
+
+  {% if data.meta.get("warnings") %}
+  <section>
+    <h3>Notes</h3>
+    <ul>
+      {% for w in data.meta.warnings %}
+        <li>{{ w }}</li>
+      {% endfor %}
+    </ul>
+  </section>
+  {% endif %}
+</body>
+</html>
+

@@ -1,5 +1,5 @@
 from pydantic import BaseModel
-from typing import Optional, List, Literal
+from typing import Optional, List, Literal, Dict, Any
 
 System = Literal["western", "vedic"]
 
@@ -25,13 +25,19 @@ class BodyOut(BaseModel):
     lon: float
     sign: str
     house: Optional[int] = None
+    retro: Optional[bool] = None
+    speed: Optional[float] = None
+    # optional vedic
+    nakshatra: Optional[Dict[str,Any]] = None
 
 class MetaOut(BaseModel):
-    engine: str = "mock"
-    engine_version: str = "0.0.1-stub"
+    engine: str = "wh-ephemeris"
+    engine_version: str
     zodiac: str
     house_system: str
     ayanamsha: Optional[str] = None
+    backend: Optional[str] = None
+    warnings: Optional[List[str]] = None
 
 class ComputeResponse(BaseModel):
     chart_id: str
