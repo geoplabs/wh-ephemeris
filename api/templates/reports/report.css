@@ -1,0 +1,44 @@
+body {
+  font-family: sans-serif;
+  margin: 0.5in;
+}
+
+h1, h2 {
+  color: var(--brand-color, #000);
+}
+
+.cover {
+  text-align: center;
+  page-break-after: always;
+}
+
+.logo {
+  max-width: 200px;
+  margin-bottom: 1em;
+}
+
+.planets table,
+.aspects table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-bottom: 1em;
+}
+
+.planets th,
+.planets td,
+.aspects th,
+.aspects td {
+  border: 1px solid #000;
+  padding: 0.25em;
+}
+
+.chart-wheel {
+  text-align: center;
+  page-break-before: always;
+}
+
+@media print {
+  @page {
+    margin: 0.5in;
+  }
+}
