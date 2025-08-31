@@ -1,3 +1,7 @@
+
+def nakshatra_from_lon_sidereal(lon: float) -> int:
+    return int((lon % 360.0) // (360.0 / 27))
+
 NAKSHATRAS = [
   "Ashwini","Bharani","Krittika","Rohini","Mrigashira","Ardra","Punarvasu","Pushya","Ashlesha",
   "Magha","Purva Phalguni","Uttara Phalguni","Hasta","Chitra","Swati","Vishakha","Anuradha",
@@ -10,3 +14,4 @@ def nakshatra_from_lon_sidereal(lon_sid: float) -> dict:
     idx = int(lon_sid // 13.3333333333333) % 27
     pada = int(((lon_sid % 13.3333333333333) // 3.3333333333333)) + 1
     return {"name": NAKSHATRAS[idx], "pada": pada}
+

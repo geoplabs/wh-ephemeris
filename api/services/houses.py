@@ -1,3 +1,10 @@
+
+def houses(jd: float, lat: float, lon: float, system: str):
+    base = jd % 360.0
+    asc = (base + lat) % 360.0
+    mc = (base + lon) % 360.0
+    return {"asc": asc, "mc": mc}
+
 import swisseph as swe
 from .constants import sign_index_from_lon
 
@@ -39,3 +46,4 @@ def solar_whole_sign_houses(sun_lon: float) -> list[int]:
     # House 1 = Sun's sign; next signs in order
     start = sign_index_from_lon(sun_lon)
     return [(start + i) % 12 for i in range(12)]
+

@@ -1,3 +1,13 @@
+
+SIGNS = [
+    "Aries","Taurus","Gemini","Cancer","Leo","Virgo",
+    "Libra","Scorpio","Sagittarius","Capricorn","Aquarius","Pisces"
+]
+
+
+def sign_name_from_lon(lon: float) -> str:
+    return SIGNS[int(lon // 30) % 12]
+
 SIGN_NAMES = ["Aries","Taurus","Gemini","Cancer","Leo","Virgo","Libra","Scorpio","Sagittarius","Capricorn","Aquarius","Pisces"]
 
 def sign_index_from_lon(lon: float) -> int:
@@ -15,3 +25,4 @@ def fmt_deg(lon: float) -> str:
     mins = int(minutes_float)
     secs = int((minutes_float - mins) * 60)
     return f"{SIGN_NAMES[sidx]} {deg:02d}°{mins:02d}′{secs:02d}″"
+
