@@ -1,15 +1,20 @@
 """PDF rendering helpers for reports."""
 
+import os
 from pathlib import Path
 from typing import Dict, Any, Optional
 
 
-# Attempt to import WeasyPrint. If unavailable, we'll fall back to ReportLab.
-try:  # pragma: no cover - import-time optional dependency
-    from weasyprint import HTML, CSS  # type: ignore
+# WeasyPrint is heavy and slow; enable only if USE_WEASY=true
+USE_WEASY = os.getenv("USE_WEASY", "false").lower() == "true"
+if USE_WEASY:  # pragma: no cover - optional dependency
+    try:
+        from weasyprint import HTML, CSS  # type: ignore
 
-    HAVE_WEASY = True
-except Exception:  # pragma: no cover - handled gracefully
+        HAVE_WEASY = True
+    except Exception:  # pragma: no cover
+        HAVE_WEASY = False
+else:  # pragma: no cover - default to ReportLab
     HAVE_WEASY = False
 
 
