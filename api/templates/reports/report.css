@@ -1,55 +1,94 @@
-
-body {
-  font-family: sans-serif;
-  margin: 0.5in;
-}
-
-h1, h2 {
-  color: var(--brand-color, #000);
-}
-
-.cover {
-  text-align: center;
-  page-break-after: always;
-}
-
-.logo {
-  max-width: 200px;
-  margin-bottom: 1em;
-}
-
-.planets table,
-.aspects table {
-  width: 100%;
-  border-collapse: collapse;
-  margin-bottom: 1em;
-}
-
-.planets th,
-.planets td,
-.aspects th,
-.aspects td {
-  border: 1px solid #000;
-  padding: 0.25em;
-}
-
-.chart-wheel {
-  text-align: center;
-  page-break-before: always;
-}
-
-@media print {
-  @page {
-    margin: 0.5in;
+/* ---------- Print & page settings ---------- */
+@page {
+  size: A4;
+  margin: 20mm 16mm 22mm 16mm;
+  @bottom-right {
+    content: "Page " counter(page) " of " counter(pages);
+    font-size: 10px;
+    color: var(--muted);
+  }
+  @top-left {
+    content: string(doc_title);
+    font-weight: 600;
+    color: var(--brand);
+    font-size: 10px;
   }
 }
 
-@page { size: A4; margin: 20mm; }
-body { font-family: system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif; color: #111; }
-h1, h2 { color: var(--brand, #4A3AFF); margin: 0.2cm 0; }
-table { width: 100%; border-collapse: collapse; margin: 0.3cm 0; }
-th, td { border: 1px solid #ddd; padding: 6px 8px; font-size: 12px; }
-thead th { background: #f5f7ff; }
-header { border-bottom: 2px solid var(--brand, #4A3AFF); margin-bottom: 0.5cm; }
+/* ---------- Theme variables (override via <style> in template) ---------- */
+:root {
+  --brand: #4A3AFF;         /* default primary if none passed */
+  --ink: #1b1f23;           /* main text */
+  --muted: #6a7280;         /* secondary text */
+  --bg: #ffffff;            /* page background */
+  --panel: #f8f9fb;         /* card background */
+  --border: #e6e8ee;        /* divider lines */
+  --ok: #0aae72;
+  --warn: #e19a05;
+  --danger: #e15241;
 
+  --font-sans: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue",
+               Arial, "Noto Sans", "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", sans-serif;
 
+  --h1: 24px;
+  --h2: 18px;
+  --h3: 14px;
+  --body: 11.5px;
+  --small: 10px;
+
+  --radius: 8px;
+  --shadow: 0 0.5px 0.5px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.06);
+}
+
+/* ---------- Base ---------- */
+* { box-sizing: border-box; }
+html, body { background: var(--bg); color: var(--ink); font-family: var(--font-sans); line-height: 1.45; font-size: var(--body); }
+h1, h2, h3 { margin: 0 0 8px; line-height: 1.25; }
+h1 { font-size: var(--h1); }
+h2 { font-size: var(--h2); }
+h3 { font-size: var(--h3); color: var(--muted); }
+p { margin: 0 0 8px; }
+small, .small { font-size: var(--small); color: var(--muted); }
+
+hr { border: 0; border-top: 1px solid var(--border); margin: 12px 0; }
+
+/* ---------- Layout helpers ---------- */
+.header { border-bottom: 1px solid var(--border); padding-bottom: 10px; margin-bottom: 12px; }
+.meta { display: flex; gap: 8px; flex-wrap: wrap; color: var(--muted); }
+.badge { display: inline-block; padding: 2px 8px; border-radius: 999px; border: 1px solid var(--border); }
+.badge.brand { border-color: var(--brand); color: var(--brand); }
+
+.grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; }
+.card { background: var(--panel); border: 1px solid var(--border); border-radius: var(--radius); padding: 10px; box-shadow: var(--shadow); }
+
+/* ---------- Tables ---------- */
+table { width: 100%; border-collapse: collapse; }
+th, td { padding: 6px 8px; border-bottom: 1px solid var(--border); vertical-align: top; }
+th { text-align: left; color: var(--muted); font-weight: 600; }
+tr:last-child td { border-bottom: 0; }
+
+/* zebra for long tables */
+.table-zebra tbody tr:nth-child(even) td { background: #fafbff; }
+
+/* ---------- Aspects tags ---------- */
+.tag { display: inline-block; padding: 2px 6px; border-radius: 6px; border: 1px solid var(--border); margin: 0 6px 6px 0; }
+.tag.ok { color: var(--ok); border-color: var(--ok); }
+.tag.warn { color: var(--warn); border-color: var(--warn); }
+.tag.danger { color: var(--danger); border-color: var(--danger); }
+
+/* ---------- Callouts ---------- */
+.callout { border-left: 3px solid var(--brand); background: #f5f7ff; padding: 8px 10px; border-radius: 6px; }
+.callout.warn { border-left-color: var(--warn); background: #fff8e9; }
+.callout.muted { border-left-color: var(--border); background: var(--panel); }
+
+/* ---------- Logo + title row ---------- */
+.brandrow { display: grid; grid-template-columns: 40px 1fr; gap: 10px; align-items: center; margin-bottom: 8px; }
+.brandrow img { width: 40px; height: 40px; object-fit: contain; }
+.brand-title { font-weight: 700; color: var(--brand); }
+
+/* ---------- Wheel container ---------- */
+.wheel { display: block; margin: 6px auto 10px; width: 82%; border: 1px dashed var(--border); border-radius: var(--radius); padding: 6px; }
+
+/* ---------- Footer note ---------- */
+.footer-note { margin-top: 8px; color: var(--muted); border-top: 1px solid var(--border); padding-top: 6px; }

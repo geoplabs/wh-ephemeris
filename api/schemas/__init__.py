@@ -26,3 +26,5 @@ from .interpret import (
     CompatibilityInterpretResponse,
 )
 
+from .viewmodels import NatalViewModel
+

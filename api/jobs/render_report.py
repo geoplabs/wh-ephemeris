@@ -7,7 +7,7 @@ from typing import Dict, Any
 
 from ..services.inproc_queue import Q
 from ..services.job_store import STORE
-from ..services.pdf_renderer import render_western_natal_pdf
+from ..services.pdf_renderer import render_western_natal_pdf, render_viewmodel_pdf
 from ..services.wheel_svg import simple_wheel_svg
 
 from ..routers.charts import compute_chart
@@ -22,7 +22,7 @@ def _build_payload(chart_req: Dict[str, Any]) -> Dict[str, Any]:
     res = compute_chart(ComputeRequest(**chart_req["chart_input"]))
     data = res.model_dump() if hasattr(res, "model_dump") else res
     data["chart_input"] = chart_req["chart_input"]
-    data["wheel_svg"] = simple_wheel_svg("Western Natal")
+    data["wheel_svg"] = simple_wheel_svg(data.get("bodies", []))
     return data
 
 
@@ -34,7 +34,7 @@ def worker_loop() -> None:
             job = STORE.get(rid)
             payload = job["payload"]
             product = payload["product"]
-            ci = payload["chart_input"]
+            ci = payload.get("chart_input")
             brand = payload.get("branding") or {}
             out = _ASSETS_BASE / f"{rid}.pdf"
             if product == "western_natal_pdf":
@@ -97,6 +97,13 @@ def worker_loop() -> None:
                     str(out),
                     branding=brand,
                     template_name="remedies.html.j2",
+                )
+            elif product == "full_natal_pdf":
+                vm = payload.get("viewmodel")
+                if not vm:
+                    raise ValueError("full_natal_pdf requires 'viewmodel' in payload")
+                render_viewmodel_pdf(
+                    vm, str(out), branding=brand, template_name="full_natal.html.j2"
                 )
             elif product == "spiritual_mission_pdf":
                 data = {

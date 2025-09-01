@@ -1,36 +1,15 @@
 """Utilities for generating simple SVG chart wheels."""
 
 
-def simple_wheel_svg(title: str = "Chart Wheel") -> str:
-    """Return a very basic SVG wheel with 12 sectors and a title.
-
-    The wheel is intentionally minimal; it's only a placeholder for tests and
-    development environments where a full wheel renderer would be overkill.
-    """
-
-    return (
-        "<svg xmlns='http://www.w3.org/2000/svg' width='800' height='800'>"
-        "  <circle cx='400' cy='400' r='360' fill='white' stroke='black' stroke-width='2'/>"
-        + "".join(
-            [
-                f"<line x1='400' y1='400' x2='{400+360*cos:.0f}' y2='{400+360*sin:.0f}' stroke='gray'/>"
-                for cos, sin in [
-                    (1, 0),
-                    (0.866, 0.5),
-                    (0.5, 0.866),
-                    (0, 1),
-                    (-0.5, 0.866),
-                    (-0.866, 0.5),
-                    (-1, 0),
-                    (-0.866, -0.5),
-                    (-0.5, -0.866),
-                    (0, -1),
-                    (0.5, -0.866),
-                    (0.866, -0.5),
-                ]
-            ]
+def simple_wheel_svg(bodies):
+    # very simple polar plot: 360° ring with planet labels by longitude
+    items = []
+    for b in bodies:
+        theta = b["lon"]
+        items.append(
+            f'<text x="50%" y="50%" transform="rotate({theta} 256 256) translate(0,-200)" font-size="10">{b["name"]}</text>'
         )
-        + f"  <text x='400' y='60' font-family='sans-serif' font-size='24' text-anchor='middle'>{title}</text>"
-        "</svg>"
-    )
-
+    return f'''<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512">
+      <circle cx="256" cy="256" r="220" fill="none" stroke="#999" stroke-width="1" />
+      {"".join(items)}
+    </svg>'''
