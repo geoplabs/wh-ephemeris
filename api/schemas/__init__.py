@@ -27,4 +27,5 @@ from .interpret import (
 )
 
 from .viewmodels import NatalViewModel
+from .yearly_viewmodel import YearlyViewModel
 

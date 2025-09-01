@@ -12,6 +12,7 @@ from .routers import compatibility as compatibility_router
 from .routers import remedies as remedies_router
 from .routers import interpret as interpret_router
 from .routers import natal as natal_router
+from .routers import yearly as yearly_router
 from .jobs.render_report import ensure_worker_started
 from .middleware.auth import APIKeyMiddleware
 from .middleware.ratelimit import RateLimitMiddleware
@@ -36,6 +37,7 @@ app.include_router(compatibility_router.router)
 app.include_router(remedies_router.router)
 app.include_router(interpret_router.router)
 app.include_router(natal_router.router)
+app.include_router(yearly_router.router)
 
 # Start worker immediately to support tests that instantiate TestClient
 # without lifespan events.

@@ -105,6 +105,13 @@ def worker_loop() -> None:
                 render_viewmodel_pdf(
                     vm, str(out), branding=brand, template_name="full_natal.html.j2"
                 )
+            elif product == "full_yearly_pdf":
+                vm = payload.get("viewmodel")
+                if not vm:
+                    raise ValueError("full_yearly_pdf requires 'viewmodel' in payload")
+                render_viewmodel_pdf(
+                    vm, str(out), branding=brand, template_name="full_yearly.html.j2"
+                )
             elif product == "spiritual_mission_pdf":
                 data = {
                     "themes": [
