@@ -1,0 +1,150 @@
+<!doctype html>
+<html><head>
+<meta charset="utf-8">
+<title>Natal Report</title>
+<link rel="stylesheet" href="{{ css_href }}">
+<style>
+  :root { --brand: {{ (branding.primary_hex or '#4A3AFF')|tojson|safe }}; }
+</style>
+</head>
+<body>
+<span style="display:none; string-set: doc_title content('Natal Report');"></span>
+
+<div class="header">
+  <div class="brandrow">
+    {% if branding.logo_url %}
+      <img src="{{ branding.logo_url }}" alt="logo">
+    {% else %}
+      <div style="width:40px;height:40px;border-radius:8px;background:var(--brand)"></div>
+    {% endif %}
+    <div>
+      <div class="brand-title">{{ vm.header.system|capitalize }} Natal Report</div>
+      <div class="meta">
+        {% if vm.header.name %}<span class="badge">{{ vm.header.name }}</span>{% endif %}
+        <span class="badge">Zodiac: {{ vm.header.zodiac|capitalize }}</span>
+        <span class="badge">House: {{ vm.header.house_system }}</span>
+        {% if vm.header.ayanamsha %}<span class="badge">Ayanamsha: {{ vm.header.ayanamsha }}</span>{% endif %}
+        {% if vm.header.place_label %}<span class="badge">{{ vm.header.place_label }}</span>{% endif %}
+      </div>
+    </div>
+  </div>
+  {% if vm.core_chart.warnings %}<div class="callout warn">{{ vm.core_chart.warnings|join('; ') }}</div>{% endif %}
+</div>
+
+<div class="grid-2">
+  <div class="card">
+    <h2>Key Snapshot</h2>
+    <ul style="margin:6px 0 0 18px">
+      <li>Sun: {{ (vm.core_chart.bodies|selectattr('name','equalto','Sun')|list|first).sign }}{% set s=(vm.core_chart.bodies|selectattr('name','equalto','Sun')|list|first) %}{% if s and s.house %} (House {{ s.house }}){% endif %}</li>
+      <li>Moon: {{ (vm.core_chart.bodies|selectattr('name','equalto','Moon')|list|first).sign }}{% set m=(vm.core_chart.bodies|selectattr('name','equalto','Moon')|list|first) %}{% if m and m.house %} (House {{ m.house }}){% endif %}{% if m and m.nakshatra %} • Nakshatra: {{ m.nakshatra.name }} (Pada {{ m.nakshatra.pada }}){% endif %}</li>
+      <li>Ascendant: {% if vm.core_chart.angles and vm.core_chart.angles.ascendant is not none %}{{ vm.core_chart.angles.ascendant|float|round(2) }}°{% else %}Asc unknown (time not known){% endif %}</li>
+    </ul>
+  </div>
+  <div class="card">
+    <h2>Highlights</h2>
+    <ul style="margin:6px 0 0 18px">
+      {% for h in vm.interpretation.highlights %}<li>{{ h }}</li>{% endfor %}
+    </ul>
+  </div>
+</div>
+
+<div class="card" style="margin-top:10px;">
+  <h2>Chart Wheel</h2>
+  <div class="wheel">{{ vm.assets.wheel_svg | safe }}</div>
+</div>
+
+<div class="card" style="margin-top:10px;">
+  <h2>Table of Positions</h2>
+  <table class="table-zebra">
+    <thead><tr><th>Body</th><th>Sign</th><th>House{% if not vm.header.time_known %}*{% endif %}</th><th>Longitude</th><th>Retro</th></tr></thead>
+    <tbody>
+      {% for b in vm.core_chart.bodies %}
+        <tr><td>{{ b.name }}</td><td>{{ b.sign }}</td><td>{{ b.house or '—' }}</td><td>{{ "%.2f"|format(b.lon) }}</td><td>{{ '✓' if b.retro else '' }}</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% if not vm.header.time_known %}<div class="small">* Houses shown as solar whole-sign (birth time unknown).</div>{% endif %}
+</div>
+
+<div class="card" style="margin-top:10px;">
+  <h2>Houses & Angles</h2>
+  {% if vm.core_chart.houses %}
+    <table class="table-zebra">
+      <thead><tr><th>#</th><th>Cusp Longitude</th></tr></thead>
+      <tbody>{% for h in vm.core_chart.houses %}<tr><td>{{ h.num }}</td><td>{{ "%.2f"|format(h.cusp_lon) }}</td></tr>{% endfor %}</tbody>
+    </table>
+    {% if vm.core_chart.angles %}
+      <div class="small">ASC: {{ vm.core_chart.angles.ascendant|float|round(2) }}° • MC: {{ vm.core_chart.angles.mc|float|round(2) }}°</div>
+    {% endif %}
+  {% else %}
+    <div class="callout muted">Angles/Houses omitted (birth time unknown).</div>
+  {% endif %}
+</div>
+
+<div class="card" style="margin-top:10px;">
+  <h2>Aspects (Major)</h2>
+  <table class="table-zebra">
+    <thead><tr><th>Aspect</th><th>Orb</th><th>Applying</th></tr></thead>
+    <tbody>
+      {% for a in vm.core_chart.aspects %}
+        {% set cls = 'ok' if a.type in ['trine','sextile'] else ('danger' if a.type in ['square','opposition'] else '') %}
+        <tr>
+          <td><span class="tag {{ cls }}">{{ a.p1 }} {{ a.type }} {{ a.p2 }}</span></td>
+          <td>{{ a.orb }}</td><td>{{ '✓' if a.applying else '' }}</td>
+        </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+<div class="card" style="margin-top:10px;">
+  <h2>Interpretation</h2>
+  <p>{{ vm.interpretation.summary }}</p>
+  <div class="grid-2" style="margin-top:8px;">
+    {% for k,v in vm.interpretation.domains.items() %}
+      <div>
+        <h3>{{ k|capitalize }}</h3>
+        <p>{{ v }}</p>
+      </div>
+    {% endfor %}
+  </div>
+</div>
+
+<div class="grid-2" style="margin-top:10px;">
+  <div class="card">
+    <h2>Strengths</h2>
+    <ul style="margin:6px 0 0 18px">{% for p in vm.analysis.strengths %}<li>{{ p }}</li>{% endfor %}</ul>
+  </div>
+  <div class="card">
+    <h2>Growth Areas</h2>
+    <ul style="margin:6px 0 0 18px">{% for c in vm.analysis.growth %}<li>{{ c }}</li>{% endfor %}</ul>
+  </div>
+</div>
+
+{% if vm.vedic_extras %}
+  <div class="card" style="margin-top:10px;">
+    <h2>Vedic Extras</h2>
+    {% if vm.vedic_extras.moon_nakshatra %}
+      <p>Moon Nakshatra: <b>{{ vm.vedic_extras.moon_nakshatra.name }}</b> (Pada {{ vm.vedic_extras.moon_nakshatra.pada }})</p>
+    {% endif %}
+    {% if vm.vedic_extras.current_dasha and vm.vedic_extras.current_dasha.maha %}
+      <p>Current Vimshottari: <b>{{ vm.vedic_extras.current_dasha.maha }}</b> / {{ vm.vedic_extras.current_dasha.antar or '—' }}
+      <span class="small">({{ vm.vedic_extras.current_dasha.start or '…' }} → {{ vm.vedic_extras.current_dasha.end or '…' }})</span></p>
+    {% endif %}
+  </div>
+{% endif %}
+
+{% if vm.remedies and vm.remedies|length>0 %}
+  <div class="card" style="margin-top:10px;">
+    <h2>Remedies</h2>
+    <ul style="margin:6px 0 0 18px">
+      {% for r in vm.remedies %}
+        <li><b>{{ r.planet }}</b>: {{ r.recommendation }}{% if r.gemstone %} • Gemstone: {{ r.gemstone }}{% endif %}</li>
+      {% endfor %}
+    </ul>
+  </div>
+{% endif %}
+
+<div class="footer-note small">Generated by wh-ephemeris • Method: {{ vm.header.system|capitalize }}, {{ vm.header.zodiac|capitalize }}{% if vm.header.ayanamsha %}, Ayanamsha {{ vm.header.ayanamsha|capitalize }}{% endif %}</div>
+
+</body></html>

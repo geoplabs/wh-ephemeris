@@ -96,3 +96,40 @@ def render_western_natal_pdf(
         _render_reportlab(out, payload)
         return str(out)
 
+
+def render_viewmodel_pdf(
+    viewmodel: dict,
+    out_path: str,
+    branding: Dict[str, Any] | None = None,
+    template_name: str = "full_natal.html.j2",
+) -> str:
+    """Render a PDF from a pre-built viewmodel."""
+
+    tpl_dir = Path(__file__).parent.parent / "templates" / "reports"
+    if HAVE_WEASY:
+        from jinja2 import Environment, FileSystemLoader
+
+        env = Environment(
+            loader=FileSystemLoader(str(tpl_dir)), autoescape=True, trim_blocks=True, lstrip_blocks=True
+        )
+        html = env.get_template(template_name).render(
+            vm=viewmodel, branding=branding or {}, css_href="report.css"
+        )
+        out = Path(out_path)
+        HTML(string=html, base_url=str(tpl_dir)).write_pdf(str(out), stylesheets=[])
+        return str(out)
+    else:
+        from reportlab.pdfgen import canvas
+
+        c = canvas.Canvas(out_path)
+        c.setTitle("Full Natal Report")
+        c.drawString(72, 800, "Full Natal Report")
+        c.drawString(
+            72,
+            780,
+            f"System: {viewmodel['header']['system']}  Zodiac: {viewmodel['header']['zodiac']}",
+        )
+        c.showPage()
+        c.save()
+        return out_path
+

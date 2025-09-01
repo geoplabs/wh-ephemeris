@@ -13,7 +13,9 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
         if os.getenv("RATE_LIMIT_ENABLED", "false").lower() != "true":
             return await call_next(request)
 
-        key = getattr(request.state, "api_key", request.client.host)
+        key = getattr(request.state, "api_key", None) or (
+            request.client.host if request.client else "anon"
+        )
         limit = int(os.getenv("RATE_LIMIT_PER_MINUTE", "10"))
         now = time.time()
 
