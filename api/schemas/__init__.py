@@ -29,4 +29,5 @@ from .interpret import (
 from .viewmodels import NatalViewModel
 from .yearly_viewmodel import YearlyViewModel
 from .monthly_viewmodel import MonthlyViewModel
+from .panchang_viewmodel import PanchangViewModel
 
