@@ -35,11 +35,17 @@ def panchang_today(
     include_muhurta: bool = True,
     include_hora: bool = False,
     place_label: Optional[str] = None,
+    lang: str = "en",
+    script: str = "latin",
+    show_bilingual: bool = False,
 ):
     options = {
         "ayanamsha": ayanamsha,
         "include_muhurta": include_muhurta,
         "include_hora": include_hora,
+        "lang": lang,
+        "script": script,
+        "show_bilingual": show_bilingual,
     }
     place = {"lat": lat, "lon": lon, "tz": tz, "query": place_label}
     return build_viewmodel("vedic", None, place, options)

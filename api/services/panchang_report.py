@@ -27,13 +27,69 @@ def _render_pdf(viewmodel: Dict[str, Any], out_path: Path) -> None:
     lunar = viewmodel.get("lunar", {})
     tithi = viewmodel.get("tithi", {})
     nakshatra = viewmodel.get("nakshatra", {})
+    locale = header.get("locale", {}) if isinstance(header, dict) else {}
+    lang = locale.get("lang")
+    script = locale.get("script")
+    bilingual = viewmodel.get("bilingual") if isinstance(viewmodel, dict) else None
+
+    weekday = header.get("weekday", {}) if isinstance(header, dict) else {}
+    weekday_display = weekday.get("display_name") if isinstance(weekday, dict) else weekday
+    weekday_en = None
+    if isinstance(weekday, dict):
+        weekday_en = weekday.get("aliases", {}).get("en")
+
+    tithi_display = tithi.get("display_name") if isinstance(tithi, dict) else tithi
+    tithi_aliases = tithi.get("aliases", {}) if isinstance(tithi, dict) else {}
+    nak_display = nakshatra.get("display_name") if isinstance(nakshatra, dict) else nakshatra
 
     c.setFont("Helvetica", 10)
-    c.drawString(2 * cm, height - 3 * cm, f"Date: {header.get('date_local')} ({header.get('weekday')})")
+    c.drawString(
+        2 * cm,
+        height - 3 * cm,
+        f"Date: {header.get('date_local')} ({weekday_display})",
+    )
+    if lang == "hi" and script == "deva" and weekday_en:
+        c.setFont("Helvetica", 8)
+        c.setFillGray(0.4)
+        c.drawString(2 * cm, height - 3.3 * cm, f"English: {weekday_en}")
+        c.setFillGray(0)
+        c.setFont("Helvetica", 10)
     c.drawString(2 * cm, height - 3.6 * cm, f"Sunrise: {solar.get('sunrise')}  Sunset: {solar.get('sunset')}")
-    c.drawString(2 * cm, height - 4.2 * cm, f"Tithi: {tithi.get('name')} ({tithi.get('number')})")
-    c.drawString(2 * cm, height - 4.8 * cm, f"Nakshatra: {nakshatra.get('name')} Pada {nakshatra.get('pada')}")
+    c.drawString(2 * cm, height - 4.2 * cm, f"Tithi: {tithi_display} ({tithi.get('number')})")
+    if lang == "hi" and script == "deva" and tithi_aliases:
+        c.setFont("Helvetica", 8)
+        c.setFillGray(0.4)
+        en_alias = tithi_aliases.get("en")
+        iast_alias = tithi_aliases.get("iast")
+        if en_alias or iast_alias:
+            c.drawString(
+                2 * cm,
+                height - 4.5 * cm,
+                f"English: {en_alias or ''}  IAST: {iast_alias or ''}",
+            )
+        c.setFillGray(0)
+        c.setFont("Helvetica", 10)
+    c.drawString(2 * cm, height - 4.8 * cm, f"Nakshatra: {nak_display} Pada {nakshatra.get('pada')}")
+    if lang == "hi" and script == "deva" and isinstance(nakshatra, dict):
+        aliases = nakshatra.get("aliases", {})
+        en_alias = aliases.get("en")
+        if en_alias:
+            c.setFont("Helvetica", 8)
+            c.setFillGray(0.4)
+            c.drawString(2 * cm, height - 5.1 * cm, f"English: {en_alias}")
+            c.setFillGray(0)
+            c.setFont("Helvetica", 10)
     c.drawString(2 * cm, height - 5.4 * cm, f"Moonrise: {lunar.get('moonrise')}  Moonset: {lunar.get('moonset')}")
+
+    if bilingual:
+        c.setFont("Helvetica-Oblique", 8)
+        c.setFillGray(0.4)
+        c.drawString(
+            2 * cm,
+            height - 6.0 * cm,
+            f"Bilingual helper: {bilingual.get('tithi_en', '')} / {bilingual.get('tithi_hi', '')}",
+        )
+        c.setFillGray(0)
 
     c.showPage()
     c.save()
