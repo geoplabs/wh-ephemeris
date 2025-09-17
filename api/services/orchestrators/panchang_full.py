@@ -149,7 +149,7 @@ def _build_viewmodel_uncached(target_date: date_cls, place: Dict[str, Any], opti
     next_sunrise = sunrise + timedelta(days=1)
     solar_noon = sunrise + (sunset - sunrise) / 2
 
-    lunar_day_no, paksha = compute_lunar_day(start_of_day)
+    lunar_day_no, paksha = compute_lunar_day(sunrise)
     moonrise, moonset = compute_moon_events(start_of_day, tz)
     tithi_number, _tithi_name, tithi_start, tithi_end = compute_tithi(start_of_day, sunrise)
     nak_no, _nak_name, nak_pada, nak_start, nak_end = compute_nakshatra(start_of_day, sunrise)
