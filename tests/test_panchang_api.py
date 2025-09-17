@@ -29,8 +29,8 @@ def test_today_minimal():
     assert data["header"]["tz"] == "Asia/Kolkata"
     _assert_local_timestamp(data["solar"]["sunrise"], "+05:30")
     _assert_local_timestamp(data["solar"]["sunset"], "+05:30")
-    assert data["tithi"]["name"]
-    assert data["nakshatra"]["name"]
+    assert data["tithi"]["display_name"]
+    assert data["nakshatra"]["display_name"]
     assert data["muhurta"] is not None
 
 
@@ -54,7 +54,7 @@ def test_compute_matches_today():
     compute_data = compute_resp.json()
 
     assert compute_data["solar"] == today_data["solar"]
-    assert compute_data["tithi"]["name"] == today_data["tithi"]["name"]
+    assert compute_data["tithi"]["display_name"] == today_data["tithi"]["display_name"]
 
 
 def test_report_endpoint_pdf(tmp_path):

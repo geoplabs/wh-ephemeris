@@ -23,8 +23,11 @@ from ...schemas.panchang_viewmodel import (
     SolarVM,
     LunarVM,
     TithiVM,
+    MasaLabel,
     MasaVM,
     HeaderVM,
+    WeekdayVM,
+    LocaleVM,
     Span,
 )
 from ..panchang_algos import (
@@ -38,10 +41,31 @@ from ..panchang_algos import (
 )
 from ..muhurta import compute_horas, compute_muhurta_blocks
 from ..day_strip_svg import build_day_strip_svg
+from ...i18n.resolve import (
+    clamp_lang,
+    clamp_script,
+    vara_label,
+    tithi_label,
+    nak_label,
+    yoga_label,
+    karana_label,
+    masa_label,
+    planet_label,
+)
 
 
 CACHE: Dict[str, tuple[float, PanchangViewModel]] = {}
 TTL_SECONDS = 900
+
+PLANET_NAME_TO_INDEX = {
+    "Sun": 0,
+    "Moon": 1,
+    "Mars": 2,
+    "Mercury": 3,
+    "Jupiter": 4,
+    "Venus": 5,
+    "Saturn": 6,
+}
 
 
 def _format_iso(dt: datetime) -> str:
@@ -65,16 +89,30 @@ def _weekday_name(dt: date_cls) -> str:
     return dt.strftime("%A")
 
 
+def _normalize_options(options: Optional[Dict[str, Any]]) -> Dict[str, Any]:
+    opts = dict(options or {})
+    opts["ayanamsha"] = opts.get("ayanamsha", "lahiri").lower()
+    opts["include_muhurta"] = bool(opts.get("include_muhurta", True))
+    opts["include_hora"] = bool(opts.get("include_hora", False))
+    opts["lang"] = clamp_lang(opts.get("lang"))
+    opts["script"] = clamp_script(opts.get("script"))
+    opts["show_bilingual"] = bool(opts.get("show_bilingual", False))
+    return opts
+
+
 def _build_cache_key(date_value: date_cls, place: Dict[str, Any], options: Dict[str, Any]) -> str:
-    ayanamsha = options.get("ayanamsha", "lahiri").lower()
+    ayanamsha = options.get("ayanamsha", "lahiri")
     include_muhurta = bool(options.get("include_muhurta", True))
     include_hora = bool(options.get("include_hora", False))
+    lang = options.get("lang", "en")
+    script = options.get("script", "latin")
+    show_bilingual = bool(options.get("show_bilingual", False))
     lat = float(place["lat"])
     lon = float(place["lon"])
     tz = place["tz"]
     return (
         f"panchang:{date_value.isoformat()}:{lat:.4f}:{lon:.4f}:{tz}:{ayanamsha}"
-        f":{int(include_muhurta)}:{int(include_hora)}"
+        f":{int(include_muhurta)}:{int(include_hora)}:{lang}:{script}:{int(show_bilingual)}"
     )
 
 
@@ -84,7 +122,7 @@ def build_viewmodel(system: str, date_str: Optional[str], place: Dict[str, Any],
 
     tz = ZoneInfo(place["tz"])
     target_date = _resolve_date(date_str, tz)
-    options = options or {}
+    options = _normalize_options(options)
 
     key = _build_cache_key(target_date, place, options)
     cached = CACHE.get(key)
@@ -98,9 +136,12 @@ def build_viewmodel(system: str, date_str: Optional[str], place: Dict[str, Any],
 
 
 def _build_viewmodel_uncached(target_date: date_cls, place: Dict[str, Any], options: Dict[str, Any], tz: ZoneInfo) -> PanchangViewModel:
-    ayanamsha = options.get("ayanamsha", "lahiri").lower()
+    ayanamsha = options.get("ayanamsha", "lahiri")
     include_muhurta = bool(options.get("include_muhurta", True))
     include_hora = bool(options.get("include_hora", False))
+    lang = options.get("lang", "en")
+    script = options.get("script", "latin")
+    show_bilingual = bool(options.get("show_bilingual", False))
 
     start_of_day = datetime.combine(target_date, time_cls(0, 0), tzinfo=tz)
     sunrise = start_of_day + timedelta(hours=6)
@@ -110,11 +151,20 @@ def _build_viewmodel_uncached(target_date: date_cls, place: Dict[str, Any], opti
 
     lunar_day_no, paksha = compute_lunar_day(start_of_day)
     moonrise, moonset = compute_moon_events(start_of_day, tz)
-    tithi_number, tithi_name, tithi_start, tithi_end = compute_tithi(start_of_day, sunrise)
-    nak_no, nak_name, nak_pada, nak_start, nak_end = compute_nakshatra(start_of_day, sunrise)
-    yoga_name, yoga_start, yoga_end = compute_yoga(start_of_day, sunrise)
-    karana_name, karana_start, karana_end = compute_karana(start_of_day, sunrise)
-    amanta, purnimanta = compute_masa(start_of_day)
+    tithi_number, _tithi_name, tithi_start, tithi_end = compute_tithi(start_of_day, sunrise)
+    nak_no, _nak_name, nak_pada, nak_start, nak_end = compute_nakshatra(start_of_day, sunrise)
+    yoga_number, _yoga_name, yoga_start, yoga_end = compute_yoga(start_of_day, sunrise)
+    karana_index, _karana_name, karana_start, karana_end = compute_karana(start_of_day, sunrise)
+    amanta_idx, _amanta_name, purnimanta_idx, _purnimanta_name = compute_masa(start_of_day)
+
+    weekday_index = (target_date.weekday() + 1) % 7
+    vara = vara_label(weekday_index, lang, script)
+    tithi_names = tithi_label(tithi_number, paksha, lang, script)
+    nak_names = nak_label(nak_no, lang, script)
+    yoga_names = yoga_label(yoga_number, lang, script)
+    kar_names = karana_label(karana_index, lang, script)
+    amanta_label = masa_label(amanta_idx, lang, script)
+    purnimanta_label = masa_label(purnimanta_idx, lang, script)
 
     span_note = None
     if tithi_start.date() != tithi_end.date():
@@ -135,20 +185,37 @@ def _build_viewmodel_uncached(target_date: date_cls, place: Dict[str, Any], opti
     if include_hora:
         horas = compute_horas(sunrise, sunset, next_sunrise, weekday)
         hora_vm = [
-            HoraSpan(start_ts=_format_iso(start), end_ts=_format_iso(end), lord=lord)
+            HoraSpan(
+                start_ts=_format_iso(start),
+                end_ts=_format_iso(end),
+                lord=planet_label(PLANET_NAME_TO_INDEX[lord], lang, script),
+            )
             for start, end, lord in horas
         ]
 
     assets = AssetsVM(day_strip_svg=build_day_strip_svg())
 
+    masa_vm = MasaVM(
+        amanta=MasaLabel(**amanta_label),
+        purnimanta=MasaLabel(**purnimanta_label),
+    )
+
+    bilingual_helper: Optional[Dict[str, str]] = None
+    if show_bilingual and lang == "hi":
+        bilingual_helper = {
+            "tithi_en": tithi_names["aliases"].get("en"),
+            "tithi_hi": tithi_names["aliases"].get("hi"),
+        }
+
     vm = PanchangViewModel(
         header=HeaderVM(
             date_local=target_date.isoformat(),
-            weekday=weekday,
+            weekday=WeekdayVM(**vara),
             tz=place["tz"],
             place_label=place.get("query"),
             system="vedic",
             ayanamsha=ayanamsha,
+            locale=LocaleVM(lang=lang, script=script),
         ),
         solar=SolarVM(
             sunrise=_format_iso(sunrise),
@@ -164,25 +231,40 @@ def _build_viewmodel_uncached(target_date: date_cls, place: Dict[str, Any], opti
         ),
         tithi=TithiVM(
             number=tithi_number,
-            name=tithi_name,
+            display_name=tithi_names["display_name"],
+            aliases=tithi_names["aliases"],
             start_ts=_format_iso(tithi_start),
             end_ts=_format_iso(tithi_end),
             span_note=span_note,
         ),
         nakshatra=SegmentVM(
             number=nak_no,
-            name=nak_name,
+            display_name=nak_names["display_name"],
+            aliases=nak_names["aliases"],
             pada=nak_pada,
             start_ts=_format_iso(nak_start),
             end_ts=_format_iso(nak_end),
         ),
-        yoga=SegmentVM(name=yoga_name, start_ts=_format_iso(yoga_start), end_ts=_format_iso(yoga_end)),
-        karana=SegmentVM(name=karana_name, start_ts=_format_iso(karana_start), end_ts=_format_iso(karana_end)),
-        masa=MasaVM(amanta_name=amanta, purnimanta_name=purnimanta),
+        yoga=SegmentVM(
+            display_name=yoga_names["display_name"],
+            aliases=yoga_names["aliases"],
+            number=yoga_number,
+            start_ts=_format_iso(yoga_start),
+            end_ts=_format_iso(yoga_end),
+        ),
+        karana=SegmentVM(
+            display_name=kar_names["display_name"],
+            aliases=kar_names["aliases"],
+            number=karana_index + 1,
+            start_ts=_format_iso(karana_start),
+            end_ts=_format_iso(karana_end),
+        ),
+        masa=masa_vm,
         muhurta=muhurta_vm,
         hora=hora_vm,
         notes=["Synthetic Panchang data for development"],
         assets=assets,
+        bilingual=bilingual_helper,
     )
 
     return vm

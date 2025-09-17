@@ -112,9 +112,9 @@ KARANA_SEQUENCE = [
     "Balava",
     "Kaulava",
     "Taitila",
-    "Garija",
+    "Garaja",
     "Vanija",
-    "Vishti",
+    "Vishti (Bhadra)",
 ]
 
 FIXED_KARANAS = [
@@ -164,31 +164,35 @@ def compute_nakshatra(date: datetime, sunrise: datetime) -> Tuple[int, str, int,
     return number, name, pada, start, end
 
 
-def compute_yoga(date: datetime, sunrise: datetime) -> Tuple[str, datetime, datetime]:
+def compute_yoga(date: datetime, sunrise: datetime) -> Tuple[int, str, datetime, datetime]:
     ordinal = date.toordinal()
-    name = YOGA_NAMES[ordinal % len(YOGA_NAMES)]
+    number = (ordinal % len(YOGA_NAMES)) + 1
+    name = YOGA_NAMES[number - 1]
     start = sunrise - timedelta(hours=2)
     end = start + timedelta(hours=26)
-    return name, start, end
+    return number, name, start, end
 
 
-def compute_karana(date: datetime, sunrise: datetime) -> Tuple[str, datetime, datetime]:
+def compute_karana(date: datetime, sunrise: datetime) -> Tuple[int, str, datetime, datetime]:
     ordinal = date.toordinal()
     half_index = (ordinal * 2) % 56
     if half_index >= 50:
-        name = FIXED_KARANAS[(half_index - 50) % len(FIXED_KARANAS)]
+        offset = (half_index - 50) % len(FIXED_KARANAS)
+        name = FIXED_KARANAS[offset]
+        index = len(KARANA_SEQUENCE) + offset
     else:
-        name = KARANA_SEQUENCE[half_index % len(KARANA_SEQUENCE)]
+        index = half_index % len(KARANA_SEQUENCE)
+        name = KARANA_SEQUENCE[index]
     start = sunrise + timedelta(hours=9)
     end = start + timedelta(hours=6)
-    return name, start, end
+    return index, name, start, end
 
 
-def compute_masa(date: datetime) -> Tuple[str, str]:
+def compute_masa(date: datetime) -> Tuple[int, str, int, str]:
     month_idx = date.month - 1
     amanta = MASA_AMANTA[month_idx % 12]
     purnimanta = MASA_AMANTA[(month_idx + 1) % 12]
-    return amanta, purnimanta
+    return month_idx % 12, amanta, (month_idx + 1) % 12, purnimanta
 
 
 def compute_lunar_day(date: datetime) -> Tuple[int, str]:

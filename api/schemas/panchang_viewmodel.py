@@ -2,13 +2,18 @@
 
 from __future__ import annotations
 
-from pydantic import BaseModel
-from typing import Optional, List
+from pydantic import BaseModel, Field
+from typing import Optional, List, Dict
 
 
 class Span(BaseModel):
     start_ts: str
     end_ts: str
+
+
+class LabelledValue(BaseModel):
+    display_name: str
+    aliases: Dict[str, str]
 
 
 class SolarVM(BaseModel):
@@ -25,21 +30,28 @@ class LunarVM(BaseModel):
     paksha: str
 
 
-class TithiVM(Span):
+class LabelledSpan(Span):
+    display_name: str
+    aliases: Dict[str, str]
+
+
+class TithiVM(LabelledSpan):
     number: int
-    name: str
     span_note: Optional[str] = None
 
 
-class SegmentVM(Span):
-    name: str
+class SegmentVM(LabelledSpan):
     number: Optional[int] = None
     pada: Optional[int] = None
 
 
+class MasaLabel(LabelledValue):
+    pass
+
+
 class MasaVM(BaseModel):
-    amanta_name: str
-    purnimanta_name: str
+    amanta: MasaLabel
+    purnimanta: MasaLabel
 
 
 class MuhurtaVM(BaseModel):
@@ -52,16 +64,26 @@ class MuhurtaVM(BaseModel):
 class HoraSpan(BaseModel):
     start_ts: str
     end_ts: str
-    lord: str
+    lord: LabelledValue
+
+
+class WeekdayVM(LabelledValue):
+    pass
+
+
+class LocaleVM(BaseModel):
+    lang: str
+    script: str
 
 
 class HeaderVM(BaseModel):
     date_local: str
-    weekday: str
+    weekday: WeekdayVM
     tz: str
     place_label: Optional[str] = None
     system: str
     ayanamsha: str
+    locale: LocaleVM
 
 
 class AssetsVM(BaseModel):
@@ -81,6 +103,7 @@ class PanchangViewModel(BaseModel):
     samvatsara: Optional[str] = None
     muhurta: Optional[MuhurtaVM] = None
     hora: Optional[List[HoraSpan]] = None
-    notes: List[str] = []
+    notes: List[str] = Field(default_factory=list)
     assets: AssetsVM = AssetsVM()
+    bilingual: Optional[Dict[str, str]] = None
 
