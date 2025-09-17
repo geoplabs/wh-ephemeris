@@ -10,11 +10,17 @@ code.
 from __future__ import annotations
 
 from datetime import datetime, timedelta, timezone
-from typing import Tuple
+from typing import Callable, Optional, Tuple
 
-from zoneinfo import ZoneInfo
+import math
+import os
 
 from .ephem import positions_ecliptic
+
+try:
+    import swisseph as swe
+except ImportError:  # pragma: no cover - library injected during runtime
+    swe = None  # type: ignore
 
 TITHI_NAMES = [
     "Shukla Pratipada",
@@ -126,6 +132,10 @@ FIXED_KARANAS = [
     "Kimstughna",
 ]
 
+KARANA_NAME_TO_INDEX = {
+    name: idx for idx, name in enumerate(KARANA_SEQUENCE + FIXED_KARANAS)
+}
+
 MASA_AMANTA = [
     "Chaitra",
     "Vaishakha",
@@ -140,6 +150,32 @@ MASA_AMANTA = [
     "Magha",
     "Phalguna",
 ]
+
+NAKSHATRA_SPAN = 360.0 / 27.0
+PADA_SPAN = NAKSHATRA_SPAN / 4.0
+YOGA_SPAN = 360.0 / 27.0
+KARANA_SPAN = 6.0
+
+RASHI_NAMES = [
+    "Mesha",
+    "Vrishabha",
+    "Mithuna",
+    "Karka",
+    "Simha",
+    "Kanya",
+    "Tula",
+    "Vrischika",
+    "Dhanu",
+    "Makara",
+    "Kumbha",
+    "Meena",
+]
+
+EPHEMERIS_FLAG = (
+    swe.FLG_MOSEPH
+    if os.getenv("EPHEMERIS_BACKEND", "swieph").lower() == "moseph"
+    else swe.FLG_SWIEPH
+) if swe else 0
 
 
 def _format_iso(dt: datetime) -> str:
@@ -168,138 +204,215 @@ def _tithi_state(moment: datetime) -> Tuple[int, float]:
     return number, diff
 
 
-def _unwrap(diff: float, reference: float, forward: bool) -> float:
-    """Unwrap a longitude difference relative to a reference value."""
+def _sun_longitude(moment: datetime, sidereal: bool = False) -> float:
+    jd = _to_jd(moment)
+    return positions_ecliptic(jd, sidereal=sidereal)["Sun"]["lon"]
+
+
+def _moon_longitude(moment: datetime, sidereal: bool = False) -> float:
+    jd = _to_jd(moment)
+    return positions_ecliptic(jd, sidereal=sidereal)["Moon"]["lon"]
+
+
+def _yoga_value(moment: datetime) -> float:
+    return (_sun_longitude(moment, sidereal=True) + _moon_longitude(moment, sidereal=True)) % 360.0
+
+
+def _jd_to_datetime(jd: float) -> datetime:
+    seconds = (jd - 2440587.5) * 86400.0
+    return datetime.fromtimestamp(seconds, tz=timezone.utc)
+
+
+def _rise_or_set(
+    start_of_day: datetime,
+    body: int,
+    rsmi: int,
+    lat: float,
+    lon: float,
+    elevation: float = 0.0,
+) -> Optional[datetime]:
+    if swe is None:
+        return None
+
+    jd_start = _to_jd(start_of_day)
+    geopos = (lon, lat, elevation)
+    try:
+        result, times = swe.rise_trans(
+            jd_start, body, rsmi | swe.BIT_DISC_CENTER, geopos, 0.0, 0.0, EPHEMERIS_FLAG
+        )
+    except swe.Error:  # type: ignore[attr-defined]
+        return None
+    if result < 0 or not times:
+        return None
+    event_utc = _jd_to_datetime(times[0])
+    return event_utc.astimezone(start_of_day.tzinfo or timezone.utc)
+
+
+def compute_solar_events(
+    start_of_day: datetime, lat: float, lon: float, elevation: float = 0.0
+) -> Tuple[Optional[datetime], Optional[datetime], Optional[datetime]]:
+    """Return sunrise, sunset and next day's sunrise for the location."""
+
+    sunrise = _rise_or_set(start_of_day, swe.SUN if swe else 0, swe.CALC_RISE if swe else 0, lat, lon, elevation)
+    sunset = _rise_or_set(start_of_day, swe.SUN if swe else 0, swe.CALC_SET if swe else 0, lat, lon, elevation)
+    next_start = start_of_day + timedelta(days=1)
+    next_sunrise = _rise_or_set(next_start, swe.SUN if swe else 0, swe.CALC_RISE if swe else 0, lat, lon, elevation)
+    return sunrise, sunset, next_sunrise
+
+
+def _unwrap(value: float, reference: float, forward: bool) -> float:
+    """Unwrap a longitude measurement relative to a reference value."""
     if forward:
-        while diff < reference:
-            diff += 360.0
+        while value < reference:
+            value += 360.0
     else:
-        while diff > reference:
-            diff -= 360.0
-    return diff
+        while value > reference:
+            value -= 360.0
+    return value
 
 
 def _find_boundary(
     reference_time: datetime,
-    reference_diff: float,
+    reference_value: float,
     target: float,
     forward: bool,
+    getter: Callable[[datetime], float],
 ) -> datetime:
-    """Locate the moment when the tithi boundary is crossed."""
+    """Locate the moment when an angular boundary is crossed."""
 
     unwrapped_target = target
     if forward:
-        while unwrapped_target < reference_diff:
+        while unwrapped_target < reference_value:
             unwrapped_target += 360.0
     else:
-        while unwrapped_target > reference_diff:
+        while unwrapped_target > reference_value:
             unwrapped_target -= 360.0
 
     step_hours = 6
-    max_hours = 72
+    max_hours = 96
     direction = 1 if forward else -1
 
     candidate_time = reference_time
-    candidate_diff = reference_diff
+    candidate_value = reference_value
     hours = step_hours
     found = False
     while hours <= max_hours:
         candidate_time = reference_time + direction * timedelta(hours=hours)
-        candidate_diff = _unwrap(
-            _moon_sun_diff(candidate_time), reference_diff, forward
+        candidate_value = _unwrap(
+            getter(candidate_time), reference_value, forward
         )
         if forward:
-            if candidate_diff >= unwrapped_target:
+            if candidate_value >= unwrapped_target:
                 found = True
                 break
         else:
-            if candidate_diff <= unwrapped_target:
+            if candidate_value <= unwrapped_target:
                 found = True
                 break
         hours += step_hours
 
     if not found:
         candidate_time = reference_time + direction * timedelta(hours=max_hours)
-        candidate_diff = _unwrap(
-            _moon_sun_diff(candidate_time), reference_diff, forward
+        candidate_value = _unwrap(
+            getter(candidate_time), reference_value, forward
         )
 
     if forward:
-        low_time, low_diff = reference_time, reference_diff
-        high_time, high_diff = candidate_time, candidate_diff
+        low_time, low_value = reference_time, reference_value
+        high_time, high_value = candidate_time, candidate_value
     else:
-        low_time, low_diff = candidate_time, candidate_diff
-        high_time, high_diff = reference_time, reference_diff
+        low_time, low_value = candidate_time, candidate_value
+        high_time, high_value = reference_time, reference_value
 
-    for _ in range(40):
+    for _ in range(50):
         midpoint = low_time + (high_time - low_time) / 2
-        mid_diff = _unwrap(_moon_sun_diff(midpoint), reference_diff, forward)
+        mid_value = _unwrap(getter(midpoint), reference_value, forward)
         if forward:
-            if mid_diff < unwrapped_target:
-                low_time, low_diff = midpoint, mid_diff
+            if mid_value < unwrapped_target:
+                low_time, low_value = midpoint, mid_value
             else:
-                high_time, high_diff = midpoint, mid_diff
+                high_time, high_value = midpoint, mid_value
         else:
-            if mid_diff > unwrapped_target:
-                high_time, high_diff = midpoint, mid_diff
+            if mid_value > unwrapped_target:
+                high_time, high_value = midpoint, mid_value
             else:
-                low_time, low_diff = midpoint, mid_diff
+                low_time, low_value = midpoint, mid_value
 
     return high_time
 
 
-def compute_tithi(date: datetime, sunrise: datetime) -> Tuple[int, str, datetime, datetime]:
-    number, diff = _tithi_state(sunrise)
+def compute_tithi(moment: datetime) -> Tuple[int, str, datetime, datetime]:
+    number, diff = _tithi_state(moment)
     name = TITHI_NAMES[number - 1]
 
     start_target = (number - 1) * 12.0
     end_target = number * 12.0
 
-    start_time = _find_boundary(sunrise, diff, start_target, forward=False)
-    end_time = _find_boundary(sunrise, diff, end_target, forward=True)
+    start_time = _find_boundary(moment, diff, start_target, forward=False, getter=_moon_sun_diff)
+    end_time = _find_boundary(moment, diff, end_target, forward=True, getter=_moon_sun_diff)
 
     return number, name, start_time, end_time
 
 
-def compute_nakshatra(date: datetime, sunrise: datetime) -> Tuple[int, str, int, datetime, datetime]:
-    ordinal = date.toordinal()
-    number = (ordinal % 27) + 1
-    name = NAKSHATRA_NAMES[number - 1]
-    pada = ((ordinal // 7) % 4) + 1
-    start = sunrise - timedelta(hours=6)
-    end = start + timedelta(hours=24)
-    return number, name, pada, start, end
+def compute_nakshatra(moment: datetime) -> Tuple[int, str, int, datetime, datetime]:
+    moon_lon = _moon_longitude(moment, sidereal=True)
+    number = int(moon_lon // NAKSHATRA_SPAN) + 1
+    name = NAKSHATRA_NAMES[(number - 1) % len(NAKSHATRA_NAMES)]
+    pada = int((moon_lon % NAKSHATRA_SPAN) // PADA_SPAN) + 1
+
+    start_target = math.floor(moon_lon / NAKSHATRA_SPAN) * NAKSHATRA_SPAN
+    end_target = start_target + NAKSHATRA_SPAN
+
+    start_time = _find_boundary(moment, moon_lon, start_target, forward=False, getter=lambda dt: _moon_longitude(dt, sidereal=True))
+    end_time = _find_boundary(moment, moon_lon, end_target, forward=True, getter=lambda dt: _moon_longitude(dt, sidereal=True))
+
+    return number, name, pada, start_time, end_time
 
 
-def compute_yoga(date: datetime, sunrise: datetime) -> Tuple[int, str, datetime, datetime]:
-    ordinal = date.toordinal()
-    number = (ordinal % len(YOGA_NAMES)) + 1
-    name = YOGA_NAMES[number - 1]
-    start = sunrise - timedelta(hours=2)
-    end = start + timedelta(hours=26)
-    return number, name, start, end
+def compute_yoga(moment: datetime) -> Tuple[int, str, datetime, datetime]:
+    yoga_val = _yoga_value(moment)
+    number = int(yoga_val // YOGA_SPAN) + 1
+    name = YOGA_NAMES[(number - 1) % len(YOGA_NAMES)]
+
+    start_target = math.floor(yoga_val / YOGA_SPAN) * YOGA_SPAN
+    end_target = start_target + YOGA_SPAN
+
+    start_time = _find_boundary(moment, yoga_val, start_target, forward=False, getter=_yoga_value)
+    end_time = _find_boundary(moment, yoga_val, end_target, forward=True, getter=_yoga_value)
+
+    return number, name, start_time, end_time
 
 
-def compute_karana(date: datetime, sunrise: datetime) -> Tuple[int, str, datetime, datetime]:
-    ordinal = date.toordinal()
-    half_index = (ordinal * 2) % 56
-    if half_index >= 50:
-        offset = (half_index - 50) % len(FIXED_KARANAS)
-        name = FIXED_KARANAS[offset]
-        index = len(KARANA_SEQUENCE) + offset
+def compute_karana(moment: datetime) -> Tuple[int, str, datetime, datetime]:
+    diff = _moon_sun_diff(moment)
+    half_index = int(diff // KARANA_SPAN)
+    if half_index == 0:
+        name = "Kimstughna"
+    elif half_index >= 56:
+        name = FIXED_KARANAS[(half_index - 56) % len(FIXED_KARANAS)]
     else:
-        index = half_index % len(KARANA_SEQUENCE)
-        name = KARANA_SEQUENCE[index]
-    start = sunrise + timedelta(hours=9)
-    end = start + timedelta(hours=6)
-    return index, name, start, end
+        name = KARANA_SEQUENCE[(half_index - 1) % len(KARANA_SEQUENCE)]
+    name_index = KARANA_NAME_TO_INDEX[name]
+
+    start_target = half_index * KARANA_SPAN
+    end_target = start_target + KARANA_SPAN
+
+    start_time = _find_boundary(moment, diff, start_target, forward=False, getter=_moon_sun_diff)
+    end_time = _find_boundary(moment, diff, end_target, forward=True, getter=_moon_sun_diff)
+
+    return name_index, name, start_time, end_time
 
 
-def compute_masa(date: datetime) -> Tuple[int, str, int, str]:
-    month_idx = date.month - 1
-    amanta = MASA_AMANTA[month_idx % 12]
-    purnimanta = MASA_AMANTA[(month_idx + 1) % 12]
-    return month_idx % 12, amanta, (month_idx + 1) % 12, purnimanta
+def compute_masa(moment: datetime) -> Tuple[int, str, int, str]:
+    sun_lon = _sun_longitude(moment, sidereal=True) % 360.0
+    amanta_index = int(sun_lon // 30.0) % 12
+    purnimanta_index = (amanta_index + 1) % 12
+    return (
+        amanta_index,
+        MASA_AMANTA[amanta_index],
+        purnimanta_index,
+        MASA_AMANTA[purnimanta_index],
+    )
 
 
 def compute_lunar_day(moment: datetime) -> Tuple[int, str]:
@@ -308,9 +421,26 @@ def compute_lunar_day(moment: datetime) -> Tuple[int, str]:
     return number, paksha
 
 
-def compute_moon_events(date: datetime, tz: ZoneInfo) -> Tuple[str | None, str | None]:
-    base = datetime(date.year, date.month, date.day, tzinfo=tz)
-    moonrise = base + timedelta(hours=21)
-    moonset = base + timedelta(hours=9)
-    return _format_iso(moonrise), _format_iso(moonset)
+def compute_moon_events(
+    start_of_day: datetime,
+    lat: float,
+    lon: float,
+    elevation: float = 0.0,
+) -> Tuple[Optional[datetime], Optional[datetime]]:
+    if swe is None:
+        fallback_rise = start_of_day + timedelta(hours=21)
+        fallback_set = start_of_day + timedelta(hours=9)
+        return fallback_rise, fallback_set
+
+    rise = _rise_or_set(start_of_day, swe.MOON, swe.CALC_RISE, lat, lon, elevation)
+    set_ = _rise_or_set(start_of_day, swe.MOON, swe.CALC_SET, lat, lon, elevation)
+    return rise, set_
+
+
+def compute_rashi(moment: datetime) -> Tuple[int, str, int, str]:
+    sun_lon = _sun_longitude(moment, sidereal=True) % 360.0
+    moon_lon = _moon_longitude(moment, sidereal=True) % 360.0
+    sun_idx = int(sun_lon // 30.0)
+    moon_idx = int(moon_lon // 30.0)
+    return sun_idx, RASHI_NAMES[sun_idx], moon_idx, RASHI_NAMES[moon_idx]
 

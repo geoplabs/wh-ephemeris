@@ -31,11 +31,13 @@ from ...schemas.panchang_viewmodel import (
     Span,
 )
 from ..panchang_algos import (
+    compute_solar_events,
     compute_karana,
     compute_lunar_day,
     compute_masa,
     compute_moon_events,
     compute_nakshatra,
+    compute_rashi,
     compute_tithi,
     compute_yoga,
 )
@@ -144,18 +146,32 @@ def _build_viewmodel_uncached(target_date: date_cls, place: Dict[str, Any], opti
     show_bilingual = bool(options.get("show_bilingual", False))
 
     start_of_day = datetime.combine(target_date, time_cls(0, 0), tzinfo=tz)
-    sunrise = start_of_day + timedelta(hours=6)
-    sunset = start_of_day + timedelta(hours=18)
-    next_sunrise = sunrise + timedelta(days=1)
+    lat = float(place["lat"])
+    lon = float(place["lon"])
+    elevation = float(place.get("elevation", 0.0))
+
+    sunrise, sunset, next_sunrise = compute_solar_events(start_of_day, lat, lon, elevation)
+
+    if sunrise is None:
+        sunrise = start_of_day + timedelta(hours=6)
+    if sunset is None:
+        sunset = start_of_day + timedelta(hours=18)
+    if next_sunrise is None:
+        next_sunrise = sunrise + timedelta(days=1)
+
     solar_noon = sunrise + (sunset - sunrise) / 2
 
     lunar_day_no, paksha = compute_lunar_day(sunrise)
-    moonrise, moonset = compute_moon_events(start_of_day, tz)
-    tithi_number, _tithi_name, tithi_start, tithi_end = compute_tithi(start_of_day, sunrise)
-    nak_no, _nak_name, nak_pada, nak_start, nak_end = compute_nakshatra(start_of_day, sunrise)
-    yoga_number, _yoga_name, yoga_start, yoga_end = compute_yoga(start_of_day, sunrise)
-    karana_index, _karana_name, karana_start, karana_end = compute_karana(start_of_day, sunrise)
-    amanta_idx, _amanta_name, purnimanta_idx, _purnimanta_name = compute_masa(start_of_day)
+    paksha_display = paksha.capitalize() + " Paksha"
+    moonrise_dt, moonset_dt = compute_moon_events(start_of_day, lat, lon, elevation)
+    moonrise = _format_iso(moonrise_dt) if moonrise_dt else None
+    moonset = _format_iso(moonset_dt) if moonset_dt else None
+    tithi_number, _tithi_name, tithi_start, tithi_end = compute_tithi(sunrise)
+    nak_no, _nak_name, nak_pada, nak_start, nak_end = compute_nakshatra(sunrise)
+    yoga_number, _yoga_name, yoga_start, yoga_end = compute_yoga(sunrise)
+    karana_index, _karana_name, karana_start, karana_end = compute_karana(sunrise)
+    amanta_idx, _amanta_name, purnimanta_idx, _purnimanta_name = compute_masa(sunrise)
+    _, sun_sign_name, _, moon_sign_name = compute_rashi(sunrise)
 
     weekday_index = (target_date.weekday() + 1) % 7
     vara = vara_label(weekday_index, lang, script)
@@ -227,7 +243,7 @@ def _build_viewmodel_uncached(target_date: date_cls, place: Dict[str, Any], opti
             moonrise=moonrise,
             moonset=moonset,
             lunar_day_no=lunar_day_no,
-            paksha=paksha,
+            paksha=paksha_display,
         ),
         tithi=TithiVM(
             number=tithi_number,
@@ -262,7 +278,11 @@ def _build_viewmodel_uncached(target_date: date_cls, place: Dict[str, Any], opti
         masa=masa_vm,
         muhurta=muhurta_vm,
         hora=hora_vm,
-        notes=["Synthetic Panchang data for development"],
+        notes=[
+            "Swiss Ephemeris derived Panchang data for development",
+            f"Sun sign: {sun_sign_name}",
+            f"Moon sign: {moon_sign_name}",
+        ],
         assets=assets,
         bilingual=bilingual_helper,
     )
