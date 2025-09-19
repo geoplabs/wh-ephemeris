@@ -49,6 +49,21 @@ class MasaLabel(LabelledValue):
     pass
 
 
+class SegmentPeriod(BaseModel):
+    start_ts: str
+    end_ts: str
+    number: Optional[int] = None
+    name: Optional[str] = None
+    pada: Optional[int] = None
+
+
+class PanchangChanges(BaseModel):
+    tithi_periods: List[SegmentPeriod] = Field(default_factory=list)
+    nakshatra_periods: List[SegmentPeriod] = Field(default_factory=list)
+    yoga_periods: List[SegmentPeriod] = Field(default_factory=list)
+    karana_periods: List[SegmentPeriod] = Field(default_factory=list)
+
+
 class WeekdayVM(LabelledValue):
     pass
 
@@ -139,4 +154,5 @@ class PanchangViewModel(BaseModel):
     observances: List[ObservanceVM] = Field(default_factory=list)
     notes: List[str] = Field(default_factory=list)
     assets: AssetsVM = AssetsVM()
+    changes: PanchangChanges = Field(default_factory=PanchangChanges)
 

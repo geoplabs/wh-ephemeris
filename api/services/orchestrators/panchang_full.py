@@ -10,13 +10,14 @@ from __future__ import annotations
 
 import logging
 import time
-from datetime import date as date_cls, datetime, time as time_cls, timedelta
+from datetime import date as date_cls, datetime, time as time_cls, timedelta, timezone
 from typing import Any, Dict, Optional, List
 
 from zoneinfo import ZoneInfo
 
 from ...schemas.panchang_viewmodel import (
     AssetsVM,
+    PanchangChanges,
     PanchangViewModel,
     SegmentVM,
     SolarVM,
@@ -45,6 +46,10 @@ from ..panchang_algos import (
     compute_rashi,
     compute_tithi,
     compute_yoga,
+    enumerate_tithi_periods,
+    enumerate_nakshatra_periods,
+    enumerate_yoga_periods,
+    enumerate_karana_periods,
 )
 from ..muhurta import compute_horas, compute_muhurta_blocks
 from ..day_strip_svg import build_day_strip_svg
@@ -236,6 +241,27 @@ def _build_viewmodel_uncached(
     amanta_label = masa_label(amanta_idx, lang, script)
     purnimanta_label = masa_label(purnimanta_idx, lang, script)
 
+    window_start_local = sunrise
+    window_end_local = next_sunrise
+    window_start_utc = window_start_local.astimezone(timezone.utc)
+    window_end_utc = window_end_local.astimezone(timezone.utc)
+
+    tithi_periods = enumerate_tithi_periods(
+        window_start_utc, window_end_utc, lat, lon, ayanamsha
+    )
+    nakshatra_periods = enumerate_nakshatra_periods(
+        window_start_utc, window_end_utc, lat, lon, ayanamsha
+    )
+    yoga_periods = enumerate_yoga_periods(
+        window_start_utc, window_end_utc, lat, lon, ayanamsha
+    )
+    karana_periods = enumerate_karana_periods(
+        window_start_utc, window_end_utc, lat, lon, ayanamsha
+    )
+
+    def _to_local_iso(dt: datetime) -> str:
+        return _format_iso(dt.astimezone(tz))
+
     span_note = None
     if tithi_start.date() != tithi_end.date():
         span_note = "Crosses civil midnight"
@@ -315,6 +341,45 @@ def _build_viewmodel_uncached(
         observances=[],
         notes=_build_notes(include_hora, hora_labels),
         assets=assets,
+        changes=PanchangChanges(
+            tithi_periods=[
+                {
+                    "start_ts": _to_local_iso(period["start"]),
+                    "end_ts": _to_local_iso(period["end"]),
+                    "number": period.get("number"),
+                    "name": period.get("name"),
+                }
+                for period in tithi_periods
+            ],
+            nakshatra_periods=[
+                {
+                    "start_ts": _to_local_iso(period["start"]),
+                    "end_ts": _to_local_iso(period["end"]),
+                    "number": period.get("number"),
+                    "name": period.get("name"),
+                    "pada": period.get("pada"),
+                }
+                for period in nakshatra_periods
+            ],
+            yoga_periods=[
+                {
+                    "start_ts": _to_local_iso(period["start"]),
+                    "end_ts": _to_local_iso(period["end"]),
+                    "number": period.get("number"),
+                    "name": period.get("name"),
+                }
+                for period in yoga_periods
+            ],
+            karana_periods=[
+                {
+                    "start_ts": _to_local_iso(period["start"]),
+                    "end_ts": _to_local_iso(period["end"]),
+                    "number": period.get("number"),
+                    "name": period.get("name"),
+                }
+                for period in karana_periods
+            ],
+        ),
     )
 
     return vm
