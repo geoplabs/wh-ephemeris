@@ -17,9 +17,9 @@ router = APIRouter(prefix="/v1/panchang", tags=["panchang"])
 
 
 class PanchangPlace(BaseModel):
-    lat: float = Field(..., ge=-90.0, le=90.0)
-    lon: float = Field(..., ge=-180.0, le=180.0)
-    tz: str = Field(default="Asia/Kolkata")
+    lat: Optional[float] = Field(default=None, ge=-90.0, le=90.0)
+    lon: Optional[float] = Field(default=None, ge=-180.0, le=180.0)
+    tz: Optional[str] = None
     query: Optional[str] = None
     elevation: Optional[float] = None
 
@@ -36,7 +36,7 @@ class PanchangOptions(BaseModel):
 class PanchangRequest(BaseModel):
     system: str = "vedic"
     date: Optional[str] = None
-    place: PanchangPlace
+    place: Optional[PanchangPlace] = None
     options: PanchangOptions = Field(default_factory=PanchangOptions)
 
 
@@ -69,11 +69,20 @@ def panchang_compute(
                         "script": "latin",
                     },
                 },
-            }
+            },
+            "defaults": {
+                "summary": "No place provided",
+                "description": "Uses configured defaults when place is omitted",
+                "value": {
+                    "system": "vedic",
+                    "options": {"ayanamsha": "lahiri", "include_muhurta": True},
+                },
+            },
         },
     ),
 ):
-    place = _clamp_place(req.place.model_dump())
+    place_payload = req.place.model_dump(exclude_none=True) if req.place else None
+    place = _clamp_place(place_payload)
     options = req.options.model_dump()
     return build_viewmodel(req.system, req.date, place, options)
 
@@ -360,6 +369,62 @@ def panchang_compute(
                                 "assets": {"day_strip_svg": None, "pdf_download_url": None},
                             },
                         },
+                        "lat_lon_only": {
+                            "summary": "Lat/Lon with inferred timezone",
+                            "description": "Shows tz inference when tz is omitted",
+                            "value": {
+                                "header": {
+                                    "date_local": "2024-06-01",
+                                    "weekday": {
+                                        "display_name": "Saturday",
+                                        "aliases": {
+                                            "en": "Saturday",
+                                            "iast": "Śani-vāra",
+                                            "deva": "शनिवार",
+                                            "hi": "शनिवार",
+                                        },
+                                    },
+                                    "tz": "Asia/Kolkata",
+                                    "place_label": "19.0760, 72.8777",
+                                    "system": "vedic",
+                                    "ayanamsha": "lahiri",
+                                    "locale": {"lang": "en", "script": "latin"},
+                                    "meta": {
+                                        "place_defaults_used": False,
+                                        "tz_inferred": True,
+                                        "default_reason": "missing_tz",
+                                    },
+                                }
+                            },
+                        },
+                        "tz_only": {
+                            "summary": "Timezone only (defaults for lat/lon)",
+                            "description": "Defaults kick in when coordinates are missing",
+                            "value": {
+                                "header": {
+                                    "date_local": "2024-06-01",
+                                    "weekday": {
+                                        "display_name": "Saturday",
+                                        "aliases": {
+                                            "en": "Saturday",
+                                            "iast": "Śani-vāra",
+                                            "deva": "शनिवार",
+                                            "hi": "शनिवार",
+                                        },
+                                    },
+                                    "tz": "Asia/Kolkata",
+                                    "place_label": "New Delhi, India",
+                                    "system": "vedic",
+                                    "ayanamsha": "lahiri",
+                                    "locale": {"lang": "en", "script": "latin"},
+                                    "meta": {
+                                        "place_defaults_used": True,
+                                        "tz_inferred": False,
+                                        "default_reason": "missing_latlon",
+                                    },
+                                }
+                            },
+                        },
                     }
                 }
             },
@@ -367,9 +432,13 @@ def panchang_compute(
     },
 )
 def panchang_today(
-    lat: float = Query(..., ge=-90.0, le=90.0, example=19.076, description="Latitude"),
-    lon: float = Query(..., ge=-180.0, le=180.0, example=72.8777, description="Longitude"),
-    tz: str = Query("Asia/Kolkata", description="IANA timezone"),
+    lat: Optional[float] = Query(
+        None, ge=-90.0, le=90.0, example=19.076, description="Latitude"
+    ),
+    lon: Optional[float] = Query(
+        None, ge=-180.0, le=180.0, example=72.8777, description="Longitude"
+    ),
+    tz: Optional[str] = Query(None, description="IANA timezone"),
     ayanamsha: str = Query("lahiri"),
     include_muhurta: bool = Query(True),
     include_hora: bool = Query(False),
@@ -386,7 +455,16 @@ def panchang_today(
         "script": script,
         "show_bilingual": show_bilingual,
     }
-    place = _clamp_place({"lat": lat, "lon": lon, "tz": tz, "query": place_label})
+    place_payload: Dict[str, Any] = {}
+    if lat is not None:
+        place_payload["lat"] = lat
+    if lon is not None:
+        place_payload["lon"] = lon
+    if tz is not None:
+        place_payload["tz"] = tz
+    if place_label:
+        place_payload["query"] = place_label
+    place = _clamp_place(place_payload or None)
     return build_viewmodel("vedic", None, place, options)
 
 
@@ -406,16 +484,26 @@ def panchang_report(req: PanchangReportRequest):
     return report
 
 
-def _clamp_place(place: Dict[str, Any]) -> Dict[str, Any]:
-    lat = float(place.get("lat", 0.0))
-    lon = float(place.get("lon", 0.0))
-    lat = max(-89.9, min(89.9, lat))
-    lon = max(-180.0, min(180.0, lon))
-    tz_name = place.get("tz") or "Asia/Kolkata"
-    try:
-        ZoneInfo(tz_name)
-    except Exception as exc:  # pragma: no cover - defensive
-        raise ValueError(f"Invalid timezone: {tz_name}") from exc
-    place.update({"lat": lat, "lon": lon, "tz": tz_name})
-    return place
+def _clamp_place(place: Optional[Dict[str, Any]]) -> Optional[Dict[str, Any]]:
+    if place is None:
+        return None
+
+    clamped = dict(place)
+
+    if "lat" in clamped and clamped["lat"] is not None:
+        lat = float(clamped["lat"])
+        clamped["lat"] = max(-89.9, min(89.9, lat))
+
+    if "lon" in clamped and clamped["lon"] is not None:
+        lon = float(clamped["lon"])
+        clamped["lon"] = max(-180.0, min(180.0, lon))
+
+    tz_name = clamped.get("tz")
+    if tz_name:
+        try:
+            ZoneInfo(tz_name)
+        except Exception as exc:  # pragma: no cover - defensive
+            raise ValueError(f"Invalid timezone: {tz_name}") from exc
+
+    return clamped
 

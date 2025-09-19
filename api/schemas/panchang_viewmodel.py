@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from pydantic import BaseModel, Field
-from typing import Optional, List, Dict
+from typing import Any, Optional, List, Dict
 
 
 class Span(BaseModel):
@@ -66,6 +66,7 @@ class HeaderVM(BaseModel):
     system: str
     ayanamsha: str
     locale: LocaleVM
+    meta: Optional[Dict[str, Any]] = None
 
 
 class MasaVM(BaseModel):

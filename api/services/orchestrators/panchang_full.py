@@ -8,6 +8,7 @@ and documentation to be exercised end-to-end.
 
 from __future__ import annotations
 
+import logging
 import time
 from datetime import date as date_cls, datetime, time as time_cls, timedelta
 from typing import Any, Dict, Optional, List
@@ -58,6 +59,10 @@ from ...i18n.resolve import (
     masa_label,
     planet_label,
 )
+from ..util.place_defaults import normalize_place
+
+
+logger = logging.getLogger(__name__)
 
 
 CACHE: Dict[str, tuple[float, PanchangViewModel]] = {}
@@ -146,26 +151,50 @@ def _build_cache_key(date_value: date_cls, place: Dict[str, Any], options: Dict[
     )
 
 
-def build_viewmodel(system: str, date_str: Optional[str], place: Dict[str, Any], options: Dict[str, Any]) -> PanchangViewModel:
+def build_viewmodel(
+    system: str,
+    date_str: Optional[str],
+    place: Optional[Dict[str, Any]],
+    options: Optional[Dict[str, Any]],
+) -> PanchangViewModel:
     if system.lower() != "vedic":
         raise ValueError("Only vedic system is supported for Panchang")
 
-    tz = ZoneInfo(place["tz"])
+    eff_place, flags = normalize_place(place)
+    tz_name = eff_place["tz"]
+    tz = ZoneInfo(tz_name)
     target_date = _resolve_date(date_str, tz)
     options = _normalize_options(options)
 
-    key = _build_cache_key(target_date, place, options)
+    if flags["default_reason"]:
+        logger.info(
+            "panchang.place.defaults",
+            extra={
+                "reason": flags["default_reason"],
+                "lat": eff_place["lat"],
+                "lon": eff_place["lon"],
+                "tz": tz_name,
+            },
+        )
+
+    key = _build_cache_key(target_date, eff_place, options)
     cached = CACHE.get(key)
     now = time.time()
     if cached and cached[0] > now:
         return cached[1]
 
-    vm = _build_viewmodel_uncached(target_date, place, options, tz)
+    vm = _build_viewmodel_uncached(target_date, eff_place, options, tz, flags)
     CACHE[key] = (now + TTL_SECONDS, vm)
     return vm
 
 
-def _build_viewmodel_uncached(target_date: date_cls, place: Dict[str, Any], options: Dict[str, Any], tz: ZoneInfo) -> PanchangViewModel:
+def _build_viewmodel_uncached(
+    target_date: date_cls,
+    place: Dict[str, Any],
+    options: Dict[str, Any],
+    tz: ZoneInfo,
+    meta_flags: Dict[str, Any],
+) -> PanchangViewModel:
     ayanamsha = options.get("ayanamsha", "lahiri")
     include_muhurta = bool(options.get("include_muhurta", True))
     include_hora = bool(options.get("include_hora", False))
@@ -236,6 +265,7 @@ def _build_viewmodel_uncached(target_date: date_cls, place: Dict[str, Any], opti
             system="vedic",
             ayanamsha=ayanamsha,
             locale=LocaleVM(lang=lang, script=script),
+            meta=meta_flags,
         ),
         solar=SolarVM(
             sunrise=_format_iso(sunrise),
