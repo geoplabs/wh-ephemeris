@@ -38,7 +38,6 @@ from ...schemas.panchang_viewmodel import (
 )
 from ..panchang_algos import (
     compute_solar_events,
-    compute_karana,
     compute_lunar_day,
     compute_masa,
     compute_moon_events,
@@ -228,7 +227,6 @@ def _build_viewmodel_uncached(
     tithi_number, _tithi_name, tithi_start, tithi_end = compute_tithi(sunrise)
     nak_no, _nak_name, nak_pada, nak_start, nak_end = compute_nakshatra(sunrise)
     yoga_number, _yoga_name, yoga_start, yoga_end = compute_yoga(sunrise)
-    karana_index, _karana_name, karana_start, karana_end = compute_karana(sunrise)
     amanta_idx, _amanta_name, purnimanta_idx, _purnimanta_name = compute_masa(sunrise)
     _, sun_sign_name, _, moon_sign_name = compute_rashi(sunrise)
 
@@ -237,6 +235,9 @@ def _build_viewmodel_uncached(
     tithi_names = tithi_label(tithi_number, paksha, lang, script)
     nak_names = nak_label(nak_no, lang, script)
     yoga_names = yoga_label(yoga_number, lang, script)
+    karana_index = 0
+    karana_start = sunrise
+    karana_end = next_sunrise
     kar_names = karana_label(karana_index, lang, script)
     amanta_label = masa_label(amanta_idx, lang, script)
     purnimanta_label = masa_label(purnimanta_idx, lang, script)
@@ -258,6 +259,13 @@ def _build_viewmodel_uncached(
     karana_periods = enumerate_karana_periods(
         window_start_utc, window_end_utc, lat, lon, ayanamsha
     )
+
+    if karana_periods:
+        current = karana_periods[0]
+        karana_index = current["number"] - 1
+        kar_names = karana_label(karana_index, lang, script)
+        karana_start = current["start"].astimezone(tz)
+        karana_end = current["end"].astimezone(tz)
 
     def _to_local_iso(dt: datetime) -> str:
         return _format_iso(dt.astimezone(tz))
@@ -376,6 +384,7 @@ def _build_viewmodel_uncached(
                     "end_ts": _to_local_iso(period["end"]),
                     "number": period.get("number"),
                     "name": period.get("name"),
+                    "pada": period.get("pada"),
                 }
                 for period in karana_periods
             ],
