@@ -10,14 +10,12 @@ from __future__ import annotations
 
 import time
 from datetime import date as date_cls, datetime, time as time_cls, timedelta
-from typing import Any, Dict, Optional
+from typing import Any, Dict, Optional, List
 
 from zoneinfo import ZoneInfo
 
 from ...schemas.panchang_viewmodel import (
     AssetsVM,
-    HoraSpan,
-    MuhurtaVM,
     PanchangViewModel,
     SegmentVM,
     SolarVM,
@@ -28,7 +26,13 @@ from ...schemas.panchang_viewmodel import (
     HeaderVM,
     WeekdayVM,
     LocaleVM,
-    Span,
+    WindowsEntry,
+    WindowsVM,
+    ContextVM,
+    SamvatsaraVM,
+    MasaContextVM,
+    RituContextVM,
+    ZodiacContextVM,
 )
 from ..panchang_algos import (
     compute_solar_events,
@@ -68,6 +72,30 @@ PLANET_NAME_TO_INDEX = {
     "Venus": 5,
     "Saturn": 6,
 }
+
+RITU_ORDER = [
+    "Vasanta",
+    "Grishma",
+    "Varsha",
+    "Sharad",
+    "Hemanta",
+    "Shishira",
+]
+
+ZODIAC_EN = [
+    "Aries",
+    "Taurus",
+    "Gemini",
+    "Cancer",
+    "Leo",
+    "Virgo",
+    "Libra",
+    "Scorpio",
+    "Sagittarius",
+    "Capricorn",
+    "Aquarius",
+    "Pisces",
+]
 
 
 def _format_iso(dt: datetime) -> str:
@@ -143,8 +171,6 @@ def _build_viewmodel_uncached(target_date: date_cls, place: Dict[str, Any], opti
     include_hora = bool(options.get("include_hora", False))
     lang = options.get("lang", "en")
     script = options.get("script", "latin")
-    show_bilingual = bool(options.get("show_bilingual", False))
-
     start_of_day = datetime.combine(target_date, time_cls(0, 0), tzinfo=tz)
     lat = float(place["lat"])
     lon = float(place["lon"])
@@ -162,7 +188,6 @@ def _build_viewmodel_uncached(target_date: date_cls, place: Dict[str, Any], opti
     solar_noon = sunrise + (sunset - sunrise) / 2
 
     lunar_day_no, paksha = compute_lunar_day(sunrise)
-    paksha_display = paksha.capitalize() + " Paksha"
     moonrise_dt, moonset_dt = compute_moon_events(start_of_day, lat, lon, elevation)
     moonrise = _format_iso(moonrise_dt) if moonrise_dt else None
     moonset = _format_iso(moonset_dt) if moonset_dt else None
@@ -186,28 +211,12 @@ def _build_viewmodel_uncached(target_date: date_cls, place: Dict[str, Any], opti
     if tithi_start.date() != tithi_end.date():
         span_note = "Crosses civil midnight"
 
-    muhurta_vm: Optional[MuhurtaVM] = None
-    hora_vm: Optional[list[HoraSpan]] = None
     weekday = _weekday_name(target_date)
     muhurta_blocks = compute_muhurta_blocks(sunrise, sunset, weekday)
-    if include_muhurta:
-        muhurta_vm = MuhurtaVM(
-            abhijit=Span(start_ts=_format_iso(muhurta_blocks["abhijit"][0]), end_ts=_format_iso(muhurta_blocks["abhijit"][1])),
-            rahu_kal=Span(start_ts=_format_iso(muhurta_blocks["rahu_kal"][0]), end_ts=_format_iso(muhurta_blocks["rahu_kal"][1])),
-            gulika_kal=Span(start_ts=_format_iso(muhurta_blocks["gulika_kal"][0]), end_ts=_format_iso(muhurta_blocks["gulika_kal"][1])),
-            yamaganda=Span(start_ts=_format_iso(muhurta_blocks["yamaganda"][0]), end_ts=_format_iso(muhurta_blocks["yamaganda"][1])),
-        )
-
+    windows = _build_windows(include_muhurta, muhurta_blocks)
+    hora_labels = []
     if include_hora:
-        horas = compute_horas(sunrise, sunset, next_sunrise, weekday)
-        hora_vm = [
-            HoraSpan(
-                start_ts=_format_iso(start),
-                end_ts=_format_iso(end),
-                lord=planet_label(PLANET_NAME_TO_INDEX[lord], lang, script),
-            )
-            for start, end, lord in horas
-        ]
+        hora_labels = _build_horas(sunrise, sunset, next_sunrise, weekday, lang, script)
 
     assets = AssetsVM(day_strip_svg=build_day_strip_svg())
 
@@ -216,12 +225,7 @@ def _build_viewmodel_uncached(target_date: date_cls, place: Dict[str, Any], opti
         purnimanta=MasaLabel(**purnimanta_label),
     )
 
-    bilingual_helper: Optional[Dict[str, str]] = None
-    if show_bilingual and lang == "hi":
-        bilingual_helper = {
-            "tithi_en": tithi_names["aliases"].get("en"),
-            "tithi_hi": tithi_names["aliases"].get("hi"),
-        }
+    context = _build_context(target_date, masa_vm, sun_sign_name, moon_sign_name)
 
     vm = PanchangViewModel(
         header=HeaderVM(
@@ -243,7 +247,7 @@ def _build_viewmodel_uncached(target_date: date_cls, place: Dict[str, Any], opti
             moonrise=moonrise,
             moonset=moonset,
             lunar_day_no=lunar_day_no,
-            paksha=paksha_display,
+            paksha=paksha,
         ),
         tithi=TithiVM(
             number=tithi_number,
@@ -276,16 +280,143 @@ def _build_viewmodel_uncached(target_date: date_cls, place: Dict[str, Any], opti
             end_ts=_format_iso(karana_end),
         ),
         masa=masa_vm,
-        muhurta=muhurta_vm,
-        hora=hora_vm,
-        notes=[
-            "Swiss Ephemeris derived Panchang data for development",
-            f"Sun sign: {sun_sign_name}",
-            f"Moon sign: {moon_sign_name}",
-        ],
+        windows=windows,
+        context=context,
+        observances=[],
+        notes=_build_notes(include_hora, hora_labels),
         assets=assets,
-        bilingual=bilingual_helper,
     )
 
     return vm
+
+
+def _build_windows(
+    include_muhurta: bool,
+    muhurta_blocks: Dict[str, tuple[datetime, datetime]],
+) -> WindowsVM:
+    auspicious: List[WindowsEntry] = []
+    inauspicious: List[WindowsEntry] = []
+
+    if include_muhurta:
+        abhijit = muhurta_blocks["abhijit"]
+        auspicious.append(
+            WindowsEntry(
+                kind="abhijit",
+                start_ts=_format_iso(abhijit[0]),
+                end_ts=_format_iso(abhijit[1]),
+            )
+        )
+    else:
+        inauspicious.append(
+            WindowsEntry(
+                kind="abhijit",
+                note="Abhijit window skipped by request",
+            )
+        )
+
+    if include_muhurta:
+        for key, kind in (
+            ("rahu_kal", "rahu_kalam"),
+            ("gulika_kal", "gulikai_kalam"),
+            ("yamaganda", "yamaganda"),
+        ):
+            block = muhurta_blocks[key]
+            inauspicious.append(
+                WindowsEntry(
+                    kind=kind,
+                    start_ts=_format_iso(block[0]),
+                    end_ts=_format_iso(block[1]),
+                )
+            )
+
+    # Placeholder entries for windows that need full algorithms in production.
+    auspicious.append(
+        WindowsEntry(kind="amrit_kalam", note="Not computed in development build")
+    )
+    inauspicious.extend(
+        [
+            WindowsEntry(kind="varjyam", note="Not computed in development build"),
+            WindowsEntry(kind="dur_muhurtam", note="Not computed in development build"),
+            WindowsEntry(kind="bhadra", note="Not computed in development build"),
+            WindowsEntry(kind="ganda_moola", note="Not computed in development build"),
+            WindowsEntry(kind="baana", value="None", note="Not computed in development build"),
+            WindowsEntry(kind="vidaal_yoga", note="Not computed in development build"),
+        ]
+    )
+
+    auspicious.sort(key=lambda entry: entry.start_ts or "9999")
+    inauspicious.sort(key=lambda entry: entry.start_ts or f"{entry.kind}~")
+    return WindowsVM(auspicious=auspicious, inauspicious=inauspicious)
+
+
+def _build_horas(
+    sunrise: datetime,
+    sunset: datetime,
+    next_sunrise: datetime,
+    weekday: str,
+    lang: str,
+    script: str,
+) -> List[str]:
+    horas = compute_horas(sunrise, sunset, next_sunrise, weekday)
+    formatted: List[str] = []
+    for start, end, lord in horas:
+        label = planet_label(PLANET_NAME_TO_INDEX[lord], lang, script)["display_name"]
+        formatted.append(f"{_format_iso(start)}→{_format_iso(end)} {label}")
+    return formatted
+
+
+def _build_context(target_date: date_cls, masa_vm: MasaVM, sun_sign_name: str, moon_sign_name: str) -> ContextVM:
+    vikram_year = target_date.year + 57
+    shaka_year = target_date.year - 78
+
+    # Map masa display name to English default for context summary.
+    amanta_name = masa_vm.amanta.aliases.get("en", masa_vm.amanta.display_name)
+    purnimanta_name = masa_vm.purnimanta.aliases.get("en", masa_vm.purnimanta.display_name)
+
+    month_index = target_date.month - 1
+    ritu_index = (month_index // 2) % len(RITU_ORDER)
+    ritu_name = RITU_ORDER[ritu_index]
+
+    ayana = "Uttarayana" if ritu_index in (0, 1, 2) else "Dakshinayana"
+
+    sun_sign = _map_zodiac_to_en(sun_sign_name)
+    moon_sign = _map_zodiac_to_en(moon_sign_name)
+
+    return ContextVM(
+        samvatsara=SamvatsaraVM(vikram=vikram_year, shaka=shaka_year),
+        masa=MasaContextVM(amanta_name=amanta_name, purnimanta_name=purnimanta_name),
+        ritu=RituContextVM(drik=ritu_name, vedic=ritu_name),
+        ayana=ayana,
+        zodiac=ZodiacContextVM(sun_sign=sun_sign, moon_sign=moon_sign),
+    )
+
+
+def _map_zodiac_to_en(name: str) -> str:
+    try:
+        idx = ZODIAC_EN.index(name)
+        return ZODIAC_EN[idx]
+    except ValueError:
+        # Fallback for Sanskrit spellings.
+        mapping = {
+            "Mesha": "Aries",
+            "Vrishabha": "Taurus",
+            "Mithuna": "Gemini",
+            "Karka": "Cancer",
+            "Simha": "Leo",
+            "Kanya": "Virgo",
+            "Tula": "Libra",
+            "Vrischika": "Scorpio",
+            "Dhanu": "Sagittarius",
+            "Makara": "Capricorn",
+            "Kumbha": "Aquarius",
+            "Meena": "Pisces",
+        }
+        return mapping.get(name, name)
+
+
+def _build_notes(include_hora: bool, hora_labels: List[str]) -> List[str]:
+    notes = ["All times are local with standard refraction.", "Panchang day considered sunrise→next sunrise."]
+    if include_hora and hora_labels:
+        notes.append("Horas: " + "; ".join(hora_labels[:3]) + " …")
+    return notes
 
