@@ -10,7 +10,7 @@ code.
 from __future__ import annotations
 
 from datetime import datetime, timedelta, timezone
-from typing import Callable, Optional, Tuple
+from typing import Callable, Optional, Tuple, List, Dict
 
 import math
 import os
@@ -443,4 +443,139 @@ def compute_rashi(moment: datetime) -> Tuple[int, str, int, str]:
     sun_idx = int(sun_lon // 30.0)
     moon_idx = int(moon_lon // 30.0)
     return sun_idx, RASHI_NAMES[sun_idx], moon_idx, RASHI_NAMES[moon_idx]
+
+
+def _ensure_aware(moment: datetime) -> datetime:
+    if moment.tzinfo is None:
+        return moment.replace(tzinfo=timezone.utc)
+    return moment
+
+
+def _enumerate_periods(
+    start: datetime,
+    end: datetime,
+    resolver: Callable[[datetime], Dict[str, object]],
+) -> List[Dict[str, object]]:
+    start = _ensure_aware(start)
+    end = _ensure_aware(end)
+    if end <= start:
+        return []
+
+    periods: List[Dict[str, object]] = []
+    epsilon = timedelta(seconds=1)
+    current = start
+    safety = 0
+    while current < end and safety < 500:
+        info = resolver(current)
+        raw_start = _ensure_aware(info["start"])  # type: ignore[index]
+        raw_end = _ensure_aware(info["end"])  # type: ignore[index]
+        period_start = max(raw_start, start)
+        period_end = min(raw_end, end)
+
+        if period_end <= period_start:
+            current = current + epsilon
+            safety += 1
+            continue
+
+        normalized: Dict[str, object] = {
+            key: value
+            for key, value in info.items()
+            if key not in {"start", "end"}
+        }
+        normalized["start"] = period_start
+        normalized["end"] = period_end
+        periods.append(normalized)
+
+        if raw_end >= end:
+            break
+
+        current = raw_end + epsilon
+        safety += 1
+
+    return periods
+
+
+def enumerate_tithi_periods(
+    start_utc: datetime,
+    end_utc: datetime,
+    lat: float,
+    lon: float,
+    ayanamsha: str,
+) -> List[Dict[str, object]]:
+    del lat, lon, ayanamsha
+
+    def _resolve(moment: datetime) -> Dict[str, object]:
+        number, name, period_start, period_end = compute_tithi(moment)
+        return {
+            "number": number,
+            "name": name,
+            "start": period_start,
+            "end": period_end,
+        }
+
+    return _enumerate_periods(start_utc, end_utc, _resolve)
+
+
+def enumerate_nakshatra_periods(
+    start_utc: datetime,
+    end_utc: datetime,
+    lat: float,
+    lon: float,
+    ayanamsha: str,
+) -> List[Dict[str, object]]:
+    del lat, lon, ayanamsha
+
+    def _resolve(moment: datetime) -> Dict[str, object]:
+        number, name, pada, period_start, period_end = compute_nakshatra(moment)
+        return {
+            "number": number,
+            "name": name,
+            "pada": pada,
+            "start": period_start,
+            "end": period_end,
+        }
+
+    return _enumerate_periods(start_utc, end_utc, _resolve)
+
+
+def enumerate_yoga_periods(
+    start_utc: datetime,
+    end_utc: datetime,
+    lat: float,
+    lon: float,
+    ayanamsha: str,
+) -> List[Dict[str, object]]:
+    del lat, lon, ayanamsha
+
+    def _resolve(moment: datetime) -> Dict[str, object]:
+        number, name, period_start, period_end = compute_yoga(moment)
+        return {
+            "number": number,
+            "name": name,
+            "start": period_start,
+            "end": period_end,
+        }
+
+    return _enumerate_periods(start_utc, end_utc, _resolve)
+
+
+def enumerate_karana_periods(
+    start_utc: datetime,
+    end_utc: datetime,
+    lat: float,
+    lon: float,
+    ayanamsha: str,
+) -> List[Dict[str, object]]:
+    del lat, lon, ayanamsha
+
+    def _resolve(moment: datetime) -> Dict[str, object]:
+        index, name, period_start, period_end = compute_karana(moment)
+        return {
+            "number": index + 1,
+            "name": name,
+            "start": period_start,
+            "end": period_end,
+        }
+
+    return _enumerate_periods(start_utc, end_utc, _resolve)
 
