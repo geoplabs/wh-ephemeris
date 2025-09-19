@@ -115,7 +115,7 @@ YOGA_NAMES = [
     "Vaidhriti",
 ]
 
-KARANA_SEQUENCE = [
+MOBILE_KARANAS = [
     "Bava",
     "Balava",
     "Kaulava",
@@ -133,7 +133,7 @@ FIXED_KARANAS = [
 ]
 
 KARANA_NAME_TO_INDEX = {
-    name: idx for idx, name in enumerate(KARANA_SEQUENCE + FIXED_KARANAS)
+    name: idx for idx, name in enumerate(MOBILE_KARANAS + FIXED_KARANAS)
 }
 
 MASA_AMANTA = [
@@ -178,6 +178,28 @@ EPHEMERIS_FLAG = (
 ) if swe else 0
 
 
+# --- K A R A N A ---
+
+
+def karana_at_delta_deg(delta_deg: float) -> Tuple[int, str]:
+    """Resolve the karana index (1-based) and display name for a delta."""
+
+    d = delta_deg % 360.0
+    half_tithi_index = int(d // KARANA_SPAN)
+
+    if half_tithi_index == 0:
+        return 11, "Kimstughna"
+    if half_tithi_index == 57:
+        return 8, "Shakuni"
+    if half_tithi_index == 58:
+        return 9, "Chatushpada"
+    if half_tithi_index == 59:
+        return 10, "Naga"
+
+    slot = (half_tithi_index - 1) % len(MOBILE_KARANAS)
+    return 1 + slot, MOBILE_KARANAS[slot]
+
+
 def _format_iso(dt: datetime) -> str:
     return dt.isoformat()
 
@@ -190,13 +212,6 @@ def _to_jd(moment: datetime) -> float:
     return moment_utc.timestamp() / 86400.0 + 2440587.5
 
 
-def _moon_sun_diff(moment: datetime) -> float:
-    """Return the longitudinal separation between Moon and Sun in degrees."""
-    jd = _to_jd(moment)
-    positions = positions_ecliptic(jd, sidereal=False)
-    return (positions["Moon"]["lon"] - positions["Sun"]["lon"]) % 360.0
-
-
 def _tithi_state(moment: datetime) -> Tuple[int, float]:
     """Return the tithi number and raw longitude difference at a moment."""
     diff = _moon_sun_diff(moment)
@@ -204,18 +219,34 @@ def _tithi_state(moment: datetime) -> Tuple[int, float]:
     return number, diff
 
 
-def _sun_longitude(moment: datetime, sidereal: bool = False) -> float:
+def _sun_longitude(
+    moment: datetime, sidereal: bool = False, ayanamsha: str = "lahiri"
+) -> float:
     jd = _to_jd(moment)
-    return positions_ecliptic(jd, sidereal=sidereal)["Sun"]["lon"]
+    return positions_ecliptic(jd, sidereal=sidereal, ayanamsha=ayanamsha)["Sun"]["lon"]
 
 
-def _moon_longitude(moment: datetime, sidereal: bool = False) -> float:
+def _moon_longitude(
+    moment: datetime, sidereal: bool = False, ayanamsha: str = "lahiri"
+) -> float:
     jd = _to_jd(moment)
-    return positions_ecliptic(jd, sidereal=sidereal)["Moon"]["lon"]
+    return positions_ecliptic(jd, sidereal=sidereal, ayanamsha=ayanamsha)["Moon"]["lon"]
 
 
 def _yoga_value(moment: datetime) -> float:
-    return (_sun_longitude(moment, sidereal=True) + _moon_longitude(moment, sidereal=True)) % 360.0
+    return (
+        _sun_longitude(moment, sidereal=True) + _moon_longitude(moment, sidereal=True)
+    ) % 360.0
+
+
+def _moon_sun_diff(
+    moment: datetime, sidereal: bool = False, ayanamsha: str = "lahiri"
+) -> float:
+    """Return the longitudinal separation between Moon and Sun in degrees."""
+
+    moon_lon = _moon_longitude(moment, sidereal=sidereal, ayanamsha=ayanamsha)
+    sun_lon = _sun_longitude(moment, sidereal=sidereal, ayanamsha=ayanamsha)
+    return (moon_lon - sun_lon) % 360.0
 
 
 def _jd_to_datetime(jd: float) -> datetime:
@@ -383,24 +414,21 @@ def compute_yoga(moment: datetime) -> Tuple[int, str, datetime, datetime]:
     return number, name, start_time, end_time
 
 
-def compute_karana(moment: datetime) -> Tuple[int, str, datetime, datetime]:
-    diff = _moon_sun_diff(moment)
+def compute_karana(
+    moment: datetime, ayanamsha: str = "lahiri"
+) -> Tuple[int, str, datetime, datetime]:
+    diff = _moon_sun_diff(moment, sidereal=True, ayanamsha=ayanamsha)
     half_index = int(diff // KARANA_SPAN)
-    if half_index == 0:
-        name = "Kimstughna"
-    elif half_index >= 56:
-        name = FIXED_KARANAS[(half_index - 56) % len(FIXED_KARANAS)]
-    else:
-        name = KARANA_SEQUENCE[(half_index - 1) % len(KARANA_SEQUENCE)]
-    name_index = KARANA_NAME_TO_INDEX[name]
+    number, name = karana_at_delta_deg(diff)
 
     start_target = half_index * KARANA_SPAN
-    end_target = start_target + KARANA_SPAN
+    end_target = ((half_index + 1) * KARANA_SPAN) % 360.0
 
-    start_time = _find_boundary(moment, diff, start_target, forward=False, getter=_moon_sun_diff)
-    end_time = _find_boundary(moment, diff, end_target, forward=True, getter=_moon_sun_diff)
+    getter = lambda dt: _moon_sun_diff(dt, sidereal=True, ayanamsha=ayanamsha)
+    start_time = _find_boundary(moment, diff, start_target, forward=False, getter=getter)
+    end_time = _find_boundary(moment, diff, end_target, forward=True, getter=getter)
 
-    return name_index, name, start_time, end_time
+    return number - 1, name, start_time, end_time
 
 
 def compute_masa(moment: datetime) -> Tuple[int, str, int, str]:
@@ -566,16 +594,67 @@ def enumerate_karana_periods(
     lon: float,
     ayanamsha: str,
 ) -> List[Dict[str, object]]:
-    del lat, lon, ayanamsha
+    del lat, lon
 
-    def _resolve(moment: datetime) -> Dict[str, object]:
-        index, name, period_start, period_end = compute_karana(moment)
-        return {
-            "number": index + 1,
-            "name": name,
-            "start": period_start,
-            "end": period_end,
-        }
+    if end_utc <= start_utc:
+        return []
 
-    return _enumerate_periods(start_utc, end_utc, _resolve)
+    ayan = (ayanamsha or "lahiri").lower()
+    getter = lambda dt: _moon_sun_diff(dt, sidereal=True, ayanamsha=ayan)
+
+    periods: List[Dict[str, object]] = []
+    current_start = start_utc
+    # probe slightly ahead to determine the active half-tithi index
+    probe_delta = getter(current_start)
+    half_index = int(probe_delta // KARANA_SPAN)
+
+    for _ in range(20):
+        mid_deg = ((half_index + 0.5) * KARANA_SPAN) % 360.0
+        number, name = karana_at_delta_deg(mid_deg)
+
+        target = ((half_index + 1) * KARANA_SPAN) % 360.0
+        boundary = _find_boundary(
+            current_start,
+            probe_delta,
+            target,
+            forward=True,
+            getter=getter,
+        )
+
+        if boundary <= current_start:
+            boundary = current_start + timedelta(seconds=1)
+
+        segment_end = min(boundary, end_utc)
+        periods.append(
+            {
+                "number": number,
+                "name": name,
+                "start": current_start,
+                "end": segment_end,
+            }
+        )
+
+        if segment_end >= end_utc:
+            break
+
+        # advance to next span and evaluate the new elongation
+        current_start = segment_end
+        if current_start >= end_utc:
+            break
+        probe_delta = getter(current_start)
+        half_index = int(probe_delta // KARANA_SPAN)
+
+    if periods and periods[-1]["end"] < end_utc:
+        # extend last segment to cover the tail using the current label
+        last = periods[-1]
+        periods.append(
+            {
+                "number": last["number"],
+                "name": last["name"],
+                "start": last["end"],
+                "end": end_utc,
+            }
+        )
+
+    return periods
 
