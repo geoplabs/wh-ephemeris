@@ -2,9 +2,11 @@
 
 from __future__ import annotations
 
-from fastapi import APIRouter
-from pydantic import BaseModel
+from fastapi import APIRouter, Body, Query
+from pydantic import BaseModel, Field
 from typing import Optional, Dict, Any
+
+from zoneinfo import ZoneInfo
 
 from ..schemas.panchang_viewmodel import PanchangViewModel
 from ..services.orchestrators.panchang_full import build_viewmodel
@@ -14,30 +16,367 @@ from ..services.panchang_report import generate_panchang_report
 router = APIRouter(prefix="/v1/panchang", tags=["panchang"])
 
 
+class PanchangPlace(BaseModel):
+    lat: float = Field(..., ge=-90.0, le=90.0)
+    lon: float = Field(..., ge=-180.0, le=180.0)
+    tz: str = Field(default="Asia/Kolkata")
+    query: Optional[str] = None
+    elevation: Optional[float] = None
+
+
+class PanchangOptions(BaseModel):
+    ayanamsha: str = Field(default="lahiri")
+    include_muhurta: bool = Field(default=True)
+    include_hora: bool = Field(default=False)
+    lang: str = Field(default="en")
+    script: str = Field(default="latin")
+    show_bilingual: bool = Field(default=False)
+
+
 class PanchangRequest(BaseModel):
     system: str = "vedic"
     date: Optional[str] = None
-    place: Dict[str, Any]
-    options: Dict[str, Any] = {}
+    place: PanchangPlace
+    options: PanchangOptions = Field(default_factory=PanchangOptions)
 
 
-@router.post("/compute", response_model=PanchangViewModel)
-def panchang_compute(req: PanchangRequest):
-    return build_viewmodel(req.system, req.date, req.place, req.options)
+@router.post(
+    "/compute",
+    response_model=PanchangViewModel,
+    summary="Compute Panchang for a specific date and location",
+)
+def panchang_compute(
+    req: PanchangRequest = Body(
+        ...,
+        examples={
+            "hyderabad": {
+                "summary": "Hyderabad explicit date",
+                "description": "Compute Panchang for Hyderabad with Lahiri ayanamsha",
+                "value": {
+                    "system": "vedic",
+                    "date": "2024-06-01",
+                    "place": {
+                        "lat": 17.385,
+                        "lon": 78.4867,
+                        "tz": "Asia/Kolkata",
+                        "query": "Hyderabad, India",
+                    },
+                    "options": {
+                        "ayanamsha": "lahiri",
+                        "include_muhurta": True,
+                        "include_hora": False,
+                        "lang": "en",
+                        "script": "latin",
+                    },
+                },
+            }
+        },
+    ),
+):
+    place = _clamp_place(req.place.model_dump())
+    options = req.options.model_dump()
+    return build_viewmodel(req.system, req.date, place, options)
 
 
-@router.get("/today", response_model=PanchangViewModel)
+@router.get(
+    "/today",
+    response_model=PanchangViewModel,
+    summary="Convenience endpoint for today's Panchang",
+    responses={
+        200: {
+            "description": "Computed Panchang for the requested location",
+            "content": {
+                "application/json": {
+                    "examples": {
+                        "mumbai_en": {
+                            "summary": "Mumbai (English)",
+                            "value": {
+                                "header": {
+                                    "date_local": "2024-06-01",
+                                    "weekday": {
+                                        "display_name": "Saturday",
+                                        "aliases": {
+                                            "en": "Saturday",
+                                            "iast": "Śani-vāra",
+                                            "deva": "शनिवार",
+                                            "hi": "शनिवार",
+                                        },
+                                    },
+                                    "tz": "Asia/Kolkata",
+                                    "place_label": "Mumbai",
+                                    "system": "vedic",
+                                    "ayanamsha": "lahiri",
+                                    "locale": {"lang": "en", "script": "latin"},
+                                },
+                                "solar": {
+                                    "sunrise": "2024-06-01T05:55:00+05:30",
+                                    "sunset": "2024-06-01T19:07:00+05:30",
+                                    "solar_noon": "2024-06-01T12:31:00+05:30",
+                                    "day_length": "13:12:00",
+                                },
+                                "lunar": {
+                                    "moonrise": "2024-06-01T03:12:00+05:30",
+                                    "moonset": "2024-06-01T16:05:00+05:30",
+                                    "lunar_day_no": 14,
+                                    "paksha": "shukla",
+                                },
+                                "tithi": {
+                                    "number": 14,
+                                    "display_name": "Shukla Chaturdashi",
+                                    "aliases": {
+                                        "en": "Shukla Chaturdashi",
+                                        "iast": "Śukla Caturdaśī",
+                                        "deva": "शुक्ल चतुर्दशी",
+                                        "hi": "शुक्ल चतुर्दशी",
+                                    },
+                                    "start_ts": "2024-05-31T22:40:00+05:30",
+                                    "end_ts": "2024-06-01T21:58:00+05:30",
+                                    "span_note": None,
+                                },
+                                "nakshatra": {
+                                    "number": 10,
+                                    "display_name": "Magha",
+                                    "aliases": {
+                                        "en": "Magha",
+                                        "iast": "Maghā",
+                                        "deva": "मघा",
+                                        "hi": "मघा",
+                                    },
+                                    "start_ts": "2024-06-01T04:30:00+05:30",
+                                    "end_ts": "2024-06-02T03:12:00+05:30",
+                                    "pada": 2,
+                                },
+                                "yoga": {
+                                    "number": 16,
+                                    "display_name": "Siddhi",
+                                    "aliases": {
+                                        "en": "Siddhi",
+                                        "iast": "Siddhi",
+                                        "deva": "सिद्धि",
+                                        "hi": "सिद्धि",
+                                    },
+                                    "start_ts": "2024-06-01T00:05:00+05:30",
+                                    "end_ts": "2024-06-01T20:41:00+05:30",
+                                },
+                                "karana": {
+                                    "number": 56,
+                                    "display_name": "Vishti (Bhadra)",
+                                    "aliases": {
+                                        "en": "Vishti (Bhadra)",
+                                        "iast": "Viṣṭi (Bhadrā)",
+                                        "deva": "विष्टि (भद्रा)",
+                                        "hi": "विष्टि (भद्रा)",
+                                    },
+                                    "start_ts": "2024-06-01T15:20:00+05:30",
+                                    "end_ts": "2024-06-01T21:30:00+05:30",
+                                },
+                                "masa": {
+                                    "amanta": {
+                                        "display_name": "Vaishakha",
+                                        "aliases": {
+                                            "en": "Vaishakha",
+                                            "iast": "Vaiśākha",
+                                            "deva": "वैशाख",
+                                            "hi": "वैशाख",
+                                        },
+                                    },
+                                    "purnimanta": {
+                                        "display_name": "Vaishakha",
+                                        "aliases": {
+                                            "en": "Vaishakha",
+                                            "iast": "Vaiśākha",
+                                            "deva": "वैशाख",
+                                            "hi": "वैशाख",
+                                        },
+                                    },
+                                },
+                                "windows": {
+                                    "auspicious": [
+                                        {
+                                            "kind": "abhijit",
+                                            "start_ts": "2024-06-01T12:18:00+05:30",
+                                            "end_ts": "2024-06-01T12:42:00+05:30",
+                                        }
+                                    ],
+                                    "inauspicious": [
+                                        {
+                                            "kind": "rahu_kalam",
+                                            "start_ts": "2024-06-01T08:30:00+05:30",
+                                            "end_ts": "2024-06-01T10:00:00+05:30",
+                                        }
+                                    ],
+                                },
+                                "context": {
+                                    "samvatsara": {"vikram": 2081, "shaka": 1943},
+                                    "masa": {
+                                        "amanta_name": "Vaishakha",
+                                        "purnimanta_name": "Vaishakha",
+                                    },
+                                    "ritu": {"drik": "Grishma", "vedic": "Grishma"},
+                                    "ayana": "Uttarayana",
+                                    "zodiac": {"sun_sign": "Taurus", "moon_sign": "Leo"},
+                                },
+                                "observances": [],
+                                "notes": [
+                                    "All times are local with standard refraction.",
+                                    "Panchang day considered sunrise→next sunrise.",
+                                ],
+                                "assets": {"day_strip_svg": None, "pdf_download_url": None},
+                            },
+                        },
+                        "delhi_hi": {
+                            "summary": "Delhi (Hindi/Devanagari)",
+                            "value": {
+                                "header": {
+                                    "date_local": "2024-06-01",
+                                    "weekday": {
+                                        "display_name": "शनिवार",
+                                        "aliases": {
+                                            "en": "Saturday",
+                                            "iast": "Śani-vāra",
+                                            "deva": "शनिवार",
+                                            "hi": "शनिवार",
+                                        },
+                                    },
+                                    "tz": "Asia/Kolkata",
+                                    "place_label": "नई दिल्ली",
+                                    "system": "vedic",
+                                    "ayanamsha": "lahiri",
+                                    "locale": {"lang": "hi", "script": "deva"},
+                                },
+                                "solar": {
+                                    "sunrise": "2024-06-01T05:25:00+05:30",
+                                    "sunset": "2024-06-01T19:15:00+05:30",
+                                    "solar_noon": "2024-06-01T12:20:00+05:30",
+                                    "day_length": "13:50:00",
+                                },
+                                "lunar": {
+                                    "moonrise": "2024-06-01T02:58:00+05:30",
+                                    "moonset": "2024-06-01T16:22:00+05:30",
+                                    "lunar_day_no": 14,
+                                    "paksha": "shukla",
+                                },
+                                "tithi": {
+                                    "number": 14,
+                                    "display_name": "शुक्ल चतुर्दशी",
+                                    "aliases": {
+                                        "en": "Shukla Chaturdashi",
+                                        "iast": "Śukla Caturdaśī",
+                                        "deva": "शुक्ल चतुर्दशी",
+                                        "hi": "शुक्ल चतुर्दशी",
+                                    },
+                                    "start_ts": "2024-05-31T22:32:00+05:30",
+                                    "end_ts": "2024-06-01T21:43:00+05:30",
+                                    "span_note": None,
+                                },
+                                "nakshatra": {
+                                    "number": 10,
+                                    "display_name": "मघा",
+                                    "aliases": {
+                                        "en": "Magha",
+                                        "iast": "Maghā",
+                                        "deva": "मघा",
+                                        "hi": "मघा",
+                                    },
+                                    "start_ts": "2024-06-01T04:12:00+05:30",
+                                    "end_ts": "2024-06-02T03:00:00+05:30",
+                                    "pada": 1,
+                                },
+                                "yoga": {
+                                    "number": 16,
+                                    "display_name": "सिद्धि",
+                                    "aliases": {
+                                        "en": "Siddhi",
+                                        "iast": "Siddhi",
+                                        "deva": "सिद्धि",
+                                        "hi": "सिद्धि",
+                                    },
+                                    "start_ts": "2024-06-01T00:10:00+05:30",
+                                    "end_ts": "2024-06-01T20:50:00+05:30",
+                                },
+                                "karana": {
+                                    "number": 56,
+                                    "display_name": "विष्टि (भद्रा)",
+                                    "aliases": {
+                                        "en": "Vishti (Bhadra)",
+                                        "iast": "Viṣṭi (Bhadrā)",
+                                        "deva": "विष्टि (भद्रा)",
+                                        "hi": "विष्टि (भद्रा)",
+                                    },
+                                    "start_ts": "2024-06-01T15:05:00+05:30",
+                                    "end_ts": "2024-06-01T21:18:00+05:30",
+                                },
+                                "masa": {
+                                    "amanta": {
+                                        "display_name": "वैशाख",
+                                        "aliases": {
+                                            "en": "Vaishakha",
+                                            "iast": "Vaiśākha",
+                                            "deva": "वैशाख",
+                                            "hi": "वैशाख",
+                                        },
+                                    },
+                                    "purnimanta": {
+                                        "display_name": "वैशाख",
+                                        "aliases": {
+                                            "en": "Vaishakha",
+                                            "iast": "Vaiśākha",
+                                            "deva": "वैशाख",
+                                            "hi": "वैशाख",
+                                        },
+                                    },
+                                },
+                                "windows": {
+                                    "auspicious": [
+                                        {
+                                            "kind": "abhijit",
+                                            "start_ts": "2024-06-01T12:12:00+05:30",
+                                            "end_ts": "2024-06-01T12:36:00+05:30",
+                                        }
+                                    ],
+                                    "inauspicious": [
+                                        {
+                                            "kind": "rahu_kalam",
+                                            "start_ts": "2024-06-01T07:30:00+05:30",
+                                            "end_ts": "2024-06-01T09:00:00+05:30",
+                                        }
+                                    ],
+                                },
+                                "context": {
+                                    "samvatsara": {"vikram": 2081, "shaka": 1943},
+                                    "masa": {
+                                        "amanta_name": "Vaishakha",
+                                        "purnimanta_name": "Vaishakha",
+                                    },
+                                    "ritu": {"drik": "Grishma", "vedic": "Grishma"},
+                                    "ayana": "Uttarayana",
+                                    "zodiac": {"sun_sign": "Taurus", "moon_sign": "Leo"},
+                                },
+                                "observances": [],
+                                "notes": [
+                                    "All times are local with standard refraction.",
+                                    "Panchang day considered sunrise→next sunrise.",
+                                ],
+                                "assets": {"day_strip_svg": None, "pdf_download_url": None},
+                            },
+                        },
+                    }
+                }
+            },
+        }
+    },
+)
 def panchang_today(
-    lat: float,
-    lon: float,
-    tz: str = "Asia/Kolkata",
-    ayanamsha: str = "lahiri",
-    include_muhurta: bool = True,
-    include_hora: bool = False,
-    place_label: Optional[str] = None,
-    lang: str = "en",
-    script: str = "latin",
-    show_bilingual: bool = False,
+    lat: float = Query(..., ge=-90.0, le=90.0, example=19.076, description="Latitude"),
+    lon: float = Query(..., ge=-180.0, le=180.0, example=72.8777, description="Longitude"),
+    tz: str = Query("Asia/Kolkata", description="IANA timezone"),
+    ayanamsha: str = Query("lahiri"),
+    include_muhurta: bool = Query(True),
+    include_hora: bool = Query(False),
+    lang: str = Query("en"),
+    script: str = Query("latin"),
+    show_bilingual: bool = Query(False),
+    place_label: Optional[str] = Query(None, description="Optional place label"),
 ):
     options = {
         "ayanamsha": ayanamsha,
@@ -47,19 +386,36 @@ def panchang_today(
         "script": script,
         "show_bilingual": show_bilingual,
     }
-    place = {"lat": lat, "lon": lon, "tz": tz, "query": place_label}
+    place = _clamp_place({"lat": lat, "lon": lon, "tz": tz, "query": place_label})
     return build_viewmodel("vedic", None, place, options)
 
 
 class PanchangReportRequest(BaseModel):
     place: Dict[str, Any]
     date: Optional[str] = None
-    options: Dict[str, Any] = {}
+    options: Dict[str, Any] = Field(default_factory=dict)
+    branding: Optional[Dict[str, Any]] = None
 
 
 @router.post("/report")
 def panchang_report(req: PanchangReportRequest):
-    vm = build_viewmodel("vedic", req.date, req.place, req.options)
+    place = _clamp_place(req.place)
+    options = dict(req.options or {})
+    vm = build_viewmodel("vedic", req.date, place, options)
     report = generate_panchang_report(vm)
     return report
+
+
+def _clamp_place(place: Dict[str, Any]) -> Dict[str, Any]:
+    lat = float(place.get("lat", 0.0))
+    lon = float(place.get("lon", 0.0))
+    lat = max(-89.9, min(89.9, lat))
+    lon = max(-180.0, min(180.0, lon))
+    tz_name = place.get("tz") or "Asia/Kolkata"
+    try:
+        ZoneInfo(tz_name)
+    except Exception as exc:  # pragma: no cover - defensive
+        raise ValueError(f"Invalid timezone: {tz_name}") from exc
+    place.update({"lat": lat, "lon": lon, "tz": tz_name})
+    return place
 

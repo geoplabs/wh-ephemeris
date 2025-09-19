@@ -49,24 +49,6 @@ class MasaLabel(LabelledValue):
     pass
 
 
-class MasaVM(BaseModel):
-    amanta: MasaLabel
-    purnimanta: MasaLabel
-
-
-class MuhurtaVM(BaseModel):
-    abhijit: Optional[Span] = None
-    rahu_kal: Span
-    gulika_kal: Span
-    yamaganda: Span
-
-
-class HoraSpan(BaseModel):
-    start_ts: str
-    end_ts: str
-    lord: LabelledValue
-
-
 class WeekdayVM(LabelledValue):
     pass
 
@@ -86,6 +68,57 @@ class HeaderVM(BaseModel):
     locale: LocaleVM
 
 
+class MasaVM(BaseModel):
+    amanta: MasaLabel
+    purnimanta: MasaLabel
+
+
+class WindowsEntry(BaseModel):
+    kind: str
+    start_ts: Optional[str] = None
+    end_ts: Optional[str] = None
+    note: Optional[str] = None
+    value: Optional[str] = None
+
+
+class WindowsVM(BaseModel):
+    auspicious: List[WindowsEntry] = Field(default_factory=list)
+    inauspicious: List[WindowsEntry] = Field(default_factory=list)
+
+
+class SamvatsaraVM(BaseModel):
+    vikram: int
+    shaka: int
+
+
+class MasaContextVM(BaseModel):
+    amanta_name: str
+    purnimanta_name: str
+
+
+class RituContextVM(BaseModel):
+    drik: str
+    vedic: str
+
+
+class ZodiacContextVM(BaseModel):
+    sun_sign: str
+    moon_sign: str
+
+
+class ContextVM(BaseModel):
+    samvatsara: SamvatsaraVM
+    masa: MasaContextVM
+    ritu: RituContextVM
+    ayana: str
+    zodiac: ZodiacContextVM
+
+
+class ObservanceVM(BaseModel):
+    title: str
+    type: str
+
+
 class AssetsVM(BaseModel):
     day_strip_svg: Optional[str] = None
     pdf_download_url: Optional[str] = None
@@ -100,10 +133,9 @@ class PanchangViewModel(BaseModel):
     yoga: SegmentVM
     karana: SegmentVM
     masa: MasaVM
-    samvatsara: Optional[str] = None
-    muhurta: Optional[MuhurtaVM] = None
-    hora: Optional[List[HoraSpan]] = None
+    windows: WindowsVM
+    context: ContextVM
+    observances: List[ObservanceVM] = Field(default_factory=list)
     notes: List[str] = Field(default_factory=list)
     assets: AssetsVM = AssetsVM()
-    bilingual: Optional[Dict[str, str]] = None
 
