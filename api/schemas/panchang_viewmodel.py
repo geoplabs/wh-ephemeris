@@ -140,6 +140,83 @@ class AssetsVM(BaseModel):
     pdf_download_url: Optional[str] = None
 
 
+class CalendarsExtended(BaseModel):
+    vikram_samvat: Optional[int] = None
+    shaka_samvat: Optional[int] = None
+    gujarati_samvat: Optional[int] = None
+    kali_ahargana: Optional[int] = None
+    julian_day: Optional[float] = None
+    modified_julian_day: Optional[float] = None
+    national_nirayana_date: Optional[Dict[str, int]] = None
+
+
+class RituExtended(BaseModel):
+    drik_ritu: Optional[str] = None
+    vedic_ritu: Optional[str] = None
+    convention: Optional[str] = "drik"
+    dinmana: Optional[str] = None
+    ratrimana: Optional[str] = None
+
+
+class MuhurtaSpan(BaseModel):
+    kind: str
+    start_ts: Optional[str] = None
+    end_ts: Optional[str] = None
+    note: Optional[str] = None
+
+
+class MuhurtasExtended(BaseModel):
+    auspicious_extra: List[MuhurtaSpan] = Field(default_factory=list)
+    inauspicious_extra: List[MuhurtaSpan] = Field(default_factory=list)
+
+
+class YogaExtended(BaseModel):
+    anandadi: Optional[str] = None
+    tamil: Optional[str] = None
+    notes: List[str] = Field(default_factory=list)
+
+
+class NivasAndShool(BaseModel):
+    homahuti: Optional[str] = None
+    agnivasa: Optional[str] = None
+    shivasa: Optional[str] = None
+    disha_shool: Optional[str] = None
+    nakshatra_shool: Optional[str] = None
+    chandra_vasa: Optional[str] = None
+    rahu_vasa: Optional[str] = None
+    kumbha_chakra: Optional[Dict[str, Any]] = None
+
+
+class Balam(BaseModel):
+    chandrabalam_good: List[str] = Field(default_factory=list)
+    chandrabalam_bad: List[str] = Field(default_factory=list)
+    tarabalam_good: List[str] = Field(default_factory=list)
+    tarabalam_bad: List[str] = Field(default_factory=list)
+    valid_until_ts: Optional[str] = None
+
+
+class PanchakaSlot(BaseModel):
+    name: str
+    start_ts: str
+    end_ts: str
+
+
+class LagnaSlot(BaseModel):
+    lagna: str
+    start_ts: str
+    end_ts: str
+
+
+class PanchakaAndLagna(BaseModel):
+    panchaka_rahita: List[PanchakaSlot] = Field(default_factory=list)
+    udaya_lagna: List[LagnaSlot] = Field(default_factory=list)
+
+
+class RitualNote(BaseModel):
+    key: str
+    text: str
+
+
 class PanchangViewModel(BaseModel):
     header: HeaderVM
     solar: SolarVM
@@ -155,4 +232,12 @@ class PanchangViewModel(BaseModel):
     notes: List[str] = Field(default_factory=list)
     assets: AssetsVM = AssetsVM()
     changes: PanchangChanges = Field(default_factory=PanchangChanges)
+    calendars_extended: Optional[CalendarsExtended] = None
+    ritu_extended: Optional[RituExtended] = None
+    muhurtas_extra: Optional[MuhurtasExtended] = None
+    yoga_extended: Optional[YogaExtended] = None
+    nivas_and_shool: Optional[NivasAndShool] = None
+    balam: Optional[Balam] = None
+    panchaka_and_lagna: Optional[PanchakaAndLagna] = None
+    ritual_notes: List[RitualNote] = Field(default_factory=list)
 

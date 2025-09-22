@@ -231,6 +231,100 @@ def panchang_compute(
                                     "Panchang day considered sunrise→next sunrise.",
                                 ],
                                 "assets": {"day_strip_svg": None, "pdf_download_url": None},
+                                "calendars_extended": {
+                                    "vikram_samvat": 2082,
+                                    "shaka_samvat": 1947,
+                                    "gujarati_samvat": 2081,
+                                    "kali_ahargana": 1867090,
+                                    "julian_day": 2460912.5,
+                                    "modified_julian_day": 60912.0,
+                                    "national_nirayana_date": {
+                                        "year": 1947,
+                                        "month": 6,
+                                        "day": 3,
+                                    },
+                                },
+                                "ritu_extended": {
+                                    "drik_ritu": "Sharad",
+                                    "vedic_ritu": "Sharad",
+                                    "convention": "drik",
+                                    "dinmana": "12:18:42",
+                                    "ratrimana": "11:41:20",
+                                },
+                                "muhurtas_extra": {
+                                    "auspicious_extra": [
+                                        {
+                                            "kind": "brahma",
+                                            "start_ts": "2025-09-19T04:20:00+05:30",
+                                            "end_ts": "2025-09-19T05:08:00+05:30",
+                                        },
+                                        {
+                                            "kind": "pratah_sandhya",
+                                            "start_ts": "2025-09-19T05:52:00+05:30",
+                                            "end_ts": "2025-09-19T06:16:00+05:30",
+                                        },
+                                    ],
+                                    "inauspicious_extra": [
+                                        {
+                                            "kind": "varjyam",
+                                            "start_ts": "2025-09-19T14:40:00+05:30",
+                                            "end_ts": "2025-09-19T16:10:00+05:30",
+                                        },
+                                        {
+                                            "kind": "durmuhurtam",
+                                            "start_ts": "2025-09-19T10:48:00+05:30",
+                                            "end_ts": "2025-09-19T11:36:00+05:30",
+                                        },
+                                    ],
+                                },
+                                "yoga_extended": {
+                                    "anandadi": "Shrivatsa",
+                                    "tamil": "Siddha",
+                                    "notes": [],
+                                },
+                                "nivas_and_shool": {
+                                    "homahuti": "Venus",
+                                    "agnivasa": "Prithvi",
+                                    "shivasa": "Smashana",
+                                    "disha_shool": "West",
+                                    "chandra_vasa": "North",
+                                    "rahu_vasa": "South",
+                                },
+                                "balam": {
+                                    "chandrabalam_good": [
+                                        "Cancer",
+                                        "Scorpio",
+                                        "Pisces",
+                                    ],
+                                    "tarabalam_good": [
+                                        "Pushya",
+                                        "Anuradha",
+                                        "Uttara Bhadrapada",
+                                    ],
+                                    "valid_until_ts": "2025-09-20T06:00:00+05:30",
+                                },
+                                "panchaka_and_lagna": {
+                                    "panchaka_rahita": [
+                                        {
+                                            "name": "Raja",
+                                            "start_ts": "2025-09-19T06:10:00+05:30",
+                                            "end_ts": "2025-09-19T08:00:00+05:30",
+                                        }
+                                    ],
+                                    "udaya_lagna": [
+                                        {
+                                            "lagna": "Leo",
+                                            "start_ts": "2025-09-19T06:05:00+05:30",
+                                            "end_ts": "2025-09-19T07:05:00+05:30",
+                                        }
+                                    ],
+                                },
+                                "ritual_notes": [
+                                    {
+                                        "key": "usage",
+                                        "text": "Panchang day spans local sunrise to next sunrise.",
+                                    }
+                                ],
                             },
                         },
                         "delhi_hi": {
