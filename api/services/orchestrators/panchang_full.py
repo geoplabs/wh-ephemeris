@@ -9,6 +9,7 @@ and documentation to be exercised end-to-end.
 from __future__ import annotations
 
 import logging
+import os
 import time
 from datetime import date as date_cls, datetime, time as time_cls, timedelta, timezone
 from typing import Any, Dict, Optional, List
@@ -35,6 +36,7 @@ from ...schemas.panchang_viewmodel import (
     MasaContextVM,
     RituContextVM,
     ZodiacContextVM,
+    ObservanceVM,
 )
 from ..panchang_algos import (
     compute_solar_events,
@@ -64,6 +66,15 @@ from ...i18n.resolve import (
     planet_label,
 )
 from ..util.place_defaults import normalize_place
+from ..ext_calendars import build_calendars_extended
+from ..ext_ritu_dinmana import build_ritu_extended
+from ..ext_muhurta_extra import build_muhurta_extra
+from ..ext_yoga_extended import build_yoga_extended
+from ..ext_nivas_shool import build_nivas_and_shool
+from ..ext_balam import build_balam
+from ..ext_panchaka_lagna import build_panchaka_and_lagna
+from ..festivals import festivals_for_date, merge_observances
+from ..ritual_notes import notes_for_day
 
 
 logger = logging.getLogger(__name__)
@@ -71,6 +82,18 @@ logger = logging.getLogger(__name__)
 
 CACHE: Dict[str, tuple[float, PanchangViewModel]] = {}
 TTL_SECONDS = 900
+
+
+def _ext_enabled() -> bool:
+    return os.getenv("PANCHANG_EXTENDED_ENABLED", "true").lower() == "true"
+
+
+def _festivals_enabled() -> bool:
+    return os.getenv("PANCHANG_EXT_FESTIVALS_ENABLED", "true").lower() == "true"
+
+
+def _ritu_convention() -> str:
+    return os.getenv("RITU_CONVENTION", "drik")
 
 PLANET_NAME_TO_INDEX = {
     "Sun": 0,
@@ -205,6 +228,7 @@ def _build_viewmodel_uncached(
     lang = options.get("lang", "en")
     script = options.get("script", "latin")
     start_of_day = datetime.combine(target_date, time_cls(0, 0), tzinfo=tz)
+    date_local_dt = datetime.combine(target_date, time_cls(12, 0), tzinfo=tz)
     lat = float(place["lat"])
     lon = float(place["lon"])
     elevation = float(place.get("elevation", 0.0))
@@ -228,7 +252,7 @@ def _build_viewmodel_uncached(
     nak_no, _nak_name, nak_pada, nak_start, nak_end = compute_nakshatra(sunrise)
     yoga_number, _yoga_name, yoga_start, yoga_end = compute_yoga(sunrise)
     amanta_idx, _amanta_name, purnimanta_idx, _purnimanta_name = compute_masa(sunrise)
-    _, sun_sign_name, _, moon_sign_name = compute_rashi(sunrise)
+    sun_rashi_index, sun_sign_name, moon_rashi_index, moon_sign_name = compute_rashi(sunrise)
 
     weekday_index = (target_date.weekday() + 1) % 7
     vara = vara_label(weekday_index, lang, script)
@@ -390,6 +414,56 @@ def _build_viewmodel_uncached(
             ],
         ),
     )
+
+    ext_on = _ext_enabled()
+    ext_fest = _festivals_enabled()
+    ritu_conv = _ritu_convention()
+
+    if ext_on:
+        sidereal_sun_long = sun_rashi_index * 30.0 + 15.0
+        nak_periods = [period.model_dump() for period in vm.changes.nakshatra_periods]
+        now_local = sunrise
+
+        vm.calendars_extended = build_calendars_extended(date_local_dt, tz)
+        vm.ritu_extended = build_ritu_extended(
+            ritu_conv,
+            sidereal_sun_long,
+            sunrise,
+            sunset,
+            next_sunrise,
+        )
+        vm.muhurtas_extra = build_muhurta_extra(
+            sunrise,
+            sunset,
+            next_sunrise,
+            solar_noon,
+            weekday_index,
+            sunset - sunrise,
+            nak_periods,
+            sidereal_sun_long,
+            now_local,
+        )
+        yoga_number = vm.yoga.number or 1
+        vm.yoga_extended = build_yoga_extended(yoga_number)
+        nak_number = vm.nakshatra.number or 1
+        vm.nivas_and_shool = build_nivas_and_shool(weekday_index, vm.tithi.number, nak_number)
+        moon_rashi = ZODIAC_EN[moon_rashi_index]
+        vm.balam = build_balam(moon_rashi, nak_number, next_sunrise)
+        vm.panchaka_and_lagna = build_panchaka_and_lagna(
+            sunrise,
+            sunset,
+            nak_number,
+            weekday_index,
+            lat,
+            lon,
+            tz,
+        )
+        vm.ritual_notes = notes_for_day()
+
+    if ext_on and ext_fest:
+        addl = festivals_for_date(date_local_dt, tz, lat, lon)
+        merged = merge_observances(vm.observances, addl)
+        vm.observances = [ObservanceVM(**obs) for obs in merged]
 
     return vm
 
