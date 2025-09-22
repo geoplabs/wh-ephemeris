@@ -75,6 +75,7 @@ from ..ext_balam import build_balam
 from ..ext_panchaka_lagna import build_panchaka_and_lagna
 from ..festivals import festivals_for_date, merge_observances
 from ..ritual_notes import notes_for_day
+from .. import ephem
 
 
 logger = logging.getLogger(__name__)
@@ -243,6 +244,13 @@ def _build_viewmodel_uncached(
         next_sunrise = sunrise + timedelta(days=1)
 
     solar_noon = sunrise + (sunset - sunrise) / 2
+
+    observation_utc = date_local_dt.astimezone(timezone.utc)
+    jd_observation = observation_utc.timestamp() / 86400.0 + 2440587.5
+    sun_long_tropical = ephem.positions_ecliptic(jd_observation, sidereal=False)["Sun"]["lon"]
+    sun_long_sidereal = ephem.positions_ecliptic(
+        jd_observation, sidereal=True, ayanamsha=ayanamsha
+    )["Sun"]["lon"]
 
     lunar_day_no, paksha = compute_lunar_day(sunrise)
     moonrise_dt, moonset_dt = compute_moon_events(start_of_day, lat, lon, elevation)
@@ -420,14 +428,14 @@ def _build_viewmodel_uncached(
     ritu_conv = _ritu_convention()
 
     if ext_on:
-        sidereal_sun_long = sun_rashi_index * 30.0 + 15.0
         nak_periods = [period.model_dump() for period in vm.changes.nakshatra_periods]
         now_local = sunrise
 
         vm.calendars_extended = build_calendars_extended(date_local_dt, tz)
         vm.ritu_extended = build_ritu_extended(
             ritu_conv,
-            sidereal_sun_long,
+            sun_long_tropical,
+            sun_long_sidereal,
             sunrise,
             sunset,
             next_sunrise,
@@ -440,7 +448,7 @@ def _build_viewmodel_uncached(
             weekday_index,
             sunset - sunrise,
             nak_periods,
-            sidereal_sun_long,
+            sun_long_sidereal,
             now_local,
         )
         yoga_number = vm.yoga.number or 1

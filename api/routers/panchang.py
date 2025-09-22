@@ -221,7 +221,7 @@ def panchang_compute(
                                         "amanta_name": "Vaishakha",
                                         "purnimanta_name": "Vaishakha",
                                     },
-                                    "ritu": {"drik": "Grishma", "vedic": "Grishma"},
+                                    "ritu": {"drik": "Sharad", "vedic": "Sharad"},
                                     "ayana": "Uttarayana",
                                     "zodiac": {"sun_sign": "Taurus", "moon_sign": "Leo"},
                                 },
