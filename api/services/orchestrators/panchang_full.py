@@ -67,7 +67,7 @@ from ...i18n.resolve import (
 )
 from ..util.place_defaults import normalize_place
 from ..ext_calendars import build_calendars_extended
-from ..ext_ritu_dinmana import build_ritu_extended
+from ..ext_ritu_dinmana import build_ritu_extended, ritu_drik, ritu_vedic
 from ..ext_muhurta_extra import build_muhurta_extra
 from ..ext_yoga_extended import build_yoga_extended
 from ..ext_nivas_shool import build_nivas_and_shool
@@ -315,12 +315,22 @@ def _build_viewmodel_uncached(
 
     assets = AssetsVM(day_strip_svg=build_day_strip_svg())
 
+    ritu_drik_name = ritu_drik(sun_long_tropical)
+    ritu_vedic_name = ritu_vedic(sun_long_sidereal)
+
     masa_vm = MasaVM(
         amanta=MasaLabel(**amanta_label),
         purnimanta=MasaLabel(**purnimanta_label),
     )
 
-    context = _build_context(target_date, masa_vm, sun_sign_name, moon_sign_name)
+    context = _build_context(
+        target_date,
+        masa_vm,
+        sun_sign_name,
+        moon_sign_name,
+        ritu_drik_name,
+        ritu_vedic_name,
+    )
 
     vm = PanchangViewModel(
         header=HeaderVM(
@@ -551,7 +561,14 @@ def _build_horas(
     return formatted
 
 
-def _build_context(target_date: date_cls, masa_vm: MasaVM, sun_sign_name: str, moon_sign_name: str) -> ContextVM:
+def _build_context(
+    target_date: date_cls,
+    masa_vm: MasaVM,
+    sun_sign_name: str,
+    moon_sign_name: str,
+    ritu_drik_name: str,
+    ritu_vedic_name: str,
+) -> ContextVM:
     vikram_year = target_date.year + 57
     shaka_year = target_date.year - 78
 
@@ -559,9 +576,15 @@ def _build_context(target_date: date_cls, masa_vm: MasaVM, sun_sign_name: str, m
     amanta_name = masa_vm.amanta.aliases.get("en", masa_vm.amanta.display_name)
     purnimanta_name = masa_vm.purnimanta.aliases.get("en", masa_vm.purnimanta.display_name)
 
-    month_index = target_date.month - 1
-    ritu_index = (month_index // 2) % len(RITU_ORDER)
-    ritu_name = RITU_ORDER[ritu_index]
+    try:
+        ritu_index = RITU_ORDER.index(ritu_drik_name)
+    except ValueError:
+        month_index = target_date.month - 1
+        ritu_index = (month_index // 2) % len(RITU_ORDER)
+        ritu_drik_name = RITU_ORDER[ritu_index]
+
+    if ritu_vedic_name not in RITU_ORDER:
+        ritu_vedic_name = ritu_drik_name
 
     ayana = "Uttarayana" if ritu_index in (0, 1, 2) else "Dakshinayana"
 
@@ -571,7 +594,7 @@ def _build_context(target_date: date_cls, masa_vm: MasaVM, sun_sign_name: str, m
     return ContextVM(
         samvatsara=SamvatsaraVM(vikram=vikram_year, shaka=shaka_year),
         masa=MasaContextVM(amanta_name=amanta_name, purnimanta_name=purnimanta_name),
-        ritu=RituContextVM(drik=ritu_name, vedic=ritu_name),
+        ritu=RituContextVM(drik=ritu_drik_name, vedic=ritu_vedic_name),
         ayana=ayana,
         zodiac=ZodiacContextVM(sun_sign=sun_sign, moon_sign=moon_sign),
     )
