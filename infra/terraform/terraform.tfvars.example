@@ -1,3 +1,4 @@
+
 # Copy this file to terraform.tfvars and replace placeholder values with your environment-specific data.
 # The values below illustrate the production whathoroscope.com deployment that keeps costs in the $30-50/month range.
 
@@ -24,14 +25,6 @@ assets_cnames = [
   "assets.whathoroscope.com",
 ]
 
-# Plaintext environment variables for the ECS task (API keys, feature flags, etc.)
-app_environment = {
-  AUTH_ENABLED       = "true"
-  API_KEYS           = "replace-with-comma-separated-production-keys"
-  RATE_LIMIT_ENABLED = "true"
-  LOGGING_ENABLED    = "true"
-}
-
 # Strong password for the initial RDS PostgreSQL master user (change immediately after deploy)
 db_password = "CHANGE_ME_WITH_A_SECURE_PASSWORD"
 
@@ -43,3 +36,15 @@ additional_tags = {
 
 # Leave Redis disabled to remain inside the target budget; set to true when caching is required.
 enable_elasticache = false
+
+aws_region         = "us-east-1"
+environment        = "prod"
+container_image    = "123456789012.dkr.ecr.us-east-1.amazonaws.com/wh-ephemeris/prod:latest"
+certificate_arn    = "arn:aws:acm:us-east-1:123456789012:certificate/abcd-efgh"
+# Hosted zone ID for the delegated Route 53 zone (e.g., api.whathoroscope.com)
+route53_zone_id    = "Z1234567890ABCDEFG"
+app_domain_name    = "api.whathoroscope.com"
+assets_bucket_name = "wh-ephemeris-assets-prod"
+db_password        = "CHANGE_ME"
+assets_cnames      = ["assets.whathoroscope.com"]
+

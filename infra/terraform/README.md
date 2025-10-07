@@ -34,23 +34,6 @@ Because the apex domain stays on Vercel while the API is hosted in AWS, the Terr
 
 If you prefer to move the entire domain into Route 53 you can do so instead, but that is not required as long as the API subdomain is delegated to AWS.
 
-## Build & Publish the Container Image
-
-Terraform expects a pre-built container image URI via the `container_image` variable. Build the production image from the repository root and push it to ECR before applying the infrastructure:
-
-```bash
-# From the repo root
-# Ensure data/ephemeris contains the Swiss Ephemeris files before building
-aws ecr get-login-password --region us-east-1 | \
-  docker login --username AWS --password-stdin 123456789012.dkr.ecr.us-east-1.amazonaws.com
-
-docker build -f docker/Dockerfile -t wh-ephemeris:prod .
-docker tag wh-ephemeris:prod 123456789012.dkr.ecr.us-east-1.amazonaws.com/wh-ephemeris:prod
-docker push 123456789012.dkr.ecr.us-east-1.amazonaws.com/wh-ephemeris:prod
-```
-
-Replace `123456789012` with your AWS account ID and adjust the tag to match your deployment workflow. The Dockerfile embeds the Swiss Ephemeris data and enables PDF rendering with WeasyPrint, so no additional EFS mount is required for the initial rollout.
-
 ## Usage
 
 1. Copy the example variables file and update it with project-specific values:
@@ -58,7 +41,7 @@ Replace `123456789012` with your AWS account ID and adjust the tag to match your
    ```bash
    cd infra/terraform
    cp terraform.tfvars.example terraform.tfvars
-   # edit terraform.tfvars with the correct account IDs, container image URI, app_environment map, passwords, etc.
+   # edit terraform.tfvars with the correct account IDs, certificate ARN, passwords, etc.
    ```
 
 2. Initialise Terraform:

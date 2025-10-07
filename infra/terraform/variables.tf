@@ -138,10 +138,10 @@ variable "log_retention_days" {
   default     = 30
 }
 
-variable "app_environment" {
-  description = "Plaintext environment variables injected into the ECS task"
-  type        = map(string)
-  default     = {}
+variable "django_settings_module" {
+  description = "Django settings module for the container"
+  type        = string
+  default     = "config.settings.production"
 }
 
 variable "db_engine_version" {
