@@ -28,9 +28,6 @@ ENV/
 env.bak/
 venv.bak/
 
-# Docker
-.dockerignore
-
 # IDE
 .vscode/
 .idea/
