@@ -104,6 +104,8 @@ wh-ephemeris/
 
 **Files**: [`infra/terraform`](./infra/terraform) – see the accompanying [README](./infra/terraform/README.md) for step-by-step usage.
 
+**Container image**: Build from [`docker/Dockerfile`](./docker/Dockerfile) and push to your Amazon ECR repository before running Terraform so the stack can launch the service task. Download the Swiss Ephemeris data into `data/ephemeris/` first so the container includes the required astronomical files.
+
 **DNS prerequisites when the main site stays on Vercel**:
 
 - Keep `whathoroscope.com` pointed to Vercel in Namecheap.
