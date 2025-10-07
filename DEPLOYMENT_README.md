@@ -76,13 +76,45 @@ wh-ephemeris/
 
 **Setup Time**: 2-4 hours
 
-**Guides**: 
+**Guides**:
 - [AWS Infrastructure Guide](./aws/AWS_INFRASTRUCTURE_GUIDE.md)
 - [AWS Build & Deployment Guide](./aws/AWS_BUILD_DEPLOYMENT_GUIDE.md)
 
 ---
 
-### 3. 💰 AWS Minimal (Cost-Optimized)
+### 3. ☁️ AWS Production (Fargate Budget)
+
+**Best for**: Production workloads that must stay within a $30-50/month AWS budget while integrating with `whathoroscope.com`.
+
+**Pros**:
+- ✅ Managed Fargate compute with HTTPS via Application Load Balancer
+- ✅ RDS PostgreSQL (single-AZ) and optional ElastiCache
+- ✅ CloudFront + S3 for static assets under the project domain
+- ✅ Terraform automation for repeatable deployments
+- ✅ Secrets stored in SSM Parameter Store
+
+**Cons**:
+- ❌ Limited capacity (1–2 Fargate tasks by default)
+- ❌ Manual horizontal scaling beyond the configured autoscaling range
+- ❌ NAT Gateway omitted (private subnet egress requires VPC endpoints or later upgrades)
+
+**Cost**: $30-50/month
+
+**Setup Time**: 60-90 minutes
+
+**Files**: [`infra/terraform`](./infra/terraform) – see the accompanying [README](./infra/terraform/README.md) for step-by-step usage.
+
+**DNS prerequisites when the main site stays on Vercel**:
+
+- Keep `whathoroscope.com` pointed to Vercel in Namecheap.
+- Create a public Route 53 hosted zone just for `api.whathoroscope.com` (or your chosen API subdomain) and note the hosted zone ID.
+- Add an `NS` record in Namecheap with host `api` that delegates the subdomain to the Route 53 name servers.
+- Issue/validate an ACM certificate in `us-east-1` that includes the delegated API subdomain so the Application Load Balancer can terminate HTTPS.
+- After DNS propagation, supply the hosted zone ID and certificate ARN to Terraform via `terraform.tfvars`.
+
+---
+
+### 4. 💰 AWS Minimal (Cost-Optimized)
 
 **Best for**: Small-scale production, budget constraints, testing
 
@@ -121,6 +153,14 @@ cd vercel/
 # Use AWS Minimal deployment
 cd aws/
 # Run deployment scripts
+```
+
+### For Production (Managed on a Budget):
+```bash
+# Use Terraform-based Fargate stack (targets $30-50/month)
+cd infra/terraform
+terraform init
+terraform apply
 ```
 
 ### For Production (Enterprise):
@@ -168,19 +208,19 @@ NATAL_USE_HTTP=false
 
 ## 📊 Feature Comparison
 
-| Feature | Vercel | AWS Minimal | AWS Production |
-|---------|--------|-------------|----------------|
-| **Setup Time** | 10 min | 30 min | 2-4 hours |
-| **Monthly Cost** | $0-25 | $3-8 | $100-200 |
-| **Scalability** | Auto | Manual | Auto |
-| **Availability** | High | Medium | Very High |
-| **Maintenance** | None | Low | Medium |
-| **Performance** | Good | Medium | Excellent |
-| **Global CDN** | ✅ | ❌ | ✅ |
-| **Custom Domain** | ✅ | ✅ | ✅ |
-| **SSL/HTTPS** | Auto | Manual | Auto |
-| **Monitoring** | Built-in | Basic | Advanced |
-| **Backup** | N/A | Manual | Automated |
+| Feature | Vercel | AWS Minimal | AWS Fargate Budget | AWS Production |
+|---------|--------|-------------|--------------------|----------------|
+| **Setup Time** | 10 min | 30-60 min | 60-90 min | 2-4 hours |
+| **Monthly Cost** | $0-25 | $3-8 | $30-50 | $100-200 |
+| **Scalability** | Auto | Manual | Auto (1-2 tasks) | Auto |
+| **Availability** | High | Medium | High | Very High |
+| **Maintenance** | None | Low | Low | Medium |
+| **Performance** | Good | Medium | Good | Excellent |
+| **Global CDN** | ✅ | ❌ | ✅ | ✅ |
+| **Custom Domain** | ✅ | ✅ | ✅ | ✅ |
+| **SSL/HTTPS** | Auto | Manual | Auto | Auto |
+| **Monitoring** | Built-in | Basic | CloudWatch | Advanced |
+| **Backup** | N/A | Manual | Automated (RDS) | Automated |
 
 ## 🎯 Decision Matrix
 
@@ -191,9 +231,14 @@ NATAL_USE_HTTP=false
 - You want zero maintenance
 
 **Choose AWS Minimal if**:
-- You have budget constraints
-- You need persistent storage
+- You have strict budget constraints (<$10/month)
+- You need persistent storage without managed services
 - You're comfortable with basic server management
+
+**Choose AWS Fargate Budget if**:
+- You need managed container hosting with HTTPS on `whathoroscope.com`
+- You want managed PostgreSQL and optional Redis without exceeding $50/month
+- You prefer infrastructure-as-code (Terraform) for reproducible deployments
 - You have predictable, low traffic
 
 **Choose AWS Production if**:

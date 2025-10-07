@@ -1,0 +1,10 @@
+aws_region         = "us-east-1"
+environment        = "prod"
+container_image    = "123456789012.dkr.ecr.us-east-1.amazonaws.com/wh-ephemeris/prod:latest"
+certificate_arn    = "arn:aws:acm:us-east-1:123456789012:certificate/abcd-efgh"
+# Hosted zone ID for the delegated Route 53 zone (e.g., api.whathoroscope.com)
+route53_zone_id    = "Z1234567890ABCDEFG"
+app_domain_name    = "api.whathoroscope.com"
+assets_bucket_name = "wh-ephemeris-assets-prod"
+db_password        = "CHANGE_ME"
+assets_cnames      = ["assets.whathoroscope.com"]
