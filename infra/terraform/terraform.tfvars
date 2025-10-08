@@ -4,8 +4,8 @@
 aws_region      = "us-east-1"
 environment     = "prod"
 container_image = "123456789012.dkr.ecr.us-east-1.amazonaws.com/wh-ephemeris:prod-latest"
-certificate_arn = "arn:aws:acm:us-east-1:123456789012:certificate/aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee"
-route53_zone_id = "ZABCDEFGHIJKLMNOP"
+certificate_arn = "arn:aws:acm:us-east-1:863518458871:certificate/e8b770ae-6e4c-40cf-8ec9-54e6f762dc56"
+route53_zone_id = "Z0822624UBELBP4YU02I"
 app_domain_name = "api.whathoroscope.com"
 assets_bucket_name = "wh-ephemeris-assets-prod"
 assets_cnames = [
@@ -17,7 +17,7 @@ app_environment = {
   RATE_LIMIT_ENABLED = "true"
   LOGGING_ENABLED    = "true"
 }
-db_password = "CHANGE_ME_WITH_A_SECURE_PASSWORD"
+db_password = "w#@ts3cureP@ssw0rd!"
 additional_tags = {
   Project     = "wh-ephemeris"
   Environment = "prod"
