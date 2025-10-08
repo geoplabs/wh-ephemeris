@@ -12,6 +12,7 @@ AWS_REGION="us-east-1"  # NVirginia region for your account
 ECR_REPOSITORY="wh-ephemeris"
 IMAGE_TAG="prod-latest"
 DOCKERFILE_PATH="docker/Dockerfile.enhanced"
+TIMESTAMP_TAG=$(date +%Y%m%d-%H%M%S)
 
 # Colors for output
 RED='\033[0;31m'
@@ -72,7 +73,7 @@ echo -e "${BLUE}This will download Swiss Ephemeris data during build (may take 2
 docker build \
     -f ${DOCKERFILE_PATH} \
     -t ${ECR_REPOSITORY}:${IMAGE_TAG} \
-    -t ${ECR_REPOSITORY}:$(date +%Y%m%d-%H%M%S) \
+    -t ${ECR_REPOSITORY}:${TIMESTAMP_TAG} \
     --build-arg BUILDKIT_INLINE_CACHE=1 \
     .
 
@@ -86,12 +87,12 @@ fi
 # Tag for ECR
 ECR_URI="${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/${ECR_REPOSITORY}"
 docker tag ${ECR_REPOSITORY}:${IMAGE_TAG} ${ECR_URI}:${IMAGE_TAG}
-docker tag ${ECR_REPOSITORY}:${IMAGE_TAG} ${ECR_URI}:$(date +%Y%m%d-%H%M%S)
+docker tag ${ECR_REPOSITORY}:${IMAGE_TAG} ${ECR_URI}:${TIMESTAMP_TAG}
 
 # Push to ECR
 echo -e "${YELLOW}📤 Pushing to ECR...${NC}"
 docker push ${ECR_URI}:${IMAGE_TAG}
-docker push ${ECR_URI}:$(date +%Y%m%d-%H%M%S)
+docker push ${ECR_URI}:${TIMESTAMP_TAG}
 
 if [ $? -eq 0 ]; then
     echo -e "${GREEN}✅ Image pushed successfully to ECR${NC}"
