@@ -62,3 +62,15 @@ htmlcov/
 # Deployment directories
 aws/
 vercel/
+
+# Development workflow and cost management documentation
+DEV_WORKFLOW_AND_COST_MANAGEMENT.md
+
+# PowerShell scripts for environment management
+start-dev-env.ps1
+stop-dev-env.ps1
+check-dev-env.ps1
+
+# Terraform task definition files
+task-def.json
+new-task-def.json
