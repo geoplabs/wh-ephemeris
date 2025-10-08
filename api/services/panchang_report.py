@@ -6,7 +6,8 @@ import uuid
 from pathlib import Path
 from typing import Dict, Any
 
-DEV_ASSETS_DIR = Path("/app/data/dev-assets/reports")
+import os
+DEV_ASSETS_DIR = Path(os.getenv("HOME", "/opt/app")) / "data" / "dev-assets" / "reports"
 DEV_ASSETS_DIR.mkdir(parents=True, exist_ok=True)
 
 

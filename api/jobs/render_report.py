@@ -13,7 +13,8 @@ from ..services.wheel_svg import simple_wheel_svg
 from ..routers.charts import compute_chart
 from ..schemas import ComputeRequest
 
-_ASSETS_BASE = Path("/app/data/dev-assets/reports")
+import os
+_ASSETS_BASE = Path(os.getenv("HOME", "/opt/app")) / "data" / "dev-assets" / "reports"
 
 
 def _build_payload(chart_req: Dict[str, Any]) -> Dict[str, Any]:

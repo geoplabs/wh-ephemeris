@@ -551,9 +551,9 @@ resource "aws_ecs_task_definition" "app" {
         }
       ]
       environment = [
-        {
-          name  = "DJANGO_SETTINGS_MODULE"
-          value = var.django_settings_module
+        for key, value in var.app_environment : {
+          name  = key
+          value = value
         }
       ]
       secrets = [

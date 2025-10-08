@@ -59,8 +59,9 @@ def health():
     return {"ok": True}
 
 
-# Dev assets static serve (for quick PDF/SVG previews saved under /app/data/dev-assets)
-DEV_ASSETS_DIR = Path("/app/data/dev-assets")
+# Dev assets static serve (for quick PDF/SVG previews saved under data/dev-assets)
+import os
+DEV_ASSETS_DIR = Path(os.getenv("HOME", "/opt/app")) / "data" / "dev-assets"
 DEV_ASSETS_DIR.mkdir(parents=True, exist_ok=True)
 
 

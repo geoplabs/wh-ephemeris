@@ -138,10 +138,18 @@ variable "log_retention_days" {
   default     = 30
 }
 
-variable "django_settings_module" {
-  description = "Django settings module for the container"
-  type        = string
-  default     = "config.settings.production"
+variable "app_environment" {
+  description = "Environment variables for the FastAPI container"
+  type        = map(string)
+  default = {
+    APP_ENV                = "production"
+    PORT                   = "8080"
+    AUTH_ENABLED          = "true"
+    RATE_LIMIT_ENABLED    = "true"
+    LOGGING_ENABLED       = "true"
+    EPHEMERIS_BACKEND     = "swieph"
+    DEFAULT_AYANAMSHA     = "lahiri"
+  }
 }
 
 variable "db_engine_version" {
