@@ -104,7 +104,14 @@ wh-ephemeris/
 
 **Files**: [`infra/terraform`](./infra/terraform) – see the accompanying [README](./infra/terraform/README.md) for step-by-step usage.
 
-**Container image**: Build from [`docker/Dockerfile`](./docker/Dockerfile) and push to your Amazon ECR repository before running Terraform so the stack can launch the service task. Download the Swiss Ephemeris data into `data/ephemeris/` first so the container includes the required astronomical files.
+**Container image**: Build from [`docker/Dockerfile`](./docker/Dockerfile) and push to your Amazon ECR repository before running Terraform so the stack can launch the service task. Download the Swiss Ephemeris data into `data/ephemeris/` first so the container includes the required astronomical files. The repository ships with a helper script that retrieves the recommended files directly from Astro.com:
+
+```bash
+# from the repository root
+./scripts/download_ephemeris.sh
+```
+
+The script requires `curl` and `unzip`. It saves `seas_18.se1`, `semo_18.se1`, `sepl_18.se1`, and `de406.eph` into `data/ephemeris/` if they are not already present. You can pass a custom destination folder as the first argument when needed (for example when running inside CI).
 
 **DNS prerequisites when the main site stays on Vercel**:
 

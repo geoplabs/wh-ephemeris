@@ -7,9 +7,14 @@ Swiss ephemeris files (*.se1, *.eph) are excluded from version control due to th
 
 ## 📥 Setup Instructions
 
-1. **Download Swiss ephemeris files** from https://www.astro.com/swisseph/
-2. **Place files in this directory** (`data/ephemeris/`)
-3. **Restart the stack** to pick up the files:
+1. **Run the helper script** (recommended): make sure `curl` and `unzip` are available on your system, then execute
+   ```bash
+   ./scripts/download_ephemeris.sh
+   ```
+   The script fetches the recommended data set (`seas_18.se1`, `semo_18.se1`, `sepl_18.se1`, and `de406.eph`) directly from Astro.com and stores it in this folder. Pass a custom destination as the first argument to download elsewhere (e.g., inside a CI workspace).
+2. **Or download manually** from https://www.astro.com/swisseph/ if you prefer.
+3. **Place files in this directory** (`data/ephemeris/`)
+4. **Restart the stack** to pick up the files:
    ```bash
    docker compose down -v
    docker compose up --build -d
