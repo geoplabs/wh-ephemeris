@@ -14,6 +14,14 @@ data/ephemeris/sepl_*.se1
 
 # Environment files
 .env
+.env.*
+*.env
+
+# Terraform sensitive files
+*.tfvars
+*.tfvars.json
+terraform.tfstate
+terraform.tfstate.backup
 
 # Python
 __pycache__/
