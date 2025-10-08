@@ -54,8 +54,11 @@ RUN apt-get update \
         curl \
     && rm -rf /var/lib/apt/lists/*
 
-# Create non-root user for security
-RUN useradd -r -s /bin/false -u 1001 ephemeris
+# Create non-root user for security with a writable home directory
+RUN groupadd --system --gid 1001 ephemeris \
+    && useradd --system --uid 1001 --gid ephemeris \
+        --home-dir /opt/app --create-home \
+        --shell /usr/sbin/nologin ephemeris
 
 WORKDIR /opt/app
 
@@ -68,11 +71,12 @@ COPY --chown=ephemeris:ephemeris data ./data
 RUN mkdir -p /opt/app/data/ephemeris \
     && chown -R ephemeris:ephemeris /opt/app
 
-ENV EPHEMERIS_DIR=/opt/app/data/ephemeris \
+ENV HOME=/opt/app \
+    EPHEMERIS_DIR=/opt/app/data/ephemeris \
     USE_WEASY=true
 
 # Switch to non-root user
-USER ephemeris
+USER ephemeris:ephemeris
 
 EXPOSE 8080
 
