@@ -12,6 +12,7 @@ RUN apt-get update \
         build-essential \
         python3-dev \
         libffi-dev \
+        libssl-dev \
     && rm -rf /var/lib/apt/lists/*
 
 RUN python -m venv /opt/venv
@@ -27,8 +28,13 @@ FROM python:3.11-slim AS runtime
 ENV PYTHONUNBUFFERED=1 \
     PYTHONDONTWRITEBYTECODE=1 \
     PATH="/opt/venv/bin:${PATH}" \
-    PIP_NO_CACHE_DIR=1
+    PIP_NO_CACHE_DIR=1 \
+    APP_ENV=production \
+    PORT=8080 \
+    EPHEMERIS_BACKEND=swieph \
+    PYTHONPATH=/opt/app
 
+# Install runtime dependencies including curl for health checks
 RUN apt-get update \
     && apt-get install -y --no-install-recommends \
         libcairo2 \
@@ -45,18 +51,33 @@ RUN apt-get update \
         shared-mime-info \
         fonts-dejavu \
         tzdata \
+        curl \
     && rm -rf /var/lib/apt/lists/*
+
+# Create non-root user for security
+RUN useradd -r -s /bin/false -u 1001 ephemeris
 
 WORKDIR /opt/app
 
 COPY --from=build /opt/venv /opt/venv
 
-COPY api ./api
-COPY data ./data
+COPY --chown=ephemeris:ephemeris api ./api
+COPY --chown=ephemeris:ephemeris data ./data
+
+# Create ephemeris directory with proper permissions
+RUN mkdir -p /opt/app/data/ephemeris \
+    && chown -R ephemeris:ephemeris /opt/app
 
 ENV EPHEMERIS_DIR=/opt/app/data/ephemeris \
     USE_WEASY=true
 
+# Switch to non-root user
+USER ephemeris
+
 EXPOSE 8080
 
-CMD ["uvicorn", "api.app:app", "--host", "0.0.0.0", "--port", "8080"]
+# Health check
+HEALTHCHECK --interval=30s --timeout=30s --start-period=5s --retries=3 \
+  CMD curl -f http://localhost:8080/health || exit 1
+
+CMD ["uvicorn", "api.app:app", "--host", "0.0.0.0", "--port", "8080", "--workers", "2"]
