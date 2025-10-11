@@ -728,6 +728,6 @@ def _map_zodiac_to_en(name: str) -> str:
 def _build_notes(include_hora: bool, hora_labels: List[str]) -> List[str]:
     notes = ["All times are local with standard refraction.", "Panchang day considered sunrise→next sunrise."]
     if include_hora and hora_labels:
-        notes.append("Horas: " + "; ".join(hora_labels[:3]) + " …")
+        notes.append("Horas: " + "; ".join(hora_labels))
     return notes
 

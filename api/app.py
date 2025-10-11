@@ -27,7 +27,8 @@ from .middleware.logging import LoggingMiddleware
 app = FastAPI(title="wh-ephemeris (dev)", version="0.2.0")
 
 # Configure CORS - localhost for development, production domains for production
-is_dev = os.getenv("APP_ENV", "development").lower() == "dev"
+app_env = os.getenv("APP_ENV")
+is_dev = app_env is None or app_env.lower() in {"dev", "development"}
 
 if is_dev:
     app.add_middleware(
