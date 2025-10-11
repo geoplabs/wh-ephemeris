@@ -252,15 +252,15 @@ def _build_viewmodel_uncached(
         jd_observation, sidereal=True, ayanamsha=ayanamsha
     )["Sun"]["lon"]
 
-    lunar_day_no, paksha = compute_lunar_day(sunrise)
+    lunar_day_no, paksha = compute_lunar_day(sunrise, ayanamsha=ayanamsha)
     moonrise_dt, moonset_dt = compute_moon_events(start_of_day, lat, lon, elevation)
     moonrise = _format_iso(moonrise_dt) if moonrise_dt else None
     moonset = _format_iso(moonset_dt) if moonset_dt else None
-    tithi_number, _tithi_name, tithi_start, tithi_end = compute_tithi(sunrise)
-    nak_no, _nak_name, nak_pada, nak_start, nak_end = compute_nakshatra(sunrise)
-    yoga_number, _yoga_name, yoga_start, yoga_end = compute_yoga(sunrise)
-    amanta_idx, _amanta_name, purnimanta_idx, _purnimanta_name = compute_masa(sunrise)
-    sun_rashi_index, sun_sign_name, moon_rashi_index, moon_sign_name = compute_rashi(sunrise)
+    tithi_number, _tithi_name, tithi_start, tithi_end = compute_tithi(sunrise, ayanamsha=ayanamsha)
+    nak_no, _nak_name, nak_pada, nak_start, nak_end = compute_nakshatra(sunrise, ayanamsha=ayanamsha)
+    yoga_number, _yoga_name, yoga_start, yoga_end = compute_yoga(sunrise, ayanamsha=ayanamsha)
+    amanta_idx, _amanta_name, purnimanta_idx, _purnimanta_name = compute_masa(sunrise, ayanamsha=ayanamsha)
+    sun_rashi_index, sun_sign_name, moon_rashi_index, moon_sign_name = compute_rashi(sunrise, ayanamsha=ayanamsha)
 
     weekday_index = (target_date.weekday() + 1) % 7
     vara = vara_label(weekday_index, lang, script)
@@ -308,10 +308,12 @@ def _build_viewmodel_uncached(
 
     weekday = _weekday_name(target_date)
     muhurta_blocks = compute_muhurta_blocks(sunrise, sunset, weekday)
-    windows = _build_windows(include_muhurta, muhurta_blocks)
+    # windows will be built later after muhurtas_extra is available
     hora_labels = []
+    horas_structured = None
     if include_hora:
         hora_labels = _build_horas(sunrise, sunset, next_sunrise, weekday, lang, script)
+        horas_structured = _build_horas_structured(sunrise, sunset, next_sunrise, weekday, lang, script)
 
     assets = AssetsVM(day_strip_svg=build_day_strip_svg())
 
@@ -386,7 +388,7 @@ def _build_viewmodel_uncached(
             end_ts=_format_iso(karana_end),
         ),
         masa=masa_vm,
-        windows=windows,
+        windows=_build_windows(include_muhurta, muhurta_blocks),  # Initial windows, will be updated later
         context=context,
         observances=[],
         notes=_build_notes(include_hora, hora_labels),
@@ -431,6 +433,7 @@ def _build_viewmodel_uncached(
                 for period in karana_periods
             ],
         ),
+        horas=horas_structured,  # Include full hora data when include_hora=true
     )
 
     ext_on = _ext_enabled()
@@ -461,6 +464,9 @@ def _build_viewmodel_uncached(
             sun_long_sidereal,
             now_local,
         )
+        
+        # Update windows with actual muhurta calculations now that muhurtas_extra is available
+        vm.windows = _build_windows(include_muhurta, muhurta_blocks, vm.muhurtas_extra)
         yoga_number = vm.yoga.number or 1
         vm.yoga_extended = build_yoga_extended(yoga_number)
         nak_number = vm.nakshatra.number or 1
@@ -477,6 +483,27 @@ def _build_viewmodel_uncached(
             tz,
         )
         vm.ritual_notes = notes_for_day()
+    else:
+        # Even if extensions are disabled, we should still try to compute basic muhurtas
+        # Build a minimal muhurtas_extra for basic calculations
+        weekday_index = target_date.weekday()
+        nak_periods = [period.model_dump() for period in vm.changes.nakshatra_periods]
+        now_local = sunrise
+        
+        minimal_muhurtas_extra = build_muhurta_extra(
+            sunrise,
+            sunset,
+            next_sunrise,
+            solar_noon,
+            weekday_index,
+            sunset - sunrise,
+            nak_periods,
+            sun_long_sidereal,
+            now_local,
+        )
+        
+        # Update windows with actual calculations even when extensions are disabled
+        vm.windows = _build_windows(include_muhurta, muhurta_blocks, minimal_muhurtas_extra)
 
     if ext_on and ext_fest:
         addl = festivals_for_date(date_local_dt, tz, lat, lon)
@@ -489,6 +516,7 @@ def _build_viewmodel_uncached(
 def _build_windows(
     include_muhurta: bool,
     muhurta_blocks: Dict[str, tuple[datetime, datetime]],
+    muhurtas_extra: Optional[Dict[str, List[Dict[str, str]]]] = None,
 ) -> WindowsVM:
     auspicious: List[WindowsEntry] = []
     inauspicious: List[WindowsEntry] = []
@@ -525,20 +553,72 @@ def _build_windows(
                 )
             )
 
-    # Placeholder entries for windows that need full algorithms in production.
-    auspicious.append(
-        WindowsEntry(kind="amrit_kalam", note="Not computed in development build")
-    )
-    inauspicious.extend(
-        [
-            WindowsEntry(kind="varjyam", note="Not computed in development build"),
-            WindowsEntry(kind="dur_muhurtam", note="Not computed in development build"),
-            WindowsEntry(kind="bhadra", note="Not computed in development build"),
-            WindowsEntry(kind="ganda_moola", note="Not computed in development build"),
-            WindowsEntry(kind="baana", value="None", note="Not computed in development build"),
-            WindowsEntry(kind="vidaal_yoga", note="Not computed in development build"),
-        ]
-    )
+    # Add actual muhurta calculations from muhurtas_extra if available
+    if muhurtas_extra:
+        # Add auspicious muhurtas (but skip ones already in basic muhurta_blocks)
+        for muhurta in muhurtas_extra.get("auspicious_extra", []):
+            kind = muhurta.get("kind")
+            # Skip if already handled above
+            if kind not in ["abhijit"]:
+                start_ts = muhurta.get("start_ts")
+                end_ts = muhurta.get("end_ts")
+                note = muhurta.get("note")
+                if start_ts and end_ts:
+                    auspicious.append(
+                        WindowsEntry(
+                            kind=kind,
+                            start_ts=start_ts,
+                            end_ts=end_ts,
+                            note=note,
+                        )
+                    )
+        
+        # Add inauspicious muhurtas from actual calculations
+        for muhurta in muhurtas_extra.get("inauspicious_extra", []):
+            kind = muhurta.get("kind")
+            # Skip if already handled above
+            if kind not in ["rahu_kalam", "gulikai_kalam", "yamaganda"]:
+                start_ts = muhurta.get("start_ts")
+                end_ts = muhurta.get("end_ts")
+                note = muhurta.get("note")
+                value = muhurta.get("value")
+                
+                if start_ts and end_ts:
+                    inauspicious.append(
+                        WindowsEntry(
+                            kind=kind,
+                            start_ts=start_ts,
+                            end_ts=end_ts,
+                            note=note,
+                            value=value,
+                        )
+                    )
+                elif kind == "baana" and note:
+                    # Handle baana which might not have times but has a note
+                    inauspicious.append(
+                        WindowsEntry(
+                            kind=kind,
+                            start_ts=start_ts,
+                            end_ts=end_ts,
+                            note=note,
+                            value=value,
+                        )
+                    )
+    elif not muhurtas_extra:
+        # Fallback to placeholder entries if muhurtas_extra not available
+        auspicious.append(
+            WindowsEntry(kind="amrit_kalam", note="Not computed in development build")
+        )
+        inauspicious.extend(
+            [
+                WindowsEntry(kind="varjyam", note="Not computed in development build"),
+                WindowsEntry(kind="dur_muhurtam", note="Not computed in development build"),
+                WindowsEntry(kind="bhadra", note="Not computed in development build"),
+                WindowsEntry(kind="ganda_moola", note="Not computed in development build"),
+                WindowsEntry(kind="baana", value="None", note="Not computed in development build"),
+                WindowsEntry(kind="vidaal_yoga", note="Not computed in development build"),
+            ]
+        )
 
     auspicious.sort(key=lambda entry: entry.start_ts or "9999")
     inauspicious.sort(key=lambda entry: entry.start_ts or f"{entry.kind}~")
@@ -553,12 +633,34 @@ def _build_horas(
     lang: str,
     script: str,
 ) -> List[str]:
+    """Build formatted hora strings for notes field (backward compatibility)."""
     horas = compute_horas(sunrise, sunset, next_sunrise, weekday)
     formatted: List[str] = []
     for start, end, lord in horas:
         label = planet_label(PLANET_NAME_TO_INDEX[lord], lang, script)["display_name"]
         formatted.append(f"{_format_iso(start)}→{_format_iso(end)} {label}")
     return formatted
+
+
+def _build_horas_structured(
+    sunrise: datetime,
+    sunset: datetime,
+    next_sunrise: datetime,
+    weekday: str,
+    lang: str,
+    script: str,
+) -> List[Dict[str, str]]:
+    """Build structured hora data for the horas field."""
+    horas = compute_horas(sunrise, sunset, next_sunrise, weekday)
+    structured: List[Dict[str, str]] = []
+    for start, end, lord in horas:
+        label = planet_label(PLANET_NAME_TO_INDEX[lord], lang, script)["display_name"]
+        structured.append({
+            "planet": label,
+            "start_ts": _format_iso(start),
+            "end_ts": _format_iso(end)
+        })
+    return structured
 
 
 def _build_context(

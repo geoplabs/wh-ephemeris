@@ -6,6 +6,14 @@ from starlette.middleware.base import BaseHTTPMiddleware
 
 class APIKeyMiddleware(BaseHTTPMiddleware):
     async def dispatch(self, request: Request, call_next):
+        # Skip authentication for health check endpoint
+        if request.url.path == "/__health":
+            return await call_next(request)
+        
+        # Skip authentication for CORS preflight requests
+        if request.method == "OPTIONS":
+            return await call_next(request)
+            
         if os.getenv("AUTH_ENABLED", "false").lower() != "true":
             return await call_next(request)
 

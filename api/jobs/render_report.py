@@ -161,3 +161,7 @@ def ensure_worker_started() -> None:
 
 if __name__ == "__main__":
     ensure_worker_started()
+    # Keep the main process alive so the daemon thread can run
+    import time
+    while True:
+        time.sleep(60)

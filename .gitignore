@@ -20,8 +20,12 @@ data/ephemeris/sepl_*.se1
 # Terraform sensitive files
 *.tfvars
 *.tfvars.json
+*.tfvars.backup
+*.tfvars.bak
 terraform.tfstate
 terraform.tfstate.backup
+.terraform.lock.hcl
+.terraform/
 
 # Python
 __pycache__/
@@ -53,6 +57,7 @@ logs/
 # Temporary files
 *.tmp
 *.temp
+test-cors-live.html
 
 # Test coverage
 .coverage
@@ -70,7 +75,12 @@ DEV_WORKFLOW_AND_COST_MANAGEMENT.md
 start-dev-env.ps1
 stop-dev-env.ps1
 check-dev-env.ps1
+deploy-to-aws.ps1
 
 # Terraform task definition files
 task-def.json
 new-task-def.json
+new-task-def-clean.json
+
+# Docker deployment documentation
+DOCKER_DEPLOYMENT_GUIDE.md

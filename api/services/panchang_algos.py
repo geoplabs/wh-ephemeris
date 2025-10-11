@@ -212,9 +212,9 @@ def _to_jd(moment: datetime) -> float:
     return moment_utc.timestamp() / 86400.0 + 2440587.5
 
 
-def _tithi_state(moment: datetime) -> Tuple[int, float]:
+def _tithi_state(moment: datetime, ayanamsha: str = "lahiri") -> Tuple[int, float]:
     """Return the tithi number and raw longitude difference at a moment."""
-    diff = _moon_sun_diff(moment)
+    diff = _moon_sun_diff(moment, sidereal=True, ayanamsha=ayanamsha)
     number = int(diff // 12.0) + 1
     return number, diff
 
@@ -233,9 +233,10 @@ def _moon_longitude(
     return positions_ecliptic(jd, sidereal=sidereal, ayanamsha=ayanamsha)["Moon"]["lon"]
 
 
-def _yoga_value(moment: datetime) -> float:
+def _yoga_value(moment: datetime, ayanamsha: str = "lahiri") -> float:
     return (
-        _sun_longitude(moment, sidereal=True) + _moon_longitude(moment, sidereal=True)
+        _sun_longitude(moment, sidereal=True, ayanamsha=ayanamsha) + 
+        _moon_longitude(moment, sidereal=True, ayanamsha=ayanamsha)
     ) % 360.0
 
 
@@ -372,21 +373,21 @@ def _find_boundary(
     return high_time
 
 
-def compute_tithi(moment: datetime) -> Tuple[int, str, datetime, datetime]:
-    number, diff = _tithi_state(moment)
+def compute_tithi(moment: datetime, ayanamsha: str = "lahiri") -> Tuple[int, str, datetime, datetime]:
+    number, diff = _tithi_state(moment, ayanamsha=ayanamsha)
     name = TITHI_NAMES[number - 1]
 
     start_target = (number - 1) * 12.0
     end_target = number * 12.0
 
-    start_time = _find_boundary(moment, diff, start_target, forward=False, getter=_moon_sun_diff)
-    end_time = _find_boundary(moment, diff, end_target, forward=True, getter=_moon_sun_diff)
+    start_time = _find_boundary(moment, diff, start_target, forward=False, getter=lambda dt: _moon_sun_diff(dt, sidereal=True, ayanamsha=ayanamsha))
+    end_time = _find_boundary(moment, diff, end_target, forward=True, getter=lambda dt: _moon_sun_diff(dt, sidereal=True, ayanamsha=ayanamsha))
 
     return number, name, start_time, end_time
 
 
-def compute_nakshatra(moment: datetime) -> Tuple[int, str, int, datetime, datetime]:
-    moon_lon = _moon_longitude(moment, sidereal=True)
+def compute_nakshatra(moment: datetime, ayanamsha: str = "lahiri") -> Tuple[int, str, int, datetime, datetime]:
+    moon_lon = _moon_longitude(moment, sidereal=True, ayanamsha=ayanamsha)
     number = int(moon_lon // NAKSHATRA_SPAN) + 1
     name = NAKSHATRA_NAMES[(number - 1) % len(NAKSHATRA_NAMES)]
     pada = int((moon_lon % NAKSHATRA_SPAN) // PADA_SPAN) + 1
@@ -394,22 +395,22 @@ def compute_nakshatra(moment: datetime) -> Tuple[int, str, int, datetime, dateti
     start_target = math.floor(moon_lon / NAKSHATRA_SPAN) * NAKSHATRA_SPAN
     end_target = start_target + NAKSHATRA_SPAN
 
-    start_time = _find_boundary(moment, moon_lon, start_target, forward=False, getter=lambda dt: _moon_longitude(dt, sidereal=True))
-    end_time = _find_boundary(moment, moon_lon, end_target, forward=True, getter=lambda dt: _moon_longitude(dt, sidereal=True))
+    start_time = _find_boundary(moment, moon_lon, start_target, forward=False, getter=lambda dt: _moon_longitude(dt, sidereal=True, ayanamsha=ayanamsha))
+    end_time = _find_boundary(moment, moon_lon, end_target, forward=True, getter=lambda dt: _moon_longitude(dt, sidereal=True, ayanamsha=ayanamsha))
 
     return number, name, pada, start_time, end_time
 
 
-def compute_yoga(moment: datetime) -> Tuple[int, str, datetime, datetime]:
-    yoga_val = _yoga_value(moment)
+def compute_yoga(moment: datetime, ayanamsha: str = "lahiri") -> Tuple[int, str, datetime, datetime]:
+    yoga_val = _yoga_value(moment, ayanamsha=ayanamsha)
     number = int(yoga_val // YOGA_SPAN) + 1
     name = YOGA_NAMES[(number - 1) % len(YOGA_NAMES)]
 
     start_target = math.floor(yoga_val / YOGA_SPAN) * YOGA_SPAN
     end_target = start_target + YOGA_SPAN
 
-    start_time = _find_boundary(moment, yoga_val, start_target, forward=False, getter=_yoga_value)
-    end_time = _find_boundary(moment, yoga_val, end_target, forward=True, getter=_yoga_value)
+    start_time = _find_boundary(moment, yoga_val, start_target, forward=False, getter=lambda dt: _yoga_value(dt, ayanamsha=ayanamsha))
+    end_time = _find_boundary(moment, yoga_val, end_target, forward=True, getter=lambda dt: _yoga_value(dt, ayanamsha=ayanamsha))
 
     return number, name, start_time, end_time
 
@@ -431,8 +432,8 @@ def compute_karana(
     return number - 1, name, start_time, end_time
 
 
-def compute_masa(moment: datetime) -> Tuple[int, str, int, str]:
-    sun_lon = _sun_longitude(moment, sidereal=True) % 360.0
+def compute_masa(moment: datetime, ayanamsha: str = "lahiri") -> Tuple[int, str, int, str]:
+    sun_lon = _sun_longitude(moment, sidereal=True, ayanamsha=ayanamsha) % 360.0
     amanta_index = int(sun_lon // 30.0) % 12
     purnimanta_index = (amanta_index + 1) % 12
     return (
@@ -443,8 +444,8 @@ def compute_masa(moment: datetime) -> Tuple[int, str, int, str]:
     )
 
 
-def compute_lunar_day(moment: datetime) -> Tuple[int, str]:
-    number, _ = _tithi_state(moment)
+def compute_lunar_day(moment: datetime, ayanamsha: str = "lahiri") -> Tuple[int, str]:
+    number, _ = _tithi_state(moment, ayanamsha=ayanamsha)
     paksha = "shukla" if number <= 15 else "krishna"
     return number, paksha
 
@@ -465,9 +466,9 @@ def compute_moon_events(
     return rise, set_
 
 
-def compute_rashi(moment: datetime) -> Tuple[int, str, int, str]:
-    sun_lon = _sun_longitude(moment, sidereal=True) % 360.0
-    moon_lon = _moon_longitude(moment, sidereal=True) % 360.0
+def compute_rashi(moment: datetime, ayanamsha: str = "lahiri") -> Tuple[int, str, int, str]:
+    sun_lon = _sun_longitude(moment, sidereal=True, ayanamsha=ayanamsha) % 360.0
+    moon_lon = _moon_longitude(moment, sidereal=True, ayanamsha=ayanamsha) % 360.0
     sun_idx = int(sun_lon // 30.0)
     moon_idx = int(moon_lon // 30.0)
     return sun_idx, RASHI_NAMES[sun_idx], moon_idx, RASHI_NAMES[moon_idx]
@@ -530,10 +531,10 @@ def enumerate_tithi_periods(
     lon: float,
     ayanamsha: str,
 ) -> List[Dict[str, object]]:
-    del lat, lon, ayanamsha
+    del lat, lon  # Not used for tithi calculations
 
     def _resolve(moment: datetime) -> Dict[str, object]:
-        number, name, period_start, period_end = compute_tithi(moment)
+        number, name, period_start, period_end = compute_tithi(moment, ayanamsha=ayanamsha)
         return {
             "number": number,
             "name": name,
@@ -551,10 +552,10 @@ def enumerate_nakshatra_periods(
     lon: float,
     ayanamsha: str,
 ) -> List[Dict[str, object]]:
-    del lat, lon, ayanamsha
+    del lat, lon  # Not used for nakshatra calculations
 
     def _resolve(moment: datetime) -> Dict[str, object]:
-        number, name, pada, period_start, period_end = compute_nakshatra(moment)
+        number, name, pada, period_start, period_end = compute_nakshatra(moment, ayanamsha=ayanamsha)
         return {
             "number": number,
             "name": name,
@@ -573,10 +574,10 @@ def enumerate_yoga_periods(
     lon: float,
     ayanamsha: str,
 ) -> List[Dict[str, object]]:
-    del lat, lon, ayanamsha
+    del lat, lon  # Not used for yoga calculations
 
     def _resolve(moment: datetime) -> Dict[str, object]:
-        number, name, period_start, period_end = compute_yoga(moment)
+        number, name, period_start, period_end = compute_yoga(moment, ayanamsha=ayanamsha)
         return {
             "number": number,
             "name": name,

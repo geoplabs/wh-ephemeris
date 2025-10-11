@@ -1,4 +1,6 @@
+import os
 from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse, FileResponse
 from pathlib import Path
 from .routers import charts as charts_router
@@ -23,6 +25,39 @@ from .middleware.logging import LoggingMiddleware
 
 
 app = FastAPI(title="wh-ephemeris (dev)", version="0.2.0")
+
+# Configure CORS - localhost for development, production domains for production
+is_dev = os.getenv("APP_ENV", "development").lower() == "dev"
+
+if is_dev:
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origin_regex=r"^https?://(localhost|127\.0\.0\.1)(:\d+)?$",
+        allow_credentials=True,
+        allow_methods=["*"],
+        allow_headers=["*"],
+        expose_headers=["Content-Length","Content-Type"],
+        max_age=86400,
+    )
+else:
+    allowed = [
+        "https://whathoroscope.com",
+        "https://www.whathoroscope.com",
+        "https://api.whathoroscope.com",
+    ]
+    preview = os.getenv("PREVIEW_ORIGIN")  # e.g., your Vercel preview URL
+    if preview:
+        allowed.append(preview)
+
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=allowed,
+        allow_credentials=True,
+        allow_methods=["*"],
+        allow_headers=["*"],
+        expose_headers=["Content-Length","Content-Type"],
+        max_age=86400,
+    )
 
 app.add_middleware(APIKeyMiddleware)
 app.add_middleware(RateLimitMiddleware)

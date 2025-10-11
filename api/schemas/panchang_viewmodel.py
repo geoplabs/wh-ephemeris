@@ -217,6 +217,13 @@ class RitualNote(BaseModel):
     text: str
 
 
+class HoraVM(BaseModel):
+    """Planetary hora period with start and end times."""
+    planet: str
+    start_ts: str
+    end_ts: str
+
+
 class PanchangViewModel(BaseModel):
     header: HeaderVM
     solar: SolarVM
@@ -240,4 +247,29 @@ class PanchangViewModel(BaseModel):
     balam: Optional[Balam] = None
     panchaka_and_lagna: Optional[PanchakaAndLagna] = None
     ritual_notes: List[RitualNote] = Field(default_factory=list)
+    horas: Optional[List[HoraVM]] = None
 
+
+# Simplified daily Panchang for weekly/monthly views
+class DailyPanchangSummary(BaseModel):
+    date_local: str
+    weekday: WeekdayVM
+    solar: SolarVM
+    lunar: LunarVM
+    tithi: TithiVM
+    nakshatra: SegmentVM
+    yoga: SegmentVM
+    karana: SegmentVM
+    paksha: str
+
+
+class WeeklyPanchangViewModel(BaseModel):
+    meta: Dict[str, Any]  # Contains start_date, end_date, place info, etc.
+    days: List[DailyPanchangSummary]
+    notes: List[str] = Field(default_factory=list)
+
+
+class MonthlyPanchangViewModel(BaseModel):
+    meta: Dict[str, Any]  # Contains month, year, place info, etc.
+    days: List[DailyPanchangSummary]
+    notes: List[str] = Field(default_factory=list)
