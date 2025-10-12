@@ -508,14 +508,27 @@ Generate monthly forecast.
 **Request Body:**
 ```json
 {
-  "birth_date": "1990-05-15",
-  "birth_time": "14:30:00",
-  "latitude": 28.6139,
-  "longitude": 77.2090,
-  "timezone": "Asia/Kolkata",
-  "month": "2024-01",
-  "include_weekly_breakdown": true,
-  "lang": "en"
+  "chart_input": {
+    "system": "western",
+    "date": "1990-05-15",
+    "time": "14:30:00",
+    "time_known": true,
+    "place": {
+      "lat": 28.6139,
+      "lon": 77.2090,
+      "tz": "Asia/Kolkata"
+    }
+  },
+  "options": {
+    "year": 2024,
+    "month": 1,
+    "step_days": 1,
+    "transit_bodies": ["Sun", "Mercury", "Venus", "Mars", "Jupiter", "Saturn", "Moon"],
+    "aspects": {
+      "types": ["conjunction", "square", "trine", "opposition"],
+      "orb_deg": 3.0
+    }
+  }
 }
 ```
 
@@ -525,14 +538,27 @@ Generate yearly forecast.
 **Request Body:**
 ```json
 {
-  "birth_date": "1990-05-15",
-  "birth_time": "14:30:00",
-  "latitude": 28.6139,
-  "longitude": 77.2090,
-  "timezone": "Asia/Kolkata",
-  "year": 2024,
-  "include_monthly_breakdown": true,
-  "lang": "en"
+  "chart_input": {
+    "system": "western",
+    "date": "1990-05-15",
+    "time": "14:30:00",
+    "time_known": true,
+    "place": {
+      "lat": 28.6139,
+      "lon": 77.2090,
+      "tz": "Asia/Kolkata"
+    }
+  },
+  "options": {
+    "year": 2024,
+    "step_days": 1,
+    "include_progressions": true,
+    "transit_bodies": ["Sun", "Mercury", "Venus", "Mars", "Jupiter", "Saturn"],
+    "aspects": {
+      "types": ["conjunction", "opposition", "square", "trine", "sextile"],
+      "orb_deg": 3.0
+    }
+  }
 }
 ```
 

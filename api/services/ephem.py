@@ -10,6 +10,9 @@ from zoneinfo import ZoneInfo
 import swisseph as swe
 
 
+# Engine version for API responses
+ENGINE_VERSION = f"swisseph-{swe.version}"
+
 BODIES: Dict[str, int] = {
     "Sun": swe.SUN,
     "Moon": swe.MOON,
