@@ -16,7 +16,6 @@ import re
 
 from zoneinfo import ZoneInfo
 
-from ..routers.charts import compute_chart
 from ..schemas import ComputeRequest
 from .pdf_renderer import render_western_natal_pdf
 
@@ -139,6 +138,13 @@ def _upload_to_s3(local_path: Path, storage_key: str) -> bool:
 def _resolve_download_url(
     report_id: str, owner_segment: Optional[str], storage_key: Optional[str] = None
 ) -> str:
+    """Return the public download URL for a generated report.
+
+    Preference is given to the explicitly configured ``REPORTS_BASE_URL`` so that
+    operators can point links at either the API host or a dedicated CDN without code
+    changes. When that variable is not set we fall back to presigned S3 URLs (if
+    available) or to environment-specific defaults.
+    """
     key = storage_key or _report_storage_key(report_id, owner_segment)
 
     base_url = os.getenv("REPORTS_BASE_URL")
@@ -396,6 +402,8 @@ def _build_sections(
 def _prepare_tagged_events(
     payload: Dict[str, Any], chart_input: Dict[str, Any]
 ) -> Tuple[List[Dict[str, Any]], Dict[str, int]]:
+    from ..routers.charts import compute_chart  # Local import to avoid heavy deps in tests
+
     chart = compute_chart(ComputeRequest(**chart_input))
     body_to_house = {b.name: b.house for b in chart.bodies}
 
