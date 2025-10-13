@@ -46,14 +46,14 @@ def test_resolve_download_url_prefers_configured_base(monkeypatch):
     _clear_s3_cache()
 
 
-def test_resolve_download_url_defaults_to_api_when_prod(monkeypatch):
+def test_resolve_download_url_defaults_to_dev_assets_when_prod(monkeypatch):
     monkeypatch.setenv("APP_ENV", "production")
     monkeypatch.setenv("REPORTS_USE_S3", "false")
     _clear_s3_cache()
 
     url = fr._resolve_download_url("report-2", "user-84")
 
-    assert url == "https://api.whathoroscope.com/reports/user-84/report-2.pdf"
+    assert url == "https://api.whathoroscope.com/dev-assets/reports/user-84/report-2.pdf"
 
     monkeypatch.delenv("APP_ENV")
     monkeypatch.delenv("REPORTS_USE_S3")

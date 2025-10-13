@@ -169,7 +169,7 @@ def _resolve_download_url(
 
     app_env = (os.getenv("APP_ENV") or "").lower()
     if app_env in {"prod", "production", "staging", "preview"}:
-        return f"https://api.whathoroscope.com/{key}"
+        return f"https://api.whathoroscope.com/dev-assets/{key}"
 
     return f"/dev-assets/{key}"
 

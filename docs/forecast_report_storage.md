@@ -12,8 +12,9 @@ the PDF objects (for example, `https://cdn.whathoroscope.com` when a CDN fronts 
 2. **Presigned URLs** – if S3 is enabled and no base URL is configured, the service
    attempts to mint a presigned link to the uploaded object.
 3. **Environment fallback** – when neither of the above paths succeeds, the code
-   falls back to `https://api.whathoroscope.com/…` for production-like environments
-   and `/dev-assets/…` during local development.
+   falls back to `https://api.whathoroscope.com/dev-assets/…` for production-like
+   environments and `/dev-assets/…` during local development so that links always
+   target the existing static file handler.
 
 Because the first step is entirely configuration-driven, choose the domain that is
 reachable in your deployment. Production can continue using
