@@ -160,6 +160,8 @@ def _normalize_options(options: Optional[Dict[str, Any]]) -> Dict[str, Any]:
     opts["lang"] = clamp_lang(opts.get("lang"))
     opts["script"] = clamp_script(opts.get("script"))
     opts["show_bilingual"] = bool(opts.get("show_bilingual", False))
+    opts["include_extensions"] = bool(opts.get("include_extensions", True))
+    opts["summary_only"] = bool(opts.get("summary_only", False))
     return opts
 
 
@@ -170,12 +172,15 @@ def _build_cache_key(date_value: date_cls, place: Dict[str, Any], options: Dict[
     lang = options.get("lang", "en")
     script = options.get("script", "latin")
     show_bilingual = bool(options.get("show_bilingual", False))
+    include_extensions = bool(options.get("include_extensions", True))
+    summary_only = bool(options.get("summary_only", False))
     lat = float(place["lat"])
     lon = float(place["lon"])
     tz = place["tz"]
     return (
         f"panchang:{date_value.isoformat()}:{lat:.4f}:{lon:.4f}:{tz}:{ayanamsha}"
         f":{int(include_muhurta)}:{int(include_hora)}:{lang}:{script}:{int(show_bilingual)}"
+        f":{int(include_extensions)}:{int(summary_only)}"
     )
 
 
@@ -226,6 +231,8 @@ def _build_viewmodel_uncached(
     ayanamsha = options.get("ayanamsha", "lahiri")
     include_muhurta = bool(options.get("include_muhurta", True))
     include_hora = bool(options.get("include_hora", False))
+    include_extensions = bool(options.get("include_extensions", True))
+    summary_only = bool(options.get("summary_only", False))
     lang = options.get("lang", "en")
     script = options.get("script", "latin")
     start_of_day = datetime.combine(target_date, time_cls(0, 0), tzinfo=tz)
@@ -315,7 +322,8 @@ def _build_viewmodel_uncached(
         hora_labels = _build_horas(sunrise, sunset, next_sunrise, weekday, lang, script)
         horas_structured = _build_horas_structured(sunrise, sunset, next_sunrise, weekday, lang, script)
 
-    assets = AssetsVM(day_strip_svg=build_day_strip_svg())
+    day_strip = None if summary_only else build_day_strip_svg()
+    assets = AssetsVM(day_strip_svg=day_strip)
 
     ritu_drik_name = ritu_drik(sun_long_tropical)
     ritu_vedic_name = ritu_vedic(sun_long_sidereal)
@@ -436,11 +444,11 @@ def _build_viewmodel_uncached(
         horas=horas_structured,  # Include full hora data when include_hora=true
     )
 
-    ext_on = _ext_enabled()
-    ext_fest = _festivals_enabled()
-    ritu_conv = _ritu_convention()
+    ext_on = (not summary_only) and include_extensions and _ext_enabled()
+    ext_fest = ext_on and _festivals_enabled()
 
     if ext_on:
+        ritu_conv = _ritu_convention()
         nak_periods = [period.model_dump() for period in vm.changes.nakshatra_periods]
         now_local = sunrise
 
@@ -483,7 +491,7 @@ def _build_viewmodel_uncached(
             tz,
         )
         vm.ritual_notes = notes_for_day()
-    else:
+    elif not summary_only:
         # Even if extensions are disabled, we should still try to compute basic muhurtas
         # Build a minimal muhurtas_extra for basic calculations
         weekday_index = target_date.weekday()
