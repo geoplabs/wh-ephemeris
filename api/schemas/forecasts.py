@@ -5,6 +5,7 @@ from .charts import ChartInput
 
 class YearlyOptions(BaseModel):
     year: int
+    user_id: Optional[str] = None
     profile_name: Optional[str] = None
     step_days: int = 1
     include_progressions: bool = True
@@ -18,6 +19,7 @@ class YearlyOptions(BaseModel):
 class MonthOptions(BaseModel):
     year: int
     month: int
+    user_id: Optional[str] = None
     profile_name: Optional[str] = None
     step_days: int = 1
     transit_bodies: List[str] = [

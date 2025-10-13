@@ -9,6 +9,9 @@ from datetime import datetime
 from pathlib import Path
 from typing import Any, Dict, Iterable, List, Optional, Tuple
 
+import hashlib
+import re
+
 from zoneinfo import ZoneInfo
 
 from ..routers.charts import compute_chart
@@ -33,20 +36,41 @@ class ForecastSection:
     fallback: str
 
 
-def _resolve_download_url(report_id: str) -> str:
+def _safe_segment(value: str) -> str:
+    cleaned = re.sub(r"[^a-zA-Z0-9]+", "-", value.strip().lower()).strip("-")
+    digest = hashlib.sha256(value.encode("utf-8")).hexdigest()[:8]
+    if cleaned:
+        return f"{cleaned[:48]}-{digest}"
+    return digest
+
+
+def _owner_segment(chart_input: Dict[str, Any], options: Dict[str, Any]) -> Optional[str]:
+    chart_opts = chart_input.get("options") or {}
+    for key in ("user_id", "profile_id", "account_id", "profile_key"):
+        candidate = options.get(key) or chart_opts.get(key)
+        if candidate:
+            return _safe_segment(str(candidate))
+    return None
+
+
+def _resolve_download_url(report_id: str, owner_segment: Optional[str]) -> str:
+    suffix = f"{owner_segment}/{report_id}.pdf" if owner_segment else f"{report_id}.pdf"
+
     base_url = os.getenv("REPORTS_BASE_URL")
     if base_url:
-        return f"{base_url.rstrip('/')}/{report_id}.pdf"
+        return f"{base_url.rstrip('/')}/{suffix}"
 
     app_env = (os.getenv("APP_ENV") or "").lower()
     if app_env in {"prod", "production", "staging", "preview"}:
-        return f"https://api.whathoroscope.com/reports/{report_id}.pdf"
+        return f"https://api.whathoroscope.com/reports/{suffix}"
 
-    return f"/dev-assets/reports/{report_id}.pdf"
+    return f"/dev-assets/reports/{suffix}"
 
 
-def _ensure_storage_path(report_id: str) -> Path:
+def _ensure_storage_path(report_id: str, owner_segment: Optional[str]) -> Path:
     base_dir = Path(os.getenv("REPORTS_STORAGE_DIR", str(DEV_REPORTS_DIR)))
+    if owner_segment:
+        base_dir = base_dir / owner_segment
     base_dir.mkdir(parents=True, exist_ok=True)
     return base_dir / f"{report_id}.pdf"
 
@@ -370,18 +394,20 @@ def generate_yearly_pdf(
     chart_input: Dict[str, Any], options: Dict[str, Any], payload: Dict[str, Any]
 ) -> Tuple[str, str]:
     report_id = f"yrf_{options.get('year')}_{uuid.uuid4().hex[:10]}"
-    out_path = _ensure_storage_path(report_id)
+    owner = _owner_segment(chart_input, options)
+    out_path = _ensure_storage_path(report_id, owner)
     context = build_yearly_pdf_payload(chart_input, options, payload)
     render_western_natal_pdf(context, str(out_path), template_name="yearly_forecast.html.j2")
-    return report_id, _resolve_download_url(report_id)
+    return report_id, _resolve_download_url(report_id, owner)
 
 
 def generate_monthly_pdf(
     chart_input: Dict[str, Any], options: Dict[str, Any], payload: Dict[str, Any]
 ) -> Tuple[str, str]:
     report_id = f"mnf_{options.get('year')}{options.get('month'):02d}_{uuid.uuid4().hex[:8]}"
-    out_path = _ensure_storage_path(report_id)
+    owner = _owner_segment(chart_input, options)
+    out_path = _ensure_storage_path(report_id, owner)
     context = build_monthly_pdf_payload(chart_input, options, payload)
     render_western_natal_pdf(context, str(out_path), template_name="monthly_horoscope.html.j2")
-    return report_id, _resolve_download_url(report_id)
+    return report_id, _resolve_download_url(report_id, owner)
 
