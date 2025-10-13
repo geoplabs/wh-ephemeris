@@ -23,3 +23,7 @@ def test_yearly_forecast_api():
     j = r.json()
     assert "months" in j and "top_events" in j
     assert any(len(v) > 0 for v in j["months"].values())
+    assert j.get("pdf_download_url")
+    pdf_resp = client.get(j["pdf_download_url"])
+    assert pdf_resp.status_code == 200
+    assert pdf_resp.content.startswith(b"%PDF")

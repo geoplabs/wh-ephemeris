@@ -8,6 +8,10 @@ from typing import Dict, Any
 from ..services.inproc_queue import Q
 from ..services.job_store import STORE
 from ..services.pdf_renderer import render_western_natal_pdf, render_viewmodel_pdf
+from ..services.forecast_reports import (
+    build_yearly_pdf_payload,
+    build_monthly_pdf_payload,
+)
 from ..services.wheel_svg import simple_wheel_svg
 
 from ..routers.charts import compute_chart
@@ -37,6 +41,7 @@ def worker_loop() -> None:
             product = payload["product"]
             ci = payload.get("chart_input")
             brand = payload.get("branding") or {}
+            options = payload.get("options") or {}
             out = _ASSETS_BASE / f"{rid}.pdf"
             if product == "western_natal_pdf":
                 data = _build_payload(payload)
@@ -63,18 +68,22 @@ def worker_loop() -> None:
                 )
             elif product == "yearly_forecast_pdf":
                 from ..services.forecast_builders import yearly_payload
-                data = yearly_payload(ci, payload.get("options", {"year": 2025}))
+                payload_opts = options or {"year": 2025}
+                data = yearly_payload(ci, payload_opts)
+                context = build_yearly_pdf_payload(ci, payload_opts, data)
                 render_western_natal_pdf(
-                    data,
+                    context,
                     str(out),
                     branding=brand,
                     template_name="yearly_forecast.html.j2",
                 )
             elif product == "monthly_horoscope_pdf":
                 from ..services.forecast_builders import monthly_payload
-                data = monthly_payload(ci, payload.get("options", {"year": 2025, "month": 8}))
+                payload_opts = options or {"year": 2025, "month": 8}
+                data = monthly_payload(ci, payload_opts)
+                context = build_monthly_pdf_payload(ci, payload_opts, data)
                 render_western_natal_pdf(
-                    data,
+                    context,
                     str(out),
                     branding=brand,
                     template_name="monthly_horoscope.html.j2",

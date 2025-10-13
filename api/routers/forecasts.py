@@ -5,7 +5,13 @@ from ..schemas import (
     MonthlyForecastRequest,
     MonthlyForecastResponse,
 )
+import logging
+
 from ..services.forecast_builders import yearly_payload, monthly_payload
+from ..services.forecast_reports import generate_yearly_pdf, generate_monthly_pdf
+
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/v1/forecasts", tags=["forecasts"])
 
@@ -26,11 +32,19 @@ def compute_yearly(
         },
     )
 ):
-    data = yearly_payload(req.chart_input.model_dump(), req.options.model_dump())
+    chart_input = req.chart_input.model_dump()
+    options = req.options.model_dump()
+    data = yearly_payload(chart_input, options)
+    pdf_url = None
+    try:
+        _, pdf_url = generate_yearly_pdf(chart_input, options, data)
+    except Exception:
+        logger.exception("yearly_pdf_generation_failed")
     return YearlyForecastResponse(
         meta={"year": req.options.year},
         months=data["months"],
         top_events=data["top_events"],
+        pdf_download_url=pdf_url,
     )
 
 
@@ -50,9 +64,17 @@ def compute_monthly(
         },
     )
 ):
-    data = monthly_payload(req.chart_input.model_dump(), req.options.model_dump())
+    chart_input = req.chart_input.model_dump()
+    options = req.options.model_dump()
+    data = monthly_payload(chart_input, options)
+    pdf_url = None
+    try:
+        _, pdf_url = generate_monthly_pdf(chart_input, options, data)
+    except Exception:
+        logger.exception("monthly_pdf_generation_failed")
     return MonthlyForecastResponse(
         meta={"year": req.options.year, "month": req.options.month},
         events=data["events"],
         highlights=data["highlights"],
+        pdf_download_url=pdf_url,
     )

@@ -1,19 +1,149 @@
-<!doctype html>
-<html>
+<!DOCTYPE html>
+<html lang="en">
 <head>
-  <meta charset="utf-8"/>
-  <title>Yearly Forecast</title>
-  <link rel="stylesheet" href="{{ css_href }}"/>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>WhatHoroscope | Yearly Forecast Report</title>
+  <style>
+    body {
+      font-family: 'Poppins', 'Merriweather', serif;
+      color: #222;
+      margin: 0;
+      padding: 0;
+      background-color: #fff;
+    }
+    .cover-page {
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      text-align: center;
+      background: linear-gradient(180deg, #fff 0%, #f9f9f9 100%);
+    }
+    .cover-logo {
+      width: 180px;
+      height: auto;
+      margin-bottom: 1.5rem;
+    }
+    .cover-page h1 {
+      font-size: 3rem;
+      color: crimson;
+      font-weight: 700;
+      letter-spacing: 1px;
+      margin-bottom: 0.5rem;
+    }
+    .cover-page p {
+      font-size: 1.1rem;
+      color: #444;
+      margin-top: 0.3rem;
+    }
+    .divider {
+      width: 80px;
+      height: 4px;
+      background-color: crimson;
+      margin: 1.2rem auto;
+      border-radius: 2px;
+    }
+    .page {
+      padding: 3rem 4rem;
+      background-color: #fff;
+      page-break-after: always;
+    }
+    h2 {
+      color: crimson;
+      font-size: 1.4rem;
+      margin-top: 2rem;
+      border-left: 4px solid crimson;
+      padding-left: 10px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    p {
+      font-size: 1rem;
+      line-height: 1.7;
+      color: #333;
+      margin-bottom: 1.2rem;
+    }
+    .section-entry {
+      margin-bottom: 0.8rem;
+    }
+    .section-entry strong {
+      color: #c21807;
+    }
+    .footer {
+      text-align: center;
+      font-size: 0.9rem;
+      color: #666;
+      border-top: 1px solid #eee;
+      padding-top: 0.8rem;
+      margin-top: 2.5rem;
+    }
+    .watermark {
+      position: fixed;
+      top: 40%;
+      left: 30%;
+      opacity: 0.05;
+      font-size: 5rem;
+      color: crimson;
+      transform: rotate(-30deg);
+      pointer-events: none;
+      z-index: 0;
+    }
+  </style>
 </head>
 <body>
-  <header><h1>Yearly Forecast</h1></header>
-  <section>
-    <h2>Top Events</h2>
-    <ul>
-    {% for e in data.top_events %}
-      <li>{{ e.date }} - {{ e.transit_body }} {{ e.aspect }} {{ e.natal_body }}</li>
+  <div class="cover-page">
+    <img src="{{ branding.logo_url or 'https://whathoroscope.com/logo.png' }}" alt="WhatHoroscope Logo" class="cover-logo" />
+    <h1>{{ data.year }} Yearly Horoscope Report</h1>
+    <div class="divider"></div>
+    <p>Personalized Forecasts &amp; Insights for a Transformative Year</p>
+    <p><strong>Prepared for:</strong> {{ data.prepared_for }}</p>
+    <p><strong>Date Generated:</strong> {{ data.generated_at }}</p>
+    <p style="margin-top:2rem; font-size:0.9rem; color:#777;">© WhatHoroscope.com | Powered by Advanced Ephemeris Intelligence</p>
+  </div>
+
+  <div class="watermark">WhatHoroscope</div>
+
+  {% set first_half = data.sections[:4] %}
+  <div class="page">
+    {% for section in first_half %}
+      <h2>{{ section.index }}) {{ section.title }}</h2>
+      {% if section.entries %}
+        {% for entry in section.entries %}
+          <p class="section-entry"><strong>{{ entry.label }} — {{ entry.headline }}</strong><br/>{{ entry.summary }}</p>
+        {% endfor %}
+      {% else %}
+        <p>{{ section.fallback }}</p>
+      {% endif %}
     {% endfor %}
-    </ul>
-  </section>
+  </div>
+
+  {% set second_half = data.sections[4:8] %}
+  <div class="page">
+    {% for section in second_half %}
+      <h2>{{ section.index }}) {{ section.title }}</h2>
+      {% if section.entries %}
+        {% for entry in section.entries %}
+          <p class="section-entry"><strong>{{ entry.label }} — {{ entry.headline }}</strong><br/>{{ entry.summary }}</p>
+        {% endfor %}
+      {% else %}
+        <p>{{ section.fallback }}</p>
+      {% endif %}
+    {% endfor %}
+  </div>
+
+  <div class="page">
+    <h2>🌙 Monthly Highlights</h2>
+    <p>
+      {% for item in data.monthly_highlights %}
+        <strong>{{ item.month }}:</strong> {{ item.headline }} — {{ item.summary }}<br/>
+      {% endfor %}
+    </p>
+
+    <div class="footer">
+      © {{ data.year }} WhatHoroscope.com | All Rights Reserved | For personal insight use only
+    </div>
+  </div>
 </body>
 </html>

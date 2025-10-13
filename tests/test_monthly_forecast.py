@@ -22,3 +22,7 @@ def test_monthly_forecast_api():
     assert r.status_code == 200
     j = r.json()
     assert "events" in j and len(j["events"]) >= 3
+    assert j.get("pdf_download_url")
+    pdf_resp = client.get(j["pdf_download_url"])
+    assert pdf_resp.status_code == 200
+    assert pdf_resp.content.startswith(b"%PDF")
