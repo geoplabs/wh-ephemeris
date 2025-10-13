@@ -41,7 +41,7 @@ def test_yearly_forecast_pdf_uploads_to_s3(monkeypatch, tmp_path):
 
     monkeypatch.setenv("REPORTS_USE_S3", "true")
     monkeypatch.setenv("S3_BUCKET", "wh-test-bucket")
-    monkeypatch.setenv("REPORTS_BASE_URL", "https://cdn.whathoroscope.com")
+    monkeypatch.setenv("REPORTS_BASE_URL", "https://api.whathoroscope.com")
     monkeypatch.setenv("REPORTS_STORAGE_DIR", str(tmp_path))
 
     # Clear cached client between env toggles
@@ -75,7 +75,7 @@ def test_yearly_forecast_pdf_uploads_to_s3(monkeypatch, tmp_path):
 
     assert uploads["key"].startswith("reports/")
     assert rid in uploads["key"]
-    assert url == f"https://cdn.whathoroscope.com/{uploads['key']}"
+    assert url == f"https://api.whathoroscope.com/{uploads['key']}"
     assert uploads["path"].exists()
 
     if hasattr(fr._get_s3_client, "cache_clear"):
