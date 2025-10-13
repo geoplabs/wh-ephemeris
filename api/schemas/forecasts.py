@@ -5,6 +5,8 @@ from .charts import ChartInput
 
 class YearlyOptions(BaseModel):
     year: int
+    user_id: Optional[str] = None
+    profile_name: Optional[str] = None
     step_days: int = 1
     include_progressions: bool = True
     transit_bodies: List[str] = ["Sun", "Mercury", "Venus", "Mars", "Jupiter", "Saturn"]
@@ -17,6 +19,8 @@ class YearlyOptions(BaseModel):
 class MonthOptions(BaseModel):
     year: int
     month: int
+    user_id: Optional[str] = None
+    profile_name: Optional[str] = None
     step_days: int = 1
     transit_bodies: List[str] = [
         "Sun",
@@ -57,9 +61,11 @@ class YearlyForecastResponse(BaseModel):
     meta: Dict[str, Any]
     months: Dict[str, List[ForecastEvent]]
     top_events: List[ForecastEvent]
+    pdf_download_url: Optional[str] = None
 
 
 class MonthlyForecastResponse(BaseModel):
     meta: Dict[str, Any]
     events: List[ForecastEvent]
     highlights: List[ForecastEvent]
+    pdf_download_url: Optional[str] = None

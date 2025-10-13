@@ -17,8 +17,16 @@ def _ci():
 def test_monthly_forecast_api():
     r = client.post(
         "/v1/forecasts/monthly",
-        json={"chart_input": _ci(), "options": {"year": 1990, "month": 9}},
+        json={
+            "chart_input": _ci(),
+            "options": {"year": 1990, "month": 9, "user_id": "user-1234"},
+        },
     )
     assert r.status_code == 200
     j = r.json()
     assert "events" in j and len(j["events"]) >= 3
+    assert j.get("pdf_download_url")
+    assert "/user-1234" in j["pdf_download_url"]
+    pdf_resp = client.get(j["pdf_download_url"])
+    assert pdf_resp.status_code == 200
+    assert pdf_resp.content.startswith(b"%PDF")
