@@ -78,14 +78,23 @@ def compute_transits(chart_input: Dict[str,Any], opts: Dict[str,Any]) -> List[Di
                     if abs(d - a_exact) <= orb_limit:
                         orb = round(abs(d - a_exact), 2)
                         score = _severity_score(a_name, orb, orb_limit, t_name)
+                        applying = t_pos["speed_lon"] > n_pos["speed_lon"]
+                        phase = "Applying" if applying else "Separating"
+                        transit_sign = sign_name_from_lon(t_pos["lon"])
+                        natal_sign = sign_name_from_lon(n_pos["lon"])
+                        note = (
+                            f"{phase} {a_name} at {orb:.2f}° orb. "
+                            f"{t_name} in {transit_sign}; {n_name} in {natal_sign}."
+                        )
                         events.append({
                             "date": dt.date().isoformat(),
                             "transit_body": t_name,
                             "natal_body": n_name,
                             "aspect": a_name,
                             "orb": orb,
-                            "applying": t_pos["speed_lon"] > n_pos["speed_lon"],
-                            "score": score
+                            "applying": applying,
+                            "score": score,
+                            "note": note,
                         })
     # Sort: date then score desc
     events.sort(key=lambda e: (e["date"], -e["score"]))
