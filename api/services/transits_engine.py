@@ -7,6 +7,63 @@ ASPECT_WEIGHTS = {"conjunction":5, "opposition":4, "square":3, "trine":2, "sexti
 PLANET_WEIGHTS = {"Saturn":3,"Jupiter":2,"Mars":2,"Sun":1,"Venus":1,"Mercury":1,"Moon":0.5,
                   "Uranus":3,"Neptune":3,"Pluto":3,"TrueNode":1,"Chiron":1}
 
+PLANET_EXPRESSIONS: Dict[str, Dict[str, str]] = {
+    "Sun": {"descriptor": "Radiant", "theme": "self-expression"},
+    "Moon": {"descriptor": "Sensitive", "theme": "emotional rhythms"},
+    "Mercury": {"descriptor": "Curious", "theme": "communication"},
+    "Venus": {"descriptor": "Harmonizing", "theme": "relationships"},
+    "Mars": {"descriptor": "Passionate", "theme": "drive"},
+    "Jupiter": {"descriptor": "Expansive", "theme": "growth"},
+    "Saturn": {"descriptor": "Disciplined", "theme": "responsibilities"},
+    "Uranus": {"descriptor": "Liberating", "theme": "innovation"},
+    "Neptune": {"descriptor": "Inspired", "theme": "imagination"},
+    "Pluto": {"descriptor": "Transformative", "theme": "personal power"},
+    "TrueNode": {"descriptor": "Destined", "theme": "life direction"},
+    "Chiron": {"descriptor": "Healing", "theme": "inner growth"},
+    "Ascendant": {"descriptor": "Emergent", "theme": "outer persona"},
+    "Midheaven": {"descriptor": "Aspirational", "theme": "public ambitions"},
+}
+
+ASPECT_PHRASES = {
+    "conjunction": "energy in",
+    "opposition": "tension to balance within",
+    "square": "challenges around",
+    "trine": "period for",
+    "sextile": "opportunity for",
+}
+
+ASPECT_GUIDANCE = {
+    "conjunction": "Channel this focus with intention.",
+    "opposition": "Find healthy compromise to integrate both sides.",
+    "square": "Take decisive steps to work through the friction.",
+    "trine": "Trust the momentum and share your gifts.",
+    "sextile": "Say yes to supportive openings as they arise.",
+}
+
+def _intensity_adverb(score: float) -> str:
+    if score >= 8.5:
+        return "Powerfully"
+    if score >= 7.0:
+        return "Strongly"
+    if score >= 5.5:
+        return "Notably"
+    if score >= 3.5:
+        return "Gently"
+    return "Subtly"
+
+def _interpretive_note(transit_body: str, natal_body: str, aspect: str, score: float) -> str:
+    t_expr = PLANET_EXPRESSIONS.get(transit_body, {"descriptor": "Dynamic", "theme": "momentum"})
+    n_expr = PLANET_EXPRESSIONS.get(natal_body, {"descriptor": "core", "theme": "life areas"})
+    tone = ASPECT_PHRASES.get(aspect, "influence on")
+    guidance = ASPECT_GUIDANCE.get(aspect, "Stay mindful of the shifting tone.")
+    adverb = _intensity_adverb(score)
+    descriptor = t_expr["descriptor"]
+    theme = n_expr["theme"]
+    headline = f"{adverb} {descriptor.lower()} {tone} {theme}".strip()
+    # Capitalize first letter for readability
+    headline = headline[0].upper() + headline[1:]
+    return f"{headline}. {guidance}"
+
 def _utc_date(y,m,d,h=12)->datetime:
     return datetime(y,m,d,h,0,0,tzinfo=timezone.utc)
 
@@ -78,14 +135,24 @@ def compute_transits(chart_input: Dict[str,Any], opts: Dict[str,Any]) -> List[Di
                     if abs(d - a_exact) <= orb_limit:
                         orb = round(abs(d - a_exact), 2)
                         score = _severity_score(a_name, orb, orb_limit, t_name)
+                        applying = t_pos["speed_lon"] > n_pos["speed_lon"]
+                        phase = "Applying" if applying else "Separating"
+                        transit_sign = sign_name_from_lon(t_pos["lon"])
+                        natal_sign = sign_name_from_lon(n_pos["lon"])
+                        note = (
+                            f"{_interpretive_note(t_name, n_name, a_name, score)} "
+                            f"{phase} {a_name} at {orb:.2f}° orb. "
+                            f"{t_name} in {transit_sign}; {n_name} in {natal_sign}."
+                        )
                         events.append({
                             "date": dt.date().isoformat(),
                             "transit_body": t_name,
                             "natal_body": n_name,
                             "aspect": a_name,
                             "orb": orb,
-                            "applying": t_pos["speed_lon"] > n_pos["speed_lon"],
-                            "score": score
+                            "applying": applying,
+                            "score": score,
+                            "note": note,
                         })
     # Sort: date then score desc
     events.sort(key=lambda e: (e["date"], -e["score"]))
