@@ -261,6 +261,7 @@ class DailyPanchangSummary(BaseModel):
     yoga: SegmentVM
     karana: SegmentVM
     paksha: str
+    changes: PanchangChanges = Field(default_factory=PanchangChanges)
 
 
 class WeeklyPanchangViewModel(BaseModel):

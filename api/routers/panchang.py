@@ -633,7 +633,8 @@ def panchang_week(
             nakshatra=vm.nakshatra,
             yoga=vm.yoga,
             karana=vm.karana,
-            paksha=vm.lunar.paksha
+            paksha=vm.lunar.paksha,
+            changes=vm.changes,
         )
         days.append(daily_summary)
     
@@ -732,7 +733,8 @@ def panchang_month(
             nakshatra=vm.nakshatra,
             yoga=vm.yoga,
             karana=vm.karana,
-            paksha=vm.lunar.paksha
+            paksha=vm.lunar.paksha,
+            changes=vm.changes,
         )
         days.append(daily_summary)
         current_date += timedelta(days=1)
