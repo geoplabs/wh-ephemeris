@@ -3,11 +3,14 @@
 from __future__ import annotations
 
 import asyncio
-from concurrent.futures import ThreadPoolExecutor, ProcessPoolExecutor
+import multiprocessing
+import os
+from concurrent.futures import ProcessPoolExecutor
+from datetime import datetime, timedelta
+from typing import Any, Dict, Optional
+
 from fastapi import APIRouter, Body, Query
 from pydantic import BaseModel, Field
-from typing import Optional, Dict, Any
-from datetime import datetime, timedelta
 
 from zoneinfo import ZoneInfo
 
@@ -18,14 +21,18 @@ from ..services.panchang_report import generate_panchang_report
 
 router = APIRouter(prefix="/v1/panchang", tags=["panchang"])
 
-# Process pool for parallel panchang calculations
-_process_pool = None
+_process_pool: ProcessPoolExecutor | None = None
 
-def _get_process_pool():
+
+def _get_process_pool() -> ProcessPoolExecutor:
+    """Return a lazily-initialised process pool tuned for CPU-bound work."""
+
     global _process_pool
     if _process_pool is None:
-        # Use 8 workers for better parallelism
-        _process_pool = ProcessPoolExecutor(max_workers=8)
+        # Limit workers so we do not overwhelm shared container CPUs.
+        max_workers = min(8, max(1, os.cpu_count() or 1))
+        ctx = multiprocessing.get_context("spawn")
+        _process_pool = ProcessPoolExecutor(max_workers=max_workers, mp_context=ctx)
     return _process_pool
 
 def _compute_single_panchang(args):
@@ -640,21 +647,19 @@ async def panchang_week(
     }
     
     # Prepare tasks for parallel execution using ProcessPoolExecutor
-    loop = asyncio.get_event_loop()
+    loop = asyncio.get_running_loop()
     pool = _get_process_pool()
-    
-    # Build arguments for all days
+
+    # Execute all days in parallel using process pool
     tasks = []
     for i in range(7):
         current_date = start_dt + timedelta(days=i)
         date_str = current_date.strftime("%Y-%m-%d")
-        tasks.append((date_str, place, options))
-    
-    # Execute all days in parallel using process pool
-    results = await asyncio.gather(*[
-        loop.run_in_executor(pool, _compute_single_panchang, task)
-        for task in tasks
-    ])
+        tasks.append(
+            loop.run_in_executor(pool, _compute_single_panchang, (date_str, place, options))
+        )
+
+    results = await asyncio.gather(*tasks)
     
     # Convert results to DailyPanchangSummary
     days = [
@@ -673,13 +678,24 @@ async def panchang_week(
         for vm in results
     ]
     
-    # Build metadata
+    # Build metadata (prefer resolved details from the computed payload)
     end_dt = start_dt + timedelta(days=6)
+    reference_header = results[0].header if results else None
     meta = {
         "start_date": start_dt.strftime("%Y-%m-%d"),
         "end_date": end_dt.strftime("%Y-%m-%d"),
-        "place_label": place.get("query") if place else "Default Location",
-        "tz": place.get("tz") if place else "Asia/Kolkata",
+        "place_label": (
+            reference_header.place_label
+            if reference_header and reference_header.place_label
+            else place.get("query") if place and place.get("query")
+            else "Default Location"
+        ),
+        "tz": (
+            reference_header.tz
+            if reference_header and reference_header.tz
+            else place.get("tz") if place and place.get("tz")
+            else "Asia/Kolkata"
+        ),
         "ayanamsha": ayanamsha,
         "locale": {"lang": lang, "script": script}
     }
@@ -755,21 +771,19 @@ async def panchang_month(
     num_days = (end_dt - start_dt).days + 1
     
     # Prepare tasks for parallel execution using ProcessPoolExecutor
-    loop = asyncio.get_event_loop()
+    loop = asyncio.get_running_loop()
     pool = _get_process_pool()
-    
-    # Build arguments for all days
+
+    # Execute all days in parallel using process pool
     tasks = []
     for i in range(num_days):
         current_date = start_dt + timedelta(days=i)
         date_str = current_date.strftime("%Y-%m-%d")
-        tasks.append((date_str, place, options))
-    
-    # Execute all days in parallel using process pool
-    results = await asyncio.gather(*[
-        loop.run_in_executor(pool, _compute_single_panchang, task)
-        for task in tasks
-    ])
+        tasks.append(
+            loop.run_in_executor(pool, _compute_single_panchang, (date_str, place, options))
+        )
+
+    results = await asyncio.gather(*tasks)
     
     # Convert results to DailyPanchangSummary
     days = [
@@ -793,7 +807,8 @@ async def panchang_month(
         "January", "February", "March", "April", "May", "June",
         "July", "August", "September", "October", "November", "December"
     ]
-    
+
+    reference_header = results[0].header if results else None
     meta = {
         "year": target_year,
         "month": target_month,
@@ -801,8 +816,18 @@ async def panchang_month(
         "start_date": start_dt.strftime("%Y-%m-%d"),
         "end_date": end_dt.strftime("%Y-%m-%d"),
         "total_days": len(days),
-        "place_label": place.get("query") if place else "Default Location",
-        "tz": place.get("tz") if place else "Asia/Kolkata",
+        "place_label": (
+            reference_header.place_label
+            if reference_header and reference_header.place_label
+            else place.get("query") if place and place.get("query")
+            else "Default Location"
+        ),
+        "tz": (
+            reference_header.tz
+            if reference_header and reference_header.tz
+            else place.get("tz") if place and place.get("tz")
+            else "Asia/Kolkata"
+        ),
         "ayanamsha": ayanamsha,
         "locale": {"lang": lang, "script": script}
     }
