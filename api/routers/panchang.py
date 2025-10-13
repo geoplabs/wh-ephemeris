@@ -85,6 +85,9 @@ def panchang_compute(
     place_payload = req.place.model_dump(exclude_none=True) if req.place else None
     place = _clamp_place(place_payload)
     options = req.options.model_dump()
+    # Ensure summary-only optimizations stay disabled for compute endpoint
+    options.setdefault("summary_only", False)
+    options.setdefault("include_extensions", True)
     return build_viewmodel(req.system, req.date, place, options)
 
 
@@ -549,6 +552,8 @@ def panchang_today(
         "lang": lang,
         "script": script,
         "show_bilingual": show_bilingual,
+        "summary_only": False,
+        "include_extensions": True,
     }
     place_payload: Dict[str, Any] = {}
     if lat is not None:
@@ -618,6 +623,8 @@ def panchang_week(
             "lang": lang,
             "script": script,
             "show_bilingual": False,
+            "summary_only": True,
+            "include_extensions": False,
         }
         
         # Get full Panchang data
@@ -718,6 +725,8 @@ def panchang_month(
             "lang": lang,
             "script": script,
             "show_bilingual": False,
+            "summary_only": True,
+            "include_extensions": False,
         }
         
         # Get full Panchang data
@@ -780,6 +789,8 @@ class PanchangReportRequest(BaseModel):
 def panchang_report(req: PanchangReportRequest):
     place = _clamp_place(req.place)
     options = dict(req.options or {})
+    options.setdefault("summary_only", False)
+    options.setdefault("include_extensions", True)
     vm = build_viewmodel("vedic", req.date, place, options)
     report = generate_panchang_report(vm)
     return report
