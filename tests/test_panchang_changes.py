@@ -122,3 +122,39 @@ def test_current_matches_changes_covering_now():
         return period["start_ts"] <= target <= period["end_ts"]
 
     assert any(covers(now, period) for period in periods)
+
+
+def test_weekly_summary_exposes_changes_block():
+    response = client.get(
+        "/v1/panchang/week",
+        params={
+            "lat": 28.6139,
+            "lon": 77.2090,
+            "tz": "Asia/Kolkata",
+        },
+    )
+    assert response.status_code == 200, response.text
+    payload = response.json()
+    assert payload["days"], "weekly payload should include days"
+    first_day = payload["days"][0]
+    assert "changes" in first_day
+    assert first_day["changes"]["tithi_periods"]
+
+
+def test_monthly_summary_exposes_changes_block():
+    response = client.get(
+        "/v1/panchang/month",
+        params={
+            "year": 2024,
+            "month": 1,
+            "lat": 12.9716,
+            "lon": 77.5946,
+            "tz": "Asia/Kolkata",
+        },
+    )
+    assert response.status_code == 200, response.text
+    payload = response.json()
+    assert payload["days"], "monthly payload should include days"
+    first_day = payload["days"][0]
+    assert "changes" in first_day
+    assert first_day["changes"]["tithi_periods"]
