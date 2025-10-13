@@ -2,10 +2,12 @@
 
 from __future__ import annotations
 
+import logging
 import os
 import uuid
 from dataclasses import dataclass
 from datetime import datetime
+from functools import lru_cache
 from pathlib import Path
 from typing import Any, Dict, Iterable, List, Optional, Tuple
 
@@ -20,6 +22,8 @@ from .pdf_renderer import render_western_natal_pdf
 
 DEV_REPORTS_DIR = Path(os.getenv("HOME", "/opt/app")) / "data" / "dev-assets" / "reports"
 DEV_REPORTS_DIR.mkdir(parents=True, exist_ok=True)
+
+logger = logging.getLogger(__name__)
 
 
 SUPPORTIVE = {"trine", "sextile"}
@@ -53,18 +57,115 @@ def _owner_segment(chart_input: Dict[str, Any], options: Dict[str, Any]) -> Opti
     return None
 
 
-def _resolve_download_url(report_id: str, owner_segment: Optional[str]) -> str:
-    suffix = f"{owner_segment}/{report_id}.pdf" if owner_segment else f"{report_id}.pdf"
+def _should_use_s3() -> bool:
+    flag = (os.getenv("REPORTS_USE_S3") or "").strip().lower()
+    if flag in {"1", "true", "yes", "on"}:
+        return True
+    if flag in {"0", "false", "no", "off"}:
+        return False
+    app_env = (os.getenv("APP_ENV") or "").lower()
+    return app_env in {"prod", "production", "staging", "preview"}
+
+
+def _s3_bucket() -> Optional[str]:
+    bucket = os.getenv("S3_BUCKET")
+    if bucket:
+        return bucket
+    return None
+
+
+def _report_storage_key(report_id: str, owner_segment: Optional[str]) -> str:
+    prefix = (os.getenv("REPORTS_S3_PREFIX") or "reports").strip("/")
+    base = f"{owner_segment}/{report_id}.pdf" if owner_segment else f"{report_id}.pdf"
+    if prefix:
+        return f"{prefix}/{base}"
+    return base
+
+
+@lru_cache(maxsize=1)
+def _get_s3_client():  # pragma: no cover - exercised via integration tests
+    if not _should_use_s3():
+        return None
+    bucket = _s3_bucket()
+    if not bucket:
+        logger.warning("report_s3_bucket_missing")
+        return None
+    try:  # Lazy import to keep optional dependency light for tests
+        import boto3
+        from botocore.config import Config
+    except Exception:  # pragma: no cover - boto3 unavailable
+        logger.exception("report_s3_import_failed")
+        return None
+
+    region = os.getenv("AWS_REGION", "us-east-1")
+    endpoint = os.getenv("AWS_ENDPOINT_URL") or os.getenv("S3_ENDPOINT_URL")
+    signature = os.getenv("AWS_S3_SIGNATURE_VERSION", "s3v4")
+
+    session = boto3.session.Session()
+    kwargs: Dict[str, Any] = {"region_name": region, "config": Config(signature_version=signature)}
+    if endpoint:
+        kwargs["endpoint_url"] = endpoint
+
+    access = os.getenv("AWS_ACCESS_KEY_ID")
+    secret = os.getenv("AWS_SECRET_ACCESS_KEY")
+    token = os.getenv("AWS_SESSION_TOKEN")
+    if access and secret:
+        kwargs["aws_access_key_id"] = access
+        kwargs["aws_secret_access_key"] = secret
+    if token:
+        kwargs["aws_session_token"] = token
+
+    return session.client("s3", **kwargs)
+
+
+def _upload_to_s3(local_path: Path, storage_key: str) -> bool:
+    client = _get_s3_client()
+    bucket = _s3_bucket()
+    if not client or not bucket:
+        return False
+    try:
+        client.upload_file(
+            str(local_path),
+            bucket,
+            storage_key,
+            ExtraArgs={"ContentType": "application/pdf", "ACL": os.getenv("REPORTS_S3_ACL", "private")},
+        )
+        return True
+    except Exception:
+        logger.exception("report_upload_failed", extra={"key": storage_key})
+        return False
+
+
+def _resolve_download_url(
+    report_id: str, owner_segment: Optional[str], storage_key: Optional[str] = None
+) -> str:
+    key = storage_key or _report_storage_key(report_id, owner_segment)
 
     base_url = os.getenv("REPORTS_BASE_URL")
     if base_url:
-        return f"{base_url.rstrip('/')}/{suffix}"
+        return f"{base_url.rstrip('/')}/{key}"
+
+    client = _get_s3_client()
+    bucket = _s3_bucket()
+    if storage_key and client and bucket:
+        try:
+            ttl = int(os.getenv("REPORTS_PRESIGNED_TTL", "86400"))
+        except ValueError:
+            ttl = 86400
+        try:
+            return client.generate_presigned_url(
+                "get_object",
+                Params={"Bucket": bucket, "Key": storage_key},
+                ExpiresIn=ttl,
+            )
+        except Exception:
+            logger.exception("report_presign_failed", extra={"key": storage_key})
 
     app_env = (os.getenv("APP_ENV") or "").lower()
     if app_env in {"prod", "production", "staging", "preview"}:
-        return f"https://api.whathoroscope.com/reports/{suffix}"
+        return f"https://api.whathoroscope.com/{key}"
 
-    return f"/dev-assets/reports/{suffix}"
+    return f"/dev-assets/{key}"
 
 
 def _ensure_storage_path(report_id: str, owner_segment: Optional[str]) -> Path:
@@ -398,7 +499,9 @@ def generate_yearly_pdf(
     out_path = _ensure_storage_path(report_id, owner)
     context = build_yearly_pdf_payload(chart_input, options, payload)
     render_western_natal_pdf(context, str(out_path), template_name="yearly_forecast.html.j2")
-    return report_id, _resolve_download_url(report_id, owner)
+    storage_key = _report_storage_key(report_id, owner)
+    uploaded = _upload_to_s3(out_path, storage_key)
+    return report_id, _resolve_download_url(report_id, owner, storage_key if uploaded else None)
 
 
 def generate_monthly_pdf(
@@ -409,5 +512,7 @@ def generate_monthly_pdf(
     out_path = _ensure_storage_path(report_id, owner)
     context = build_monthly_pdf_payload(chart_input, options, payload)
     render_western_natal_pdf(context, str(out_path), template_name="monthly_horoscope.html.j2")
-    return report_id, _resolve_download_url(report_id, owner)
+    storage_key = _report_storage_key(report_id, owner)
+    uploaded = _upload_to_s3(out_path, storage_key)
+    return report_id, _resolve_download_url(report_id, owner, storage_key if uploaded else None)
 
