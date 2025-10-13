@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import asyncio
+from concurrent.futures import ThreadPoolExecutor, ProcessPoolExecutor
 from fastapi import APIRouter, Body, Query
 from pydantic import BaseModel, Field
 from typing import Optional, Dict, Any
@@ -15,6 +17,22 @@ from ..services.panchang_report import generate_panchang_report
 
 
 router = APIRouter(prefix="/v1/panchang", tags=["panchang"])
+
+# Process pool for parallel panchang calculations
+_process_pool = None
+
+def _get_process_pool():
+    global _process_pool
+    if _process_pool is None:
+        # Use 8 workers for better parallelism
+        _process_pool = ProcessPoolExecutor(max_workers=8)
+    return _process_pool
+
+def _compute_single_panchang(args):
+    """Worker function for parallel panchang computation."""
+    date_str, place, options = args
+    from ..services.orchestrators.panchang_full import build_viewmodel
+    return build_viewmodel("vedic", date_str, place, options)
 
 
 class PanchangPlace(BaseModel):
@@ -85,6 +103,9 @@ def panchang_compute(
     place_payload = req.place.model_dump(exclude_none=True) if req.place else None
     place = _clamp_place(place_payload)
     options = req.options.model_dump()
+     # Ensure summary-only optimizations stay disabled for compute endpoint
+    options.setdefault("summary_only", False)
+    options.setdefault("include_extensions", True)
     return build_viewmodel(req.system, req.date, place, options)
 
 
@@ -549,6 +570,8 @@ def panchang_today(
         "lang": lang,
         "script": script,
         "show_bilingual": show_bilingual,
+        "summary_only": False,
+        "include_extensions": True,
     }
     place_payload: Dict[str, Any] = {}
     if lat is not None:
@@ -569,7 +592,7 @@ def panchang_today(
     summary="Get Panchang for a whole week",
     description="Returns simplified Panchang data for 7 consecutive days starting from the specified date (or current week if no date provided)"
 )
-def panchang_week(
+async def panchang_week(
     start_date: Optional[str] = Query(None, description="Start date (YYYY-MM-DD). If not provided, uses current week starting from Monday"),
     lat: Optional[float] = Query(None, ge=-90.0, le=90.0, description="Latitude"),
     lon: Optional[float] = Query(None, ge=-180.0, le=180.0, description="Longitude"),
@@ -604,27 +627,38 @@ def panchang_week(
         place_payload["query"] = place_label
     place = _clamp_place(place_payload or None)
     
-    # Generate Panchang for 7 days
-    days = []
+    # Build simplified options (no muhurta/hora for performance)
+    options = {
+        "ayanamsha": ayanamsha,
+        "include_muhurta": False,
+        "include_hora": False,
+        "lang": lang,
+        "script": script,
+        "show_bilingual": False,
+        "summary_only": True,
+        "include_extensions": False,
+    }
+    
+    # Prepare tasks for parallel execution using ProcessPoolExecutor
+    loop = asyncio.get_event_loop()
+    pool = _get_process_pool()
+    
+    # Build arguments for all days
+    tasks = []
     for i in range(7):
         current_date = start_dt + timedelta(days=i)
         date_str = current_date.strftime("%Y-%m-%d")
-        
-        # Build simplified options (no muhurta/hora for performance)
-        options = {
-            "ayanamsha": ayanamsha,
-            "include_muhurta": False,
-            "include_hora": False,
-            "lang": lang,
-            "script": script,
-            "show_bilingual": False,
-        }
-        
-        # Get full Panchang data
-        vm = build_viewmodel("vedic", date_str, place, options)
-        
-        # Create simplified summary
-        daily_summary = DailyPanchangSummary(
+        tasks.append((date_str, place, options))
+    
+    # Execute all days in parallel using process pool
+    results = await asyncio.gather(*[
+        loop.run_in_executor(pool, _compute_single_panchang, task)
+        for task in tasks
+    ])
+    
+    # Convert results to DailyPanchangSummary
+    days = [
+        DailyPanchangSummary(
             date_local=vm.header.date_local,
             weekday=vm.header.weekday,
             solar=vm.solar,
@@ -636,7 +670,8 @@ def panchang_week(
             paksha=vm.lunar.paksha,
             changes=vm.changes,
         )
-        days.append(daily_summary)
+        for vm in results
+    ]
     
     # Build metadata
     end_dt = start_dt + timedelta(days=6)
@@ -666,7 +701,7 @@ def panchang_week(
     summary="Get Panchang for a whole month",
     description="Returns simplified Panchang data for all days in the specified month (or current month if not provided)"
 )
-def panchang_month(
+async def panchang_month(
     year: Optional[int] = Query(None, description="Year (YYYY). If not provided, uses current year"),
     month: Optional[int] = Query(None, ge=1, le=12, description="Month (1-12). If not provided, uses current month"),
     lat: Optional[float] = Query(None, ge=-90.0, le=90.0, description="Latitude"),
@@ -704,27 +739,41 @@ def panchang_month(
         place_payload["query"] = place_label
     place = _clamp_place(place_payload or None)
     
-    # Generate Panchang for all days in month
-    days = []
-    current_date = start_dt
-    while current_date <= end_dt:
+    # Build simplified options (no muhurta/hora for performance)
+    options = {
+        "ayanamsha": ayanamsha,
+        "include_muhurta": False,
+        "include_hora": False,
+        "lang": lang,
+        "script": script,
+        "show_bilingual": False,
+        "summary_only": True,
+        "include_extensions": False,
+    }
+    
+    # Calculate number of days
+    num_days = (end_dt - start_dt).days + 1
+    
+    # Prepare tasks for parallel execution using ProcessPoolExecutor
+    loop = asyncio.get_event_loop()
+    pool = _get_process_pool()
+    
+    # Build arguments for all days
+    tasks = []
+    for i in range(num_days):
+        current_date = start_dt + timedelta(days=i)
         date_str = current_date.strftime("%Y-%m-%d")
-        
-        # Build simplified options (no muhurta/hora for performance)
-        options = {
-            "ayanamsha": ayanamsha,
-            "include_muhurta": False,
-            "include_hora": False,
-            "lang": lang,
-            "script": script,
-            "show_bilingual": False,
-        }
-        
-        # Get full Panchang data
-        vm = build_viewmodel("vedic", date_str, place, options)
-        
-        # Create simplified summary
-        daily_summary = DailyPanchangSummary(
+        tasks.append((date_str, place, options))
+    
+    # Execute all days in parallel using process pool
+    results = await asyncio.gather(*[
+        loop.run_in_executor(pool, _compute_single_panchang, task)
+        for task in tasks
+    ])
+    
+    # Convert results to DailyPanchangSummary
+    days = [
+        DailyPanchangSummary(
             date_local=vm.header.date_local,
             weekday=vm.header.weekday,
             solar=vm.solar,
@@ -736,8 +785,8 @@ def panchang_month(
             paksha=vm.lunar.paksha,
             changes=vm.changes,
         )
-        days.append(daily_summary)
-        current_date += timedelta(days=1)
+        for vm in results
+    ]
     
     # Build metadata
     month_names = [
@@ -780,6 +829,8 @@ class PanchangReportRequest(BaseModel):
 def panchang_report(req: PanchangReportRequest):
     place = _clamp_place(req.place)
     options = dict(req.options or {})
+    options.setdefault("summary_only", False)
+    options.setdefault("include_extensions", True)
     vm = build_viewmodel("vedic", req.date, place, options)
     report = generate_panchang_report(vm)
     return report

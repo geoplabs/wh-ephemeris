@@ -82,7 +82,7 @@ logger = logging.getLogger(__name__)
 
 
 CACHE: Dict[str, tuple[float, PanchangViewModel]] = {}
-TTL_SECONDS = 900
+TTL_SECONDS = 3600  # 1 hour cache for better performance
 
 
 def _ext_enabled() -> bool:
@@ -167,6 +167,8 @@ def _build_cache_key(date_value: date_cls, place: Dict[str, Any], options: Dict[
     ayanamsha = options.get("ayanamsha", "lahiri")
     include_muhurta = bool(options.get("include_muhurta", True))
     include_hora = bool(options.get("include_hora", False))
+    include_extensions = bool(options.get("include_extensions", True))
+    summary_only = bool(options.get("summary_only", False))
     lang = options.get("lang", "en")
     script = options.get("script", "latin")
     show_bilingual = bool(options.get("show_bilingual", False))
@@ -175,7 +177,7 @@ def _build_cache_key(date_value: date_cls, place: Dict[str, Any], options: Dict[
     tz = place["tz"]
     return (
         f"panchang:{date_value.isoformat()}:{lat:.4f}:{lon:.4f}:{tz}:{ayanamsha}"
-        f":{int(include_muhurta)}:{int(include_hora)}:{lang}:{script}:{int(show_bilingual)}"
+        f":{int(include_muhurta)}:{int(include_hora)}:{int(include_extensions)}:{int(summary_only)}:{lang}:{script}:{int(show_bilingual)}"
     )
 
 
@@ -226,6 +228,8 @@ def _build_viewmodel_uncached(
     ayanamsha = options.get("ayanamsha", "lahiri")
     include_muhurta = bool(options.get("include_muhurta", True))
     include_hora = bool(options.get("include_hora", False))
+    include_extensions = bool(options.get("include_extensions", True))
+    summary_only = bool(options.get("summary_only", False))
     lang = options.get("lang", "en")
     script = options.get("script", "latin")
     start_of_day = datetime.combine(target_date, time_cls(0, 0), tzinfo=tz)
@@ -307,7 +311,12 @@ def _build_viewmodel_uncached(
         span_note = "Crosses civil midnight"
 
     weekday = _weekday_name(target_date)
-    muhurta_blocks = compute_muhurta_blocks(sunrise, sunset, weekday)
+    
+    # Skip expensive computations in summary mode
+    muhurta_blocks = {}
+    if include_muhurta and not summary_only:
+        muhurta_blocks = compute_muhurta_blocks(sunrise, sunset, weekday)
+    
     # windows will be built later after muhurtas_extra is available
     hora_labels = []
     horas_structured = None
@@ -315,7 +324,9 @@ def _build_viewmodel_uncached(
         hora_labels = _build_horas(sunrise, sunset, next_sunrise, weekday, lang, script)
         horas_structured = _build_horas_structured(sunrise, sunset, next_sunrise, weekday, lang, script)
 
-    assets = AssetsVM(day_strip_svg=build_day_strip_svg())
+    # Skip SVG generation in summary mode
+    day_strip_svg = None if summary_only else build_day_strip_svg()
+    assets = AssetsVM(day_strip_svg=day_strip_svg)
 
     ritu_drik_name = ritu_drik(sun_long_tropical)
     ritu_vedic_name = ritu_vedic(sun_long_sidereal)
@@ -436,9 +447,14 @@ def _build_viewmodel_uncached(
         horas=horas_structured,  # Include full hora data when include_hora=true
     )
 
-    ext_on = _ext_enabled()
-    ext_fest = _festivals_enabled()
+    ext_on = _ext_enabled() and include_extensions
+    ext_fest = _festivals_enabled() and include_extensions
     ritu_conv = _ritu_convention()
+
+    # For summary_only mode, skip all expensive extensions
+    if summary_only:
+        ext_on = False
+        ext_fest = False
 
     if ext_on:
         nak_periods = [period.model_dump() for period in vm.changes.nakshatra_periods]

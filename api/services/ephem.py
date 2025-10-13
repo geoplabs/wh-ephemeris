@@ -11,7 +11,10 @@ import swisseph as swe
 
 
 # Engine version for API responses
-ENGINE_VERSION = f"swisseph-{swe.version}"
+try:
+    ENGINE_VERSION = f"swisseph-{swe.version}"
+except AttributeError:
+    ENGINE_VERSION = "swisseph-2.10"  # Fallback if version not available
 
 BODIES: Dict[str, int] = {
     "Sun": swe.SUN,
