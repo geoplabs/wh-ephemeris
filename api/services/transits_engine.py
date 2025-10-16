@@ -1,6 +1,7 @@
 from datetime import datetime, timedelta, timezone
 from typing import Dict, Any, List
 from . import ephem, aspects as aspects_svc, houses as houses_svc
+from .transit_math import is_applying
 from .constants import sign_name_from_lon
 
 ASPECT_WEIGHTS = {"conjunction":5, "opposition":4, "square":3, "trine":2, "sextile":1}
@@ -135,7 +136,13 @@ def compute_transits(chart_input: Dict[str,Any], opts: Dict[str,Any]) -> List[Di
                     if abs(d - a_exact) <= orb_limit:
                         orb = round(abs(d - a_exact), 2)
                         score = _severity_score(a_name, orb, orb_limit, t_name)
-                        applying = t_pos["speed_lon"] > n_pos["speed_lon"]
+                        applying = is_applying(
+                            t_pos["lon"],
+                            t_pos["speed_lon"],
+                            n_pos["lon"],
+                            n_pos["speed_lon"],
+                            a_exact,
+                        )
                         phase = "Applying" if applying else "Separating"
                         transit_sign = sign_name_from_lon(t_pos["lon"])
                         natal_sign = sign_name_from_lon(n_pos["lon"])
