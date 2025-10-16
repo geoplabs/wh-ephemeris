@@ -499,6 +499,85 @@ def build_monthly_pdf_payload(
     }
 
 
+def _append_timeline_to_yearly_pdf(
+    pdf_path: Path, payload: Dict[str, Any], options: Dict[str, Any]
+) -> None:
+    try:
+        from append_timeline_page import (
+            append_to_pdf as append_timeline_pdf,
+            build_palette as build_timeline_palette,
+            derive_focus_scores as derive_timeline_focus,
+            render_infographic as render_timeline,
+        )
+    except Exception:
+        logger.exception("yearly_timeline_import_failed")
+        return
+
+    events: List[Dict[str, Any]] = []
+    for month_events in (payload.get("months") or {}).values():
+        if month_events:
+            events.extend(month_events)
+    if not events:
+        events.extend(payload.get("top_events") or [])
+    if not events:
+        logger.info("yearly_timeline_skipped_no_events", extra={"path": str(pdf_path)})
+        return
+
+    year = (
+        options.get("year")
+        or (payload.get("meta") or {}).get("year")
+        or datetime.utcnow().year
+    )
+
+    focus_json = payload.get("focus_scores") if isinstance(payload, dict) else None
+    if isinstance(focus_json, dict) and focus_json.get("year") is None:
+        focus_json = {**focus_json, "year": year}
+
+    palette = build_timeline_palette(None)
+    focus_scores = derive_timeline_focus(focus_json, events, year)
+
+    if options.get("timeline_title"):
+        title = str(options["timeline_title"])
+    else:
+        descriptor = options.get("tagline") or options.get("title")
+        if descriptor and options.get("year"):
+            title = f"{options['year']} • {descriptor}"
+        elif options.get("year"):
+            title = f"{options['year']} • Year-at-a-Glance Timeline"
+        elif descriptor:
+            title = str(descriptor)
+        else:
+            title = "Year-at-a-Glance Timeline"
+
+    png_path = pdf_path.with_name(f"{pdf_path.stem}_timeline.png")
+    tmp_pdf_path = pdf_path.with_name(f"{pdf_path.stem}_timeline_append.pdf")
+
+    try:
+        rendered_png = render_timeline(
+            events,
+            focus_scores,
+            title,
+            palette,
+            year,
+            output_path=str(png_path),
+        )
+        append_timeline_pdf(str(pdf_path), str(tmp_pdf_path), rendered_png)
+        os.replace(tmp_pdf_path, pdf_path)
+    except Exception:
+        logger.exception("yearly_timeline_append_failed", extra={"path": str(pdf_path)})
+        if tmp_pdf_path.exists():
+            try:
+                tmp_pdf_path.unlink()
+            except Exception:
+                pass
+    finally:
+        try:
+            if png_path.exists():
+                png_path.unlink()
+        except Exception:
+            pass
+
+
 def generate_yearly_pdf(
     chart_input: Dict[str, Any], options: Dict[str, Any], payload: Dict[str, Any]
 ) -> Tuple[str, str]:
@@ -507,6 +586,7 @@ def generate_yearly_pdf(
     out_path = _ensure_storage_path(report_id, owner)
     context = build_yearly_pdf_payload(chart_input, options, payload)
     render_western_natal_pdf(context, str(out_path), template_name="yearly_forecast.html.j2")
+    _append_timeline_to_yearly_pdf(out_path, payload, options)
     storage_key = _report_storage_key(report_id, owner)
     uploaded = _upload_to_s3(out_path, storage_key)
     return report_id, _resolve_download_url(report_id, owner, storage_key if uploaded else None)
