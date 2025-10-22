@@ -1,4 +1,4 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, Field, ConfigDict, conlist
 from typing import Optional, List, Dict, Any
 from .charts import ChartInput
 
@@ -114,3 +114,60 @@ class DailyForecastResponse(BaseModel):
     focus_areas: List[DailyFocusArea]
     events: List[ForecastEvent]
     top_events: List[ForecastEvent]
+
+
+class MorningMindset(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    paragraph: str
+    mantra: str
+
+
+class SectionWithBullets(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    paragraph: str
+    bullets: conlist(str, min_length=0, max_length=4) = Field(default_factory=list)
+
+
+class LoveSection(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    paragraph: str
+    attached: str
+    single: str
+
+
+class HealthSection(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    paragraph: str
+    good_options: conlist(str, min_length=0, max_length=4) = Field(default_factory=list)
+
+
+class LuckyDetails(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    color: str
+    time_window: str
+    direction: str
+    affirmation: str
+
+
+class DailyTemplatedResponse(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    profile_name: str
+    date: str
+    mood: str
+    theme: str
+    opening_summary: str
+    morning_mindset: MorningMindset
+    career: SectionWithBullets
+    love: LoveSection
+    health: HealthSection
+    finance: SectionWithBullets
+    do_today: conlist(str, min_length=0, max_length=4) = Field(default_factory=list)
+    avoid_today: conlist(str, min_length=0, max_length=4) = Field(default_factory=list)
+    lucky: LuckyDetails
+    one_line_summary: str

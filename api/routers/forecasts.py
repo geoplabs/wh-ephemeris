@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Body
+from fastapi import APIRouter, Body, Request, Response, HTTPException
 from ..schemas import (
     YearlyForecastRequest,
     YearlyForecastResponse,
@@ -6,11 +6,13 @@ from ..schemas import (
     MonthlyForecastResponse,
     DailyForecastRequest,
     DailyForecastResponse,
+    DailyTemplatedResponse,
 )
 import logging
 
 from ..services.forecast_builders import yearly_payload, monthly_payload, daily_payload
 from ..services.forecast_reports import generate_yearly_pdf, generate_monthly_pdf
+from ..services.daily_template import generate_daily_template
 
 
 logger = logging.getLogger(__name__)
@@ -42,6 +44,47 @@ def compute_daily(
     options = req.options.model_dump()
     data = daily_payload(chart_input, options)
     return DailyForecastResponse(**data)
+
+
+@router.post("/daily/templated", response_model=DailyTemplatedResponse)
+def compute_daily_templated(
+    request: Request,
+    response: Response,
+    req: DailyForecastRequest = Body(
+        ...,
+        example={
+            "chart_input": {
+                "system": "western",
+                "date": "1990-08-18",
+                "time": "14:32:00",
+                "time_known": True,
+                "place": {"lat": 17.385, "lon": 78.4867, "tz": "Asia/Kolkata"},
+            },
+            "options": {
+                "date": "2024-01-15",
+                "profile_name": "Asha",
+                "areas": ["career", "love", "health"],
+            },
+        },
+    ),
+):
+    chart_input = req.chart_input.model_dump()
+    options = req.options.model_dump()
+    base_daily = daily_payload(chart_input, options)
+    base_json = DailyForecastResponse(**base_daily).model_dump(mode="json")
+    result = generate_daily_template(base_json, request.headers)
+
+    headers = {
+        "ETag": result.etag,
+        "Cache-Control": result.cache_control,
+    }
+    if result.not_modified:
+        return Response(status_code=304, headers=headers)
+
+    response.headers.update(headers)
+    if result.payload is None:
+        raise HTTPException(status_code=500, detail="Unable to build daily template")
+    return result.payload
 
 
 @router.post("/yearly", response_model=YearlyForecastResponse)

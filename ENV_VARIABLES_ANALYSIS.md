@@ -12,6 +12,8 @@
 - `APP_ENV` - Application environment (production/development)
 - `PORT` - Server port (default: 8080)
 - `LOGGING_ENABLED` - Enable/disable request logging (default: "false")
+- `OPENAI_API_KEY` - API key used to authenticate OpenAI client requests
+- `OPENAI_ORG_ID` - Optional OpenAI organization identifier applied to the client
 
 ### **Ephemeris Configuration**
 - `EPHEMERIS_BACKEND` - Backend type: "swieph" or "moseph" (default: "swieph")
