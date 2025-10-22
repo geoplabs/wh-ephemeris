@@ -11,6 +11,13 @@ httpx>=0.25.0
 # PDF generation
 weasyprint>=60.0
 reportlab>=4.0.0
+pypdf>=3.17.0
+
+# Timeline infographic dependencies
+matplotlib>=3.8.0
+numpy>=1.26.0
+Pillow>=10.0.0
+python-docx>=1.1.0
 
 # Astronomical calculations
 pyswisseph>=2.10.3
