@@ -67,7 +67,7 @@ TEMPLATE_SCHEMA: Dict[str, Any] = {
             "required": ["paragraph", "bullets"],
             "properties": {
                 "paragraph": {"type": "string"},
-                "bullets": {"type": "array", "items": {"type": "string"}, "maxItems": 4},
+                "bullets": {"type": "array", "items": {"type": "string"}, "maxItems": 6},
             },
         },
         "love": {
@@ -84,7 +84,7 @@ TEMPLATE_SCHEMA: Dict[str, Any] = {
             "required": ["paragraph", "good_options"],
             "properties": {
                 "paragraph": {"type": "string"},
-                "good_options": {"type": "array", "items": {"type": "string"}, "maxItems": 4},
+                "good_options": {"type": "array", "items": {"type": "string"}, "maxItems": 6},
             },
         },
         "finance": {
@@ -92,11 +92,11 @@ TEMPLATE_SCHEMA: Dict[str, Any] = {
             "required": ["paragraph", "bullets"],
             "properties": {
                 "paragraph": {"type": "string"},
-                "bullets": {"type": "array", "items": {"type": "string"}, "maxItems": 4},
+                "bullets": {"type": "array", "items": {"type": "string"}, "maxItems": 6},
             },
         },
-        "do_today": {"type": "array", "items": {"type": "string"}, "maxItems": 4},
-        "avoid_today": {"type": "array", "items": {"type": "string"}, "maxItems": 4},
+        "do_today": {"type": "array", "items": {"type": "string"}, "maxItems": 6},
+        "avoid_today": {"type": "array", "items": {"type": "string"}, "maxItems": 6},
         "lucky": {
             "type": "object",
             "required": ["color", "time_window", "direction", "affirmation"],
@@ -209,6 +209,87 @@ def _parse_response(raw: str) -> Optional[Dict[str, Any]]:
         return None
 
 
+SANITIZED_LIST_LIMIT = 4
+
+
+def _coerce_string(value: Any) -> str:
+    if isinstance(value, str):
+        return value.strip()
+    if value is None:
+        return ""
+    return str(value).strip()
+
+
+def _sanitize_string_list(value: Any, limit: int = SANITIZED_LIST_LIMIT) -> List[str]:
+    if not isinstance(value, list):
+        return []
+    sanitized: List[str] = []
+    for item in value:
+        if len(sanitized) >= limit:
+            break
+        text = _coerce_string(item)
+        if text:
+            sanitized.append(text)
+    return sanitized
+
+
+def _sanitize_mapping(value: Any) -> Dict[str, Any]:
+    if isinstance(value, Mapping):
+        return dict(value)
+    return {}
+
+
+def _sanitize_payload(payload: Any) -> Dict[str, Any]:
+    data = _sanitize_mapping(payload)
+
+    morning_mindset = _sanitize_mapping(data.get("morning_mindset"))
+    career = _sanitize_mapping(data.get("career"))
+    love = _sanitize_mapping(data.get("love"))
+    health = _sanitize_mapping(data.get("health"))
+    finance = _sanitize_mapping(data.get("finance"))
+    lucky = _sanitize_mapping(data.get("lucky"))
+
+    sanitized_payload: Dict[str, Any] = {
+        "profile_name": _coerce_string(data.get("profile_name")),
+        "date": _coerce_string(data.get("date")),
+        "mood": _coerce_string(data.get("mood")),
+        "theme": _coerce_string(data.get("theme")),
+        "opening_summary": _coerce_string(data.get("opening_summary")),
+        "morning_mindset": {
+            "paragraph": _coerce_string(morning_mindset.get("paragraph")),
+            "mantra": _coerce_string(morning_mindset.get("mantra")),
+        },
+        "career": {
+            "paragraph": _coerce_string(career.get("paragraph")),
+            "bullets": _sanitize_string_list(career.get("bullets")),
+        },
+        "love": {
+            "paragraph": _coerce_string(love.get("paragraph")),
+            "attached": _coerce_string(love.get("attached")),
+            "single": _coerce_string(love.get("single")),
+        },
+        "health": {
+            "paragraph": _coerce_string(health.get("paragraph")),
+            "good_options": _sanitize_string_list(health.get("good_options")),
+        },
+        "finance": {
+            "paragraph": _coerce_string(finance.get("paragraph")),
+            "bullets": _sanitize_string_list(finance.get("bullets")),
+        },
+        "do_today": _sanitize_string_list(data.get("do_today")),
+        "avoid_today": _sanitize_string_list(data.get("avoid_today")),
+        "lucky": {
+            "color": _coerce_string(lucky.get("color")),
+            "time_window": _coerce_string(lucky.get("time_window")),
+            "direction": _coerce_string(lucky.get("direction")),
+            "affirmation": _coerce_string(lucky.get("affirmation")),
+        },
+        "one_line_summary": _coerce_string(data.get("one_line_summary")),
+    }
+
+    return sanitized_payload
+
+
 def _build_fallback(daily: Dict[str, Any]) -> DailyTemplatedResponse:
     meta = daily.get("meta", {})
     top_events = sorted(
@@ -296,14 +377,26 @@ def _render_with_llm(
         "You are a clear, supportive astrologer-writer. "
         "Write in warm, plain English with no fatalism or guarantees. "
         "Ground each section in the strongest events by score and tightest orb. "
-        "Return valid JSON ONLY."
+        "Respond with a single JSON object that matches the required schema exactly. "
+        "Do not add commentary, code fences, or explanations. "
+        "Each list must contain no more than four concise items. "
+        "If information is missing, acknowledge it honestly without fabrication."
     )
 
     user_lines = [
         f"TEMPLATE_VERSION={TEMPLATE_VERSION}",
         f"LANG={TEMPLATE_LANG}",
         f"MODEL={TEMPLATE_MODEL}",
+        "- Respond with raw JSON only (no code fences).",
+        "- Top-level keys must be exactly: profile_name, date, mood, theme, opening_summary,",
+        "  morning_mindset, career, love, health, finance, do_today, avoid_today, lucky, one_line_summary.",
         "- Use meta.profile_name (Title Case) and meta.date.",
+        "- morning_mindset must include paragraph and mantra strings.",
+        "- career and finance must include paragraph plus <=4 bullet strings.",
+        "- love must include paragraph, attached, and single strings.",
+        "- health.good_options, do_today, avoid_today should each contain up to 4 short items.",
+        "- lucky must include color, time_window, direction, and affirmation strings.",
+        "- Do not introduce additional fields or sections.",
         "- Reference significant transits lightly; keep it readable.",
         "- If data is missing, stay honest and general—no fabrication.",
         "INPUT_DAILY_JSON:",
@@ -457,10 +550,13 @@ def generate_daily_template(
     if llm_client is not None:
         parsed, raw_response, llm_tokens = _render_with_llm(llm_client, daily_payload)
         if parsed is not None:
-            is_valid, validation_errors = _validate_payload(parsed)
+            sanitized = _sanitize_payload(parsed)
+            is_valid, validation_errors = _validate_payload(sanitized)
             if is_valid:
                 try:
-                    generated_payload = DailyTemplatedResponse.model_validate(parsed).model_dump(mode="json")
+                    generated_payload = (
+                        DailyTemplatedResponse.model_validate(sanitized).model_dump(mode="json")
+                    )
                 except Exception as exc:  # pragma: no cover - should be rare
                     validation_errors = [str(exc)]
                     generated_payload = None
@@ -490,10 +586,13 @@ def generate_daily_template(
             if retry_tokens is not None:
                 llm_tokens = retry_tokens
             if parsed_retry is not None:
-                is_valid, validation_errors = _validate_payload(parsed_retry)
+                sanitized_retry = _sanitize_payload(parsed_retry)
+                is_valid, validation_errors = _validate_payload(sanitized_retry)
                 if is_valid:
                     try:
-                        generated_payload = DailyTemplatedResponse.model_validate(parsed_retry).model_dump(mode="json")
+                        generated_payload = (
+                            DailyTemplatedResponse.model_validate(sanitized_retry).model_dump(mode="json")
+                        )
                         validation_errors = []
                     except Exception as exc:
                         validation_errors = [str(exc)]
