@@ -12,6 +12,7 @@ from .forecasts import (
     MonthlyForecastResponse,
     DailyForecastRequest,
     DailyForecastResponse,
+    DailyTemplatedResponse,
 )
 from .compatibility import (
     CompatibilityComputeRequest,

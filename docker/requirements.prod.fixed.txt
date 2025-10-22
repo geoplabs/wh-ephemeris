@@ -35,6 +35,10 @@ psycopg2-binary>=2.9.0
 # Caching
 redis>=5.0.0
 
+# LLM + validation helpers
+openai>=1.35.0
+jsonschema>=4.22.0
+
 # Environment and configuration
 python-dotenv>=1.0.0
 
