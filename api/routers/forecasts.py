@@ -46,8 +46,8 @@ def compute_daily(
     return DailyForecastResponse(**data)
 
 
-@router.post("/daily/templated", response_model=DailyTemplatedResponse)
-def compute_daily_templated(
+@router.post("/daily/forecast", response_model=DailyTemplatedResponse)
+def compute_daily_forecast(
     request: Request,
     response: Response,
     req: DailyForecastRequest = Body(

@@ -27,7 +27,7 @@ logger = logging.getLogger(__name__)
 
 TEMPLATE_VERSION = os.getenv("DAILY_TEMPLATE_VERSION", "v1.0")
 TEMPLATE_LANG = os.getenv("DAILY_TEMPLATE_LANG", "en")
-TEMPLATE_MODEL = os.getenv("DAILY_TEMPLATE_MODEL", "gpt-4.1")
+TEMPLATE_MODEL = os.getenv("DAILY_TEMPLATE_MODEL", "gpt-4o-mini")
 CACHE_TTL_SECONDS = int(os.getenv("DAILY_TEMPLATE_CACHE_TTL", str(60 * 60 * 72)))
 CACHE_CONTROL_HEADER = "private, max-age=300, stale-while-revalidate=600"
 LOCK_TTL_SECONDS = 30
