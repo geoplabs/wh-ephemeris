@@ -10,6 +10,8 @@ from .forecasts import (
     YearlyForecastResponse,
     MonthlyForecastRequest,
     MonthlyForecastResponse,
+    DailyForecastRequest,
+    DailyForecastResponse,
 )
 from .compatibility import (
     CompatibilityComputeRequest,
