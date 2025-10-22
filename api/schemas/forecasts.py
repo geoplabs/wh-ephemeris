@@ -113,6 +113,15 @@ class DailyFocusArea(BaseModel):
     events: List[ForecastEvent]
 
 
+class LuckyDetails(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    color: str
+    time_window: str
+    direction: str
+    affirmation: str
+
+
 class DailyForecastResponse(BaseModel):
     meta: Dict[str, Any]
     summary: str
@@ -150,15 +159,6 @@ class HealthSection(BaseModel):
 
     paragraph: str
     good_options: conlist(str, min_length=0, max_length=4) = Field(default_factory=list)
-
-
-class LuckyDetails(BaseModel):
-    model_config = ConfigDict(extra="forbid")
-
-    color: str
-    time_window: str
-    direction: str
-    affirmation: str
 
 
 class DailyTemplatedResponse(BaseModel):
