@@ -37,6 +37,29 @@ class MonthOptions(BaseModel):
     }
 
 
+class DailyOptions(BaseModel):
+    date: str
+    user_id: Optional[str] = None
+    profile_name: Optional[str] = None
+    step_days: int = 1
+    window_days: int = 1
+    areas: List[str] = ["career", "love", "health", "finance"]
+    transit_bodies: List[str] = [
+        "Sun",
+        "Moon",
+        "Mercury",
+        "Venus",
+        "Mars",
+        "Jupiter",
+        "Saturn",
+    ]
+    natal_targets: Optional[List[str]] = None
+    aspects: Dict[str, Any] = {
+        "types": ["conjunction", "square", "trine", "opposition", "sextile"],
+        "orb_deg": 3.0,
+    }
+
+
 class ForecastEvent(BaseModel):
     date: str
     transit_body: str
@@ -57,6 +80,11 @@ class MonthlyForecastRequest(BaseModel):
     options: MonthOptions
 
 
+class DailyForecastRequest(BaseModel):
+    chart_input: ChartInput
+    options: DailyOptions
+
+
 class YearlyForecastResponse(BaseModel):
     meta: Dict[str, Any]
     months: Dict[str, List[ForecastEvent]]
@@ -69,3 +97,20 @@ class MonthlyForecastResponse(BaseModel):
     events: List[ForecastEvent]
     highlights: List[ForecastEvent]
     pdf_download_url: Optional[str] = None
+
+
+class DailyFocusArea(BaseModel):
+    area: str
+    score: float
+    headline: str
+    guidance: str
+    events: List[ForecastEvent]
+
+
+class DailyForecastResponse(BaseModel):
+    meta: Dict[str, Any]
+    summary: str
+    mood: str
+    focus_areas: List[DailyFocusArea]
+    events: List[ForecastEvent]
+    top_events: List[ForecastEvent]

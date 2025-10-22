@@ -4,16 +4,44 @@ from ..schemas import (
     YearlyForecastResponse,
     MonthlyForecastRequest,
     MonthlyForecastResponse,
+    DailyForecastRequest,
+    DailyForecastResponse,
 )
 import logging
 
-from ..services.forecast_builders import yearly_payload, monthly_payload
+from ..services.forecast_builders import yearly_payload, monthly_payload, daily_payload
 from ..services.forecast_reports import generate_yearly_pdf, generate_monthly_pdf
 
 
 logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/v1/forecasts", tags=["forecasts"])
+
+
+@router.post("/daily", response_model=DailyForecastResponse)
+def compute_daily(
+    req: DailyForecastRequest = Body(
+        ...,
+        example={
+            "chart_input": {
+                "system": "western",
+                "date": "1990-08-18",
+                "time": "14:32:00",
+                "time_known": True,
+                "place": {"lat": 17.385, "lon": 78.4867, "tz": "Asia/Kolkata"},
+            },
+            "options": {
+                "date": "2024-01-15",
+                "profile_name": "Asha",
+                "areas": ["career", "love", "health"],
+            },
+        },
+    )
+):
+    chart_input = req.chart_input.model_dump()
+    options = req.options.model_dump()
+    data = daily_payload(chart_input, options)
+    return DailyForecastResponse(**data)
 
 
 @router.post("/yearly", response_model=YearlyForecastResponse)
