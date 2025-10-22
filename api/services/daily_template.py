@@ -303,6 +303,14 @@ def _build_fallback(daily: Dict[str, Any]) -> DailyTemplatedResponse:
     mood = "motivated" if score >= 7 else "balanced"
     profile = _title_case(meta.get("profile_name"))
     date = meta.get("date") or time.strftime("%Y-%m-%d")
+    lucky_details = _sanitize_mapping(daily.get("lucky"))
+    fallback_lucky = {
+        "color": _coerce_string(lucky_details.get("color")) or "Deep Red",
+        "time_window": _coerce_string(lucky_details.get("time_window")) or "10:00–12:00",
+        "direction": _coerce_string(lucky_details.get("direction")) or "SE",
+        "affirmation": _coerce_string(lucky_details.get("affirmation"))
+        or "My focus is steady and encouraging.",
+    }
 
     fallback = {
         "profile_name": profile,
@@ -356,12 +364,7 @@ def _build_fallback(daily: Dict[str, Any]) -> DailyTemplatedResponse:
             "Doomscrolling",
             "Impulse spending",
         ],
-        "lucky": {
-            "color": "Deep Red",
-            "time_window": "10:00–12:00",
-            "direction": "SE",
-            "affirmation": "My focus is steady and encouraging.",
-        },
+        "lucky": fallback_lucky,
         "one_line_summary": "Steady, grounded momentum keeps you aligned today.",
     }
     return DailyTemplatedResponse.model_validate(fallback)
