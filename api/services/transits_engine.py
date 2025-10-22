@@ -160,6 +160,8 @@ def compute_transits(chart_input: Dict[str,Any], opts: Dict[str,Any]) -> List[Di
                             "applying": applying,
                             "score": score,
                             "note": note,
+                            "transit_sign": transit_sign,
+                            "natal_sign": natal_sign,
                         })
     # Sort: date then score desc
     events.sort(key=lambda e: (e["date"], -e["score"]))

@@ -68,6 +68,8 @@ class ForecastEvent(BaseModel):
     orb: float
     score: float
     note: Optional[str] = None
+    transit_sign: Optional[str] = None
+    natal_sign: Optional[str] = None
 
 
 class YearlyForecastRequest(BaseModel):
@@ -114,6 +116,7 @@ class DailyForecastResponse(BaseModel):
     focus_areas: List[DailyFocusArea]
     events: List[ForecastEvent]
     top_events: List[ForecastEvent]
+    lucky: LuckyDetails
 
 
 class MorningMindset(BaseModel):
