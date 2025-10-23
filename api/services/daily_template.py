@@ -2,14 +2,18 @@ import json
 import logging
 import os
 import random
+import re
+import textwrap
 import time
 from collections.abc import Mapping
 from dataclasses import dataclass
+from functools import lru_cache
 from hashlib import sha256
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Optional, Sequence, Tuple
 
 import redis
 from jsonschema import Draft7Validator
+from jinja2 import Environment, Template
 
 from ..schemas.forecasts import DailyTemplatedResponse
 
@@ -290,8 +294,145 @@ def _sanitize_payload(payload: Any) -> Dict[str, Any]:
     return sanitized_payload
 
 
+def _ensure_sentence(value: Any) -> str:
+    text = _coerce_string(value)
+    if not text:
+        return ""
+    condensed = " ".join(text.split())
+    if not condensed:
+        return ""
+    if condensed[-1] not in ".!?":
+        condensed = f"{condensed}."
+    return condensed
+
+
+def _lower_first(value: Any) -> str:
+    text = _coerce_string(value)
+    if not text:
+        return ""
+    return text[0].lower() + text[1:]
+
+
+def _guidance_clause(value: Any) -> str:
+    text = _coerce_string(value)
+    if not text:
+        return ""
+    normalized = " ".join(text.split())
+    if not normalized:
+        return ""
+    normalized = re.sub(r"\bYou\b", "you", normalized)
+    normalized = re.sub(r"\bYour\b", "your", normalized)
+    normalized = re.sub(r"\bYou're\b", "you're", normalized)
+    normalized = normalized.rstrip(" .!?")
+    return _lower_first(normalized)
+
+
+_jinja_env: Optional[Environment] = None
+
+
+def _get_jinja_env() -> Environment:
+    global _jinja_env
+    if _jinja_env is None:
+        env = Environment(autoescape=False, trim_blocks=True, lstrip_blocks=True)
+        env.filters["lower_first"] = _lower_first
+        _jinja_env = env
+    return _jinja_env
+
+
+@lru_cache(maxsize=128)
+def _compile_template(source: str) -> Template:
+    return _get_jinja_env().from_string(source)
+
+
+def _render_from_templates(
+    templates: Sequence[str],
+    context: Dict[str, Any],
+    fallback: str,
+    *,
+    ensure_sentence_output: bool = True,
+) -> str:
+    for template_source in templates:
+        try:
+            rendered = _compile_template(template_source).render(**context)
+        except Exception:
+            logger.exception(
+                "daily_template_template_render_failed",
+                extra={"template": template_source},
+            )
+            continue
+        cleaned = _coerce_string(rendered)
+        if not cleaned:
+            continue
+        cleaned = " ".join(cleaned.split())
+        if ensure_sentence_output:
+            cleaned = _ensure_sentence(cleaned)
+        if cleaned:
+            return cleaned
+    fallback_cleaned = _coerce_string(fallback)
+    if ensure_sentence_output:
+        return _ensure_sentence(fallback_cleaned)
+    return fallback_cleaned
+
+
+OPENING_SUMMARY_TEMPLATES: Tuple[str, ...] = (
+    "{{ summary }}",
+    "{{ profile_ref }} can start {{ date }} with {{ theme|lower_first }} front and centre. {{ summary }}",
+)
+
+MORNING_PARAGRAPH_TEMPLATES: Tuple[str, ...] = (
+    "{{ profile_ref }} can set the tone by taking one intentional pause before leaning into {{ theme|lower_first }}.",
+    "Before the day accelerates, {{ profile_ref }} can breathe and let {{ theme|lower_first }} guide the first move.",
+)
+
+MORNING_MANTRA_TEMPLATES: Tuple[str, ...] = (
+    "{{ affirmation }}",
+    "I focus on {{ theme|lower_first }} with calm confidence",
+)
+
+FOCUS_PARAGRAPH_TEMPLATES: Dict[str, Tuple[str, ...]] = {
+    "career": (
+        "{{ profile_ref }} can turn today's {{ highlight|lower_first }} into deliberate progress at work.{% if guidance %} {{ guidance }}{% endif %}",
+        "Professional momentum builds when {{ profile_ref }} honours {{ highlight|lower_first }}.{% if guidance %} {{ guidance }}{% endif %}",
+    ),
+    "finance": (
+        "{{ profile_ref }} can let {{ highlight|lower_first }} inform smart money moves today.{% if guidance %} {{ guidance }}{% endif %}",
+        "Steady resources flow when {{ profile_ref }} stays close to {{ highlight|lower_first }}.{% if guidance %} {{ guidance }}{% endif %}",
+    ),
+    "health": (
+        "{{ profile_ref }} can balance energy by keeping {{ highlight|lower_first }} in mind.{% if guidance %} {{ guidance }}{% endif %}",
+        "Wellness improves as {{ profile_ref }} listens to how {{ highlight|lower_first }} feels in the body.{% if guidance %} {{ guidance }}{% endif %}",
+    ),
+    "default": (
+        "{{ profile_ref }} can stay aligned with {{ highlight|lower_first }}.{% if guidance %} {{ guidance }}{% endif %}",
+    ),
+}
+
+LOVE_PARAGRAPH_TEMPLATES: Tuple[str, ...] = (
+    "Heart matters: {{ highlight }}{% if guidance %}. {{ guidance }}{% endif %}",
+    "{{ profile_ref }} can let relationships revolve around {{ highlight|lower_first }} today.{% if guidance %} {{ guidance }}{% endif %}",
+)
+
+LOVE_ATTACHED_TEMPLATES: Tuple[str, ...] = (
+    "If you're attached, {{ guidance_clause or 'offer one honest appreciation to your partner' }}.",
+    "If you're attached, keep the bond steady{% if guidance_clause %} and {{ guidance_clause }}{% else %} by sharing gratitude{% endif %}.",
+)
+
+LOVE_SINGLE_TEMPLATES: Tuple[str, ...] = (
+    "If you're single, {{ guidance_clause or 'let conversations unfold without rushing the outcome' }}.",
+    "If you're single, stay open{% if guidance_clause %} and {{ guidance_clause }}{% else %} by noticing genuine curiosity{% endif %}.",
+)
+
+DEFAULT_HEALTH_NOTES: Tuple[str, ...] = (
+    "Brisk walk",
+    "Gentle strength work",
+    "Breathwork",
+    "Plenty of water",
+)
+
+
 def _build_fallback(daily: Dict[str, Any]) -> DailyTemplatedResponse:
     meta = daily.get("meta", {})
+    focus_areas = daily.get("focus_areas", [])
     top_events = sorted(
         daily.get("top_events", []),
         key=lambda item: (
@@ -300,9 +441,11 @@ def _build_fallback(daily: Dict[str, Any]) -> DailyTemplatedResponse:
         ),
     )
     score = float(top_events[0].get("score", 0.0)) if top_events else 0.0
-    mood = "motivated" if score >= 7 else "balanced"
+    mood = _coerce_string(daily.get("mood")) or ("energised" if score >= 7 else "balanced")
     profile = _title_case(meta.get("profile_name"))
+    profile_ref = "You" if profile == "You" else profile
     date = meta.get("date") or time.strftime("%Y-%m-%d")
+
     lucky_details = _sanitize_mapping(daily.get("lucky"))
     fallback_lucky = {
         "color": _coerce_string(lucky_details.get("color")) or "Deep Red",
@@ -312,60 +455,225 @@ def _build_fallback(daily: Dict[str, Any]) -> DailyTemplatedResponse:
         or "My focus is steady and encouraging.",
     }
 
+    summary_text = _coerce_string(daily.get("summary"))
+    if summary_text:
+        stripped_summary = summary_text
+        lower_profile = profile.lower()
+        lowered_summary = summary_text.lower()
+        if lower_profile and lower_profile != "you" and lowered_summary.startswith(lower_profile):
+            stripped_summary = summary_text[len(meta.get("profile_name", "")) :].lstrip(", :")
+        cleaned_summary = _ensure_sentence(stripped_summary)
+    else:
+        cleaned_summary = "Stay grounded and move with purpose."
+    summary_for_opening = (
+        cleaned_summary.replace(profile, profile_ref) if profile != "You" else cleaned_summary
+    )
+
+    headline_source = next(
+        (
+            _coerce_string(area.get("headline"))
+            for area in focus_areas
+            if _coerce_string(area.get("headline"))
+        ),
+        "Focused Momentum",
+    )
+    theme = textwrap.shorten(headline_source, width=60, placeholder="…") or "Focused Momentum"
+
+    focus_map: Dict[str, Dict[str, Any]] = {}
+    for entry in focus_areas:
+        area_key = _coerce_string(entry.get("area")).lower()
+        if area_key:
+            focus_map[area_key] = entry
+
+    def build_focus(area_key: str, default_paragraph: str, default_highlight: str) -> Tuple[str, List[str]]:
+        area_data = focus_map.get(area_key, {})
+        headline = _coerce_string(area_data.get("headline")) or default_highlight
+        guidance_raw = _coerce_string(area_data.get("guidance"))
+        guidance = guidance_raw.replace("You", profile_ref)
+        paragraph = _render_from_templates(
+            FOCUS_PARAGRAPH_TEMPLATES.get(area_key, FOCUS_PARAGRAPH_TEMPLATES["default"]),
+            {
+                "profile_ref": profile_ref,
+                "area_label": area_key.capitalize(),
+                "highlight": headline or default_highlight,
+                "guidance": guidance,
+                "guidance_clause": _guidance_clause(guidance_raw),
+            },
+            default_paragraph,
+        )
+
+        events = area_data.get("events", []) if isinstance(area_data, Mapping) else []
+        bullets: List[str] = []
+        for event in events:
+            if len(bullets) >= SANITIZED_LIST_LIMIT:
+                break
+            event_map = _sanitize_mapping(event)
+            note = _coerce_string(event_map.get("note"))
+            if note:
+                formatted = textwrap.shorten(note, width=96, placeholder="…")
+            else:
+                transit = _coerce_string(event_map.get("transit_body"))
+                aspect = _coerce_string(event_map.get("aspect"))
+                natal = _coerce_string(event_map.get("natal_body"))
+                formatted = f"{transit} {aspect} {natal}".strip()
+            if formatted:
+                bullets.append(formatted)
+        return paragraph, bullets
+
+    career_paragraph, career_bullets = build_focus(
+        "career",
+        "Lean on steady progress and keep communication direct.",
+        theme,
+    )
+    finance_paragraph, finance_bullets = build_focus(
+        "finance",
+        "Think long-term and sidestep impulse choices.",
+        theme,
+    )
+    health_paragraph, health_notes = build_focus(
+        "health",
+        "Balance effort with rest and hydration.",
+        theme,
+    )
+    love_data = focus_map.get("love", {})
+    love_headline = _coerce_string(love_data.get("headline"))
+    love_guidance = _coerce_string(love_data.get("guidance"))
+    love_context = {
+        "profile_ref": profile_ref,
+        "highlight": love_headline or theme,
+        "guidance": love_guidance.replace("You", profile_ref),
+        "guidance_clause": _guidance_clause(love_guidance),
+    }
+    love_paragraph = _render_from_templates(
+        LOVE_PARAGRAPH_TEMPLATES,
+        love_context,
+        "Lead with sincerity and warmth.",
+    )
+    love_attached = _render_from_templates(
+        LOVE_ATTACHED_TEMPLATES,
+        love_context,
+        "If you're attached, offer one honest appreciation to your partner.",
+    )
+    love_single = _render_from_templates(
+        LOVE_SINGLE_TEMPLATES,
+        love_context,
+        "If you're single, let conversations unfold without rushing the outcome.",
+    )
+
+    if not health_notes:
+        health_notes = list(DEFAULT_HEALTH_NOTES)
+
+    positive_aspects = {"conjunction", "trine", "sextile"}
+    challenging_aspects = {"square", "opposition", "quincunx"}
+    do_today: List[str] = []
+    avoid_today: List[str] = []
+    for event in daily.get("events", []):
+        if len(do_today) >= SANITIZED_LIST_LIMIT and len(avoid_today) >= SANITIZED_LIST_LIMIT:
+            break
+        event_map = _sanitize_mapping(event)
+        aspect = _coerce_string(event_map.get("aspect")).lower()
+        phrase = _coerce_string(event_map.get("note"))
+        if not phrase:
+            transit = _coerce_string(event_map.get("transit_body"))
+            natal = _coerce_string(event_map.get("natal_body"))
+            phrase = f"Focus on the {transit} {aspect} {natal} influence".strip()
+        formatted_phrase = textwrap.shorten(phrase, width=88, placeholder="…")
+        if aspect in positive_aspects and len(do_today) < SANITIZED_LIST_LIMIT:
+            do_today.append(formatted_phrase)
+        elif aspect in challenging_aspects and len(avoid_today) < SANITIZED_LIST_LIMIT:
+            avoid_today.append(formatted_phrase)
+
+    if not do_today:
+        do_today = [
+            "Focus on one priority",
+            "Speak kindly",
+            "Move your body",
+            "Hydrate intentionally",
+        ]
+    if not avoid_today:
+        avoid_today = [
+            "Overcommitting",
+            "Power struggles",
+            "Doomscrolling",
+            "Impulse spending",
+        ]
+
+    opening_summary = _render_from_templates(
+        OPENING_SUMMARY_TEMPLATES,
+        {
+            "profile_ref": profile_ref,
+            "date": date,
+            "theme": theme,
+            "summary": summary_for_opening,
+        },
+        summary_for_opening,
+    )
+    morning_paragraph = _render_from_templates(
+        MORNING_PARAGRAPH_TEMPLATES,
+        {
+            "profile_ref": profile_ref,
+            "theme": theme,
+        },
+        f"{profile_ref} can set the tone by taking one intentional pause before the day begins.",
+    )
+    mantra_source = _coerce_string(lucky_details.get("affirmation")) or "Small steps carry real power."
+    morning_mantra = _render_from_templates(
+        MORNING_MANTRA_TEMPLATES,
+        {
+            "affirmation": mantra_source,
+            "theme": theme,
+        },
+        mantra_source,
+        ensure_sentence_output=False,
+    ) or mantra_source
+
+    one_line_summary = textwrap.shorten(
+        opening_summary,
+        width=96,
+        placeholder="…",
+    )
+
     fallback = {
         "profile_name": profile,
         "date": date,
         "mood": mood,
-        "theme": "Focused Momentum",
-        "opening_summary": "Channel your effort into one intentional move today.",
+        "theme": theme,
+        "opening_summary": opening_summary,
         "morning_mindset": {
-            "paragraph": "Ground yourself before diving into the busiest parts of the day.",
-            "mantra": "Small steps carry real power.",
+            "paragraph": morning_paragraph,
+            "mantra": morning_mantra,
         },
         "career": {
-            "paragraph": "Lean on steady progress and keep communication direct.",
-            "bullets": [
+            "paragraph": career_paragraph,
+            "bullets": career_bullets
+            or [
                 "Complete one meaningful task",
                 "Clarify expectations",
                 "Review priority deadlines",
             ],
         },
         "love": {
-            "paragraph": "Lead with sincerity and keep your tone warm.",
-            "attached": "Offer one honest appreciation to your partner.",
-            "single": "Let conversations unfold without rushing the outcome.",
+            "paragraph": love_paragraph,
+            "attached": love_attached,
+            "single": love_single,
         },
         "health": {
-            "paragraph": "Balance focus with mindful breaks and hydration.",
-            "good_options": [
-                "Brisk walk",
-                "Gentle strength work",
-                "Breathwork",
-                "Plenty of water",
-            ],
+            "paragraph": health_paragraph,
+            "good_options": health_notes[:SANITIZED_LIST_LIMIT],
         },
         "finance": {
-            "paragraph": "Think long-term and sidestep impulse choices.",
-            "bullets": [
+            "paragraph": finance_paragraph,
+            "bullets": finance_bullets
+            or [
                 "Review a key number",
                 "Delay big purchases",
                 "Plan your next savings step",
             ],
         },
-        "do_today": [
-            "Focus on one priority",
-            "Speak kindly",
-            "Move your body",
-            "Hydrate intentionally",
-        ],
-        "avoid_today": [
-            "Overcommitting",
-            "Power struggles",
-            "Doomscrolling",
-            "Impulse spending",
-        ],
+        "do_today": do_today,
+        "avoid_today": avoid_today,
         "lucky": fallback_lucky,
-        "one_line_summary": "Steady, grounded momentum keeps you aligned today.",
+        "one_line_summary": one_line_summary,
     }
     return DailyTemplatedResponse.model_validate(fallback)
 
