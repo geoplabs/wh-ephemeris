@@ -1,0 +1,61 @@
+{
+  "profile_name": "{{ profile_name|title }}",
+  "date": "{{ date }}",
+  "mood": "{{ mood }}",
+  "theme": "{{ theme|title }}",
+  "opening_summary": "{{ opening_summary|trim }}",
+
+  "morning_mindset": {
+    "paragraph": "{{ morning_paragraph|trim }}",
+    "mantra": "{{ mantra|trim }}"
+  },
+
+  "career": {
+    "paragraph": "{{ career_paragraph|trim }}",
+    "bullets": [
+      {% for b in career_bullets[:4] -%}
+      "{{ b|trim }}"{% if not loop.last %},{% endif %}
+      {%- endfor %}
+    ]
+  },
+
+  "love": {
+    "paragraph": "{{ love_paragraph|trim }}",
+    "attached": "{{ love_attached|trim }}",
+    "single": "{{ love_single|trim }}"
+  },
+
+  "health": {
+    "paragraph": "{{ health_paragraph|trim }}",
+    "good_options": [
+      {% for h in health_opts[:4] -%}
+      "{{ h|trim }}"{% if not loop.last %},{% endif %}
+      {%- endfor %}
+    ]
+  },
+
+  "finance": {
+    "paragraph": "{{ finance_paragraph|trim }}",
+    "bullets": [
+      {% for b in finance_bullets[:3] -%}
+      "{{ b|trim }}"{% if not loop.last %},{% endif %}
+      {%- endfor %}
+    ]
+  },
+
+  "do_today": [
+    {% for d in do_today[:4] -%}
+    "{{ d|trim }}"{% if not loop.last %},{% endif %}
+    {%- endfor %}
+  ],
+  "avoid_today": [
+    {% for a in avoid_today[:4] -%}
+    "{{ a|trim }}"{% if not loop.last %},{% endif %}
+    {%- endfor %}
+  ],
+
+  "lucky": {{ lucky | tojson }},
+
+  "one_line_summary": "{{ one_line_summary|trim }}",
+  "tech_notes": {{ tech_notes | tojson }}
+}
