@@ -812,6 +812,7 @@ class DailyTemplateResult:
 def generate_daily_template(
     daily_payload: Dict[str, Any],
     request_headers: Mapping[str, str],
+    use_ai: bool = False,
 ) -> DailyTemplateResult:
     _, content_hash, etag = _stable_bundle(daily_payload)
     date = daily_payload.get("meta", {}).get("date", "unknown")
@@ -925,7 +926,7 @@ def generate_daily_template(
     generated_payload: Optional[Dict[str, Any]] = None
     raw_response: Optional[str] = None
 
-    if llm_client is not None:
+    if llm_client is not None and use_ai:
         parsed, raw_response, llm_tokens = _render_with_llm(llm_client, daily_payload)
         if parsed is not None:
             sanitized = _sanitize_payload(parsed)

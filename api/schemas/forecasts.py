@@ -43,6 +43,7 @@ class DailyOptions(BaseModel):
     date: str
     user_id: Optional[str] = None
     profile_name: Optional[str] = None
+    use_ai: bool = False  # Enable/disable AI generation (OpenAI)
     step_days: int = 1
     window_days: int = 1
     use_ai: Optional[bool] = None

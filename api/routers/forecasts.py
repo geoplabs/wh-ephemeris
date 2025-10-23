@@ -63,7 +63,8 @@ def compute_daily_forecast(
             "options": {
                 "date": "2024-01-15",
                 "profile_name": "Asha",
-                "areas": ["career", "love", "health"],
+                "use_ai": True,
+                "areas": ["career", "love", "health", "finance"],
             },
         },
     ),
@@ -72,7 +73,8 @@ def compute_daily_forecast(
     options = req.options.model_dump()
     base_daily = daily_payload(chart_input, options)
     base_json = DailyForecastResponse(**base_daily).model_dump(mode="json")
-    result = generate_daily_template(base_json, request.headers)
+    use_ai = options.get("use_ai", False)  # Default to False for backward compatibility
+    result = generate_daily_template(base_json, request.headers, use_ai=use_ai)
 
     headers = {
         "ETag": result.etag,
