@@ -1,0 +1,57 @@
+{
+  "profile_name": "ethan",
+  "date": "2024-06-01",
+  "mood": "motivated",
+  "theme": "focused renewal",
+  "opening_summary": "Ethan can expect Applying conjunction energy today. Sun in Gemini. Stay alert.",
+  "morning_mindset": {
+    "paragraph": "Applying square from Mars at 1.5°. Ethan should take a breath.",
+    "mantra": "Ethan can trust his timing."
+  },
+  "career": {
+    "paragraph": "Separating sextile offers momentum; Moon in Leo. Ethan may tackle backlog.",
+    "bullets": [
+      "Ethan should review the key deck.",
+      "Applying trine to Jupiter; consider pitching."
+    ]
+  },
+  "love": {
+    "paragraph": "Venus in Cancer heightens warmth. Applying conjunction to Moon.",
+    "attached": "Ethan can share the new plan.",
+    "single": "Ethan may say yes to the invite."
+  },
+  "health": {
+    "paragraph": "Notably strong conjunction energy; focus on core strength.",
+    "good_options": [
+      "Ethan should stretch hamstrings.",
+      "Hydration…"
+    ]
+  },
+  "finance": {
+    "paragraph": "Applying square to Saturn warns restraint.",
+    "bullets": [
+      "Ethan can check the budget.",
+      "Review separation of expenses."
+    ]
+  },
+  "do_today": [
+    "Ethan should plan the outreach.",
+    "Applying sextile favors investments."
+  ],
+  "avoid_today": [
+    "Avoid Applying square arguments."
+  ],
+  "one_line_summary": "Applying conjunction headlines the day. Ethan can focus on clarity.",
+  "events": [
+    {
+      "transit_body": "Sun",
+      "score": 9,
+      "note": "Sun conjunct Mars; Aries"
+    },
+    {
+      "transit_body": "Moon",
+      "score": 7,
+      "note": "Moon square Venus; Libra"
+    }
+  ]
+}
