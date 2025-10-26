@@ -22,6 +22,10 @@ class TransitEvent(BaseModel):
     orb: float
     applying: Optional[bool] = None
     score: float
+    note: Optional[str] = None
+    transit_sign: Optional[str] = None
+    natal_sign: Optional[str] = None
+    zodiac: Optional[str] = None
 
 class TransitsComputeRequest(BaseModel):
     chart_input: ChartInput

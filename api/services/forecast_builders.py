@@ -270,6 +270,7 @@ def daily_payload(chart_input: Dict[str, Any], options: Dict[str, Any]) -> Dict[
         "areas": areas,
         "profile_name": profile_name,
         "window_days": window,
+        "zodiac": "sidereal" if chart_input.get("system") == "vedic" else "tropical",
     }
     use_ai_option = options.get("use_ai")
     if use_ai_option is not None:
