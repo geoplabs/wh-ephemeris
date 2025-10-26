@@ -19,6 +19,7 @@ from .language import (
     build_opening_summary,
 )
 from src.content.archetype_router import classify_event
+from src.content.area_selector import rank_events_by_area, summarize_rankings
 
 
 TEMPLATES_DIR = Path(__file__).resolve().parent
@@ -141,13 +142,18 @@ def build_context(option_b_json: dict[str, Any]) -> dict[str, Any]:
     date = option_b_json.get("date") or meta.get("date") or ""
 
     events = option_b_json.get("events") or option_b_json.get("top_events") or []
-    dom_planet, dom_sign = derive_dominant(events)
-    dominant_signs = top_two_signs(events)
+    annotated_events, area_rankings = rank_events_by_area(events)
+    dom_planet, dom_sign = derive_dominant(annotated_events)
+    dominant_signs = top_two_signs(annotated_events)
     lucky = lucky_from_dominant(dom_planet, dom_sign)
 
-    enriched_events = _enrich_events(events)
+    enriched_events = _enrich_events(annotated_events)
     tone_hints = {section: _section_tone(enriched_events, section) for section in SECTION_TAGS}
     top_classification = enriched_events[0]["classification"] if enriched_events else None
+    area_summary = summarize_rankings(area_rankings)
+    selected_area_events = {
+        area: summary.get("selected") for area, summary in area_summary.items()
+    }
 
     morning = option_b_json.get("morning_mindset", {})
     career = option_b_json.get("career", {})
@@ -203,17 +209,22 @@ def build_context(option_b_json: dict[str, Any]) -> dict[str, Any]:
         "one_line_summary": build_one_line_summary(
             option_b_json.get("one_line_summary", ""), option_b_json.get("theme", ""), profile_name=profile_name
         ),
-        "tech_notes": {
-            "dominant": {"planet": dom_planet, "sign": dom_sign},
-            "raw_events": events[:5],
-            "classifier": {
-                "top_event": {
-                    **({} if not enriched_events else enriched_events[0]["event"]),
-                    **(top_classification or {}),
-                },
-                "section_tones": tone_hints,
+        "area_events": selected_area_events,
+    }
+    for area, selected in selected_area_events.items():
+        ctx[f"{area}_event"] = selected.get("event") if selected else None
+
+    ctx["tech_notes"] = {
+        "dominant": {"planet": dom_planet, "sign": dom_sign},
+        "raw_events": annotated_events[:5],
+        "classifier": {
+            "top_event": {
+                **({} if not enriched_events else enriched_events[0]["event"]),
+                **(top_classification or {}),
             },
+            "section_tones": tone_hints,
         },
+        "areas": area_summary,
     }
     return ctx
 
