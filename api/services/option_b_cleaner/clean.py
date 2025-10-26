@@ -1,4 +1,7 @@
 import re
+
+from src.content.phrasebank import PhraseAsset, bullet_templates_for
+
 _ORB = re.compile(r"\b\d+(\.\d+)?°\b")
 _APPLYING_SEP = re.compile(r"\b(Applying|Separating)\b[^.]*\.?")
 _SIGN_IN = re.compile(r";?\s*[A-Z][a-z]+ in [A-Z][a-z]+")
@@ -35,21 +38,6 @@ _STOPWORDS = {
 }
 
 _DIRECT_VERBS = {"review", "check", "plan", "stretch", "hydrate", "share", "breathe", "rest", "express", "address"}
-
-_BULLET_TEMPLATES = {
-    "do": (
-        "Focus on {phrase} today.",
-        "Choose {phrase} now.",
-        "Set {phrase} priorities today.",
-        "Plan {phrase} today.",
-    ),
-    "avoid": (
-        "Avoid {phrase} today.",
-        "Skip {phrase} now.",
-        "Hold back from {phrase} today.",
-        "Delay {phrase} moves today.",
-    ),
-}
 
 
 def de_jargon(s: str) -> str:
@@ -163,7 +151,32 @@ def _format_phrase(words: list[str], mode: str = "do") -> str:
     return phrase
 
 
-def imperative_bullet(s: str, order: int = 0, mode: str = "do") -> str:
+def _resolve_templates(area: str | None, mode: str, asset: PhraseAsset | None) -> tuple[str, ...]:
+    if area:
+        archetype = asset.archetype if asset else None
+        intensity = asset.intensity if asset else None
+        templates = bullet_templates_for(
+            area,
+            mode,
+            archetype=archetype,
+            intensity=intensity,
+        )
+        if templates:
+            return templates
+    return (
+        "Focus on {phrase} today.",
+        "Choose {phrase} now.",
+        "Set {phrase} priorities today.",
+        "Plan {phrase} today.",
+    ) if mode == "do" else (
+        "Avoid {phrase} today.",
+        "Skip {phrase} now.",
+        "Hold back from {phrase} today.",
+        "Delay {phrase} moves today.",
+    )
+
+
+def imperative_bullet(s: str, order: int = 0, mode: str = "do", *, area: str | None = None, asset: PhraseAsset | None = None) -> str:
     s = de_jargon(s)
     s = re.sub(r"^(?:Try to|You should|Consider|Aim to)\s+", "", s, flags=re.I)
     words = _keywords_for_bullet(s)
@@ -185,7 +198,7 @@ def imperative_bullet(s: str, order: int = 0, mode: str = "do") -> str:
         if word_count < 3:
             candidate = f"{verb} with care today."
         return candidate
-    templates = _BULLET_TEMPLATES.get(mode, _BULLET_TEMPLATES["do"])
+    templates = _resolve_templates(area, mode, asset)
     template = templates[order % len(templates)]
     # Trim phrase to keep word count between 3 and 10 once formatted
     for cut in range(len(phrase_words), 0, -1):

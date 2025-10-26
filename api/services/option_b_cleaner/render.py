@@ -20,6 +20,12 @@ from .language import (
 )
 from src.content.archetype_router import classify_event
 from src.content.area_selector import rank_events_by_area, summarize_rankings
+from src.content.phrasebank import (
+    PhraseAsset,
+    get_asset,
+    seed_from_event,
+    select_clause,
+)
 
 
 TEMPLATES_DIR = Path(__file__).resolve().parent
@@ -79,21 +85,33 @@ def top_two_signs(transits: list[dict[str, Any]]) -> list[str]:
     return signs[:2]
 
 
-def normalize_bullets(bullets: list[str], profile_name: str) -> list[str]:
+def normalize_bullets(
+    bullets: list[str],
+    profile_name: str,
+    *,
+    area: str,
+    asset: PhraseAsset | None = None,
+) -> list[str]:
     out: list[str] = []
     for idx, raw in enumerate(bullets or []):
         cleaned = to_you_pov(raw or "", profile_name)
-        bullet = imperative_bullet(cleaned, idx)
+        bullet = imperative_bullet(cleaned, idx, area=area, asset=asset)
         if bullet and bullet not in out:
             out.append(bullet)
     return out[:4]
 
 
-def normalize_avoid(bullets: list[str], profile_name: str) -> list[str]:
+def normalize_avoid(
+    bullets: list[str],
+    profile_name: str,
+    *,
+    area: str,
+    asset: PhraseAsset | None = None,
+) -> list[str]:
     out: list[str] = []
     for idx, raw in enumerate(bullets or []):
         cleaned = to_you_pov(raw or "", profile_name)
-        bullet = imperative_bullet(cleaned, idx, mode="avoid")
+        bullet = imperative_bullet(cleaned, idx, mode="avoid", area=area, asset=asset)
         if bullet and bullet not in out:
             out.append(bullet)
     return out[:4]
@@ -155,6 +173,39 @@ def build_context(option_b_json: dict[str, Any]) -> dict[str, Any]:
         area: summary.get("selected") for area, summary in area_summary.items()
     }
 
+    general_archetype = (top_classification or {}).get("archetype", "Steady Integration")
+    general_intensity = (top_classification or {}).get("intensity", "steady")
+    general_event = enriched_events[0]["event"] if enriched_events else None
+    general_asset = get_asset(general_archetype, general_intensity, "general")
+    general_seed = seed_from_event("general", general_event, salt=date or "")
+    general_clause = select_clause(
+        general_archetype,
+        general_intensity,
+        "general",
+        seed=general_seed,
+    )
+
+    phrase_context: dict[str, dict[str, Any]] = {}
+    for area in SECTION_TAGS:
+        selected = selected_area_events.get(area)
+        event = selected.get("event") if selected else None
+        if event:
+            classification = classify_event(event)
+        else:
+            classification = top_classification or {}
+        archetype = classification.get("archetype", "Steady Integration")
+        intensity = classification.get("intensity", "steady")
+        asset = get_asset(archetype, intensity, area)
+        seed = seed_from_event(area, event, salt=date or "")
+        clause = select_clause(archetype, intensity, area, seed=seed)
+        phrase_context[area] = {
+            "asset": asset,
+            "clause": clause,
+            "archetype": archetype,
+            "intensity": intensity,
+            "seed": seed,
+        }
+
     morning = option_b_json.get("morning_mindset", {})
     career = option_b_json.get("career", {})
     love = option_b_json.get("love", {})
@@ -171,17 +222,29 @@ def build_context(option_b_json: dict[str, Any]) -> dict[str, Any]:
             option_b_json.get("opening_summary", ""),
             dominant_signs,
             profile_name=profile_name,
+            clause=general_clause,
         ),
         "morning_paragraph": build_morning_paragraph(
             morning.get("paragraph", ""), profile_name, option_b_json.get("theme", "")
         ),
         "mantra": (morning.get("mantra") or "I choose what strengthens me.").strip(),
         "career_paragraph": build_career_paragraph(
-            career.get("paragraph", ""), profile_name=profile_name, tone_hint=tone_hints["career"]
+            career.get("paragraph", ""),
+            profile_name=profile_name,
+            tone_hint=tone_hints["career"],
+            clause=phrase_context.get("career", {}).get("clause"),
         ),
-        "career_bullets": normalize_bullets(career.get("bullets", []), profile_name),
+        "career_bullets": normalize_bullets(
+            career.get("bullets", []),
+            profile_name,
+            area="career",
+            asset=phrase_context.get("career", {}).get("asset"),
+        ),
         "love_paragraph": build_love_paragraph(
-            love.get("paragraph", ""), profile_name=profile_name, tone_hint=tone_hints["love"]
+            love.get("paragraph", ""),
+            profile_name=profile_name,
+            tone_hint=tone_hints["love"],
+            clause=phrase_context.get("love", {}).get("clause"),
         ),
         "love_attached": build_love_status(
             love.get("attached", ""), "attached", profile_name=profile_name, tone_hint=tone_hints["love"]
@@ -194,17 +257,39 @@ def build_context(option_b_json: dict[str, Any]) -> dict[str, Any]:
             option_b_json.get("theme", ""),
             profile_name=profile_name,
             tone_hint=tone_hints["health"],
+            clause=phrase_context.get("health", {}).get("clause"),
         ),
-        "health_opts": normalize_bullets(health.get("good_options", []), profile_name),
+        "health_opts": normalize_bullets(
+            health.get("good_options", []),
+            profile_name,
+            area="health",
+            asset=phrase_context.get("health", {}).get("asset"),
+        ),
         "finance_paragraph": build_finance_paragraph(
             finance.get("paragraph", ""),
             option_b_json.get("theme", ""),
             profile_name=profile_name,
             tone_hint=tone_hints["finance"],
+            clause=phrase_context.get("finance", {}).get("clause"),
         ),
-        "finance_bullets": normalize_bullets(finance.get("bullets", []), profile_name),
-        "do_today": normalize_bullets(option_b_json.get("do_today", []), profile_name),
-        "avoid_today": normalize_avoid(option_b_json.get("avoid_today", []), profile_name),
+        "finance_bullets": normalize_bullets(
+            finance.get("bullets", []),
+            profile_name,
+            area="finance",
+            asset=phrase_context.get("finance", {}).get("asset"),
+        ),
+        "do_today": normalize_bullets(
+            option_b_json.get("do_today", []),
+            profile_name,
+            area="general",
+            asset=general_asset,
+        ),
+        "avoid_today": normalize_avoid(
+            option_b_json.get("avoid_today", []),
+            profile_name,
+            area="general",
+            asset=general_asset,
+        ),
         "lucky": lucky,
         "one_line_summary": build_one_line_summary(
             option_b_json.get("one_line_summary", ""), option_b_json.get("theme", ""), profile_name=profile_name
@@ -225,6 +310,21 @@ def build_context(option_b_json: dict[str, Any]) -> dict[str, Any]:
             "section_tones": tone_hints,
         },
         "areas": area_summary,
+        "phrases": {
+            "general": {
+                "archetype": general_archetype,
+                "intensity": general_intensity,
+                "seed": general_seed,
+            },
+            **{
+                area: {
+                    "archetype": details.get("archetype"),
+                    "intensity": details.get("intensity"),
+                    "seed": details.get("seed"),
+                }
+                for area, details in phrase_context.items()
+            },
+        },
     }
     return ctx
 
