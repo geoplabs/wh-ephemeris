@@ -345,29 +345,7 @@ def _trim_for_display(
     if not normalized:
         return ""
 
-    if len(normalized) <= width:
-        result = normalized
-    else:
-        result = ""
-        # Prefer returning a full sentence when it fits.
-        for sentence in re.split(r"(?<=[.!?])\s+", normalized):
-            candidate = sentence.strip()
-            if candidate and len(candidate) <= width:
-                result = candidate
-                break
-        if not result:
-            words = normalized.split()
-            trimmed: List[str] = []
-            current_len = 0
-            for word in words:
-                additional = len(word) if not trimmed else len(word) + 1
-                if current_len + additional > width:
-                    break
-                trimmed.append(word)
-                current_len += additional
-            result = " ".join(trimmed).rstrip(",;:-")
-        if not result:
-            result = normalized[:width].rstrip()
+    result = normalized
     if ensure_sentence:
         result = _ensure_sentence(result)
     return result
