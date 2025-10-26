@@ -54,3 +54,86 @@ def test_build_context_includes_classifier_and_tones():
     assert ctx["career_paragraph"].startswith("You steady")
     assert ctx["love_paragraph"].startswith("You nurture")
     assert classifier_notes["section_tones"]["finance"] == "neutral"
+
+
+def test_area_rankings_pick_distinct_events():
+    option_b = _base_option_b()
+    option_b["events"] = [
+        {
+            "transit_body": "Saturn",
+            "natal_body": "Sun",
+            "aspect": "square",
+            "score": -82,
+            "natal_house": 10,
+        },
+        {
+            "transit_body": "Venus",
+            "natal_body": "Moon",
+            "aspect": "trine",
+            "score": 68,
+            "natal_house": 7,
+        },
+        {
+            "transit_body": "Mars",
+            "natal_body": "Mercury",
+            "aspect": "conjunction",
+            "score": 59,
+            "natal_house": 6,
+        },
+        {
+            "transit_body": "Jupiter",
+            "natal_body": "Venus",
+            "aspect": "sextile",
+            "score": 54,
+            "natal_house": 2,
+        },
+    ]
+
+    ctx = build_context(option_b)
+    area_summary = ctx["tech_notes"]["areas"]
+
+    assert area_summary["career"]["selected"]["event"]["natal_house"] == 10
+    assert area_summary["love"]["selected"]["event"]["natal_house"] == 7
+    assert area_summary["health"]["selected"]["event"]["natal_house"] == 6
+    assert area_summary["finance"]["selected"]["event"]["natal_house"] == 2
+
+    selected_houses = {
+        area_summary[area]["selected"]["event"]["natal_house"]
+        for area in ("career", "love", "health", "finance")
+    }
+    assert selected_houses == {10, 7, 6, 2}
+
+
+def test_area_rankings_handle_empty_events():
+    option_b = _base_option_b()
+    option_b["events"] = []
+
+    ctx = build_context(option_b)
+    area_summary = ctx["tech_notes"]["areas"]
+
+    for area in ("career", "love", "health", "finance"):
+        assert area_summary[area]["selected"] is None
+        assert area_summary[area]["ranking"] == []
+        assert ctx["area_events"][area] is None
+        assert ctx.get(f"{area}_event") is None
+
+
+def test_area_rankings_apply_fallback_when_no_hints():
+    option_b = _base_option_b()
+    option_b["events"] = [
+        {
+            "transit_body": "Lilith",
+            "aspect": "square",
+            "score": -88,
+        }
+    ]
+
+    ctx = build_context(option_b)
+    area_summary = ctx["tech_notes"]["areas"]
+
+    for area in ("career", "love", "health", "finance"):
+        selected = area_summary[area]["selected"]
+        assert selected is not None
+        assert selected.get("is_fallback") is True
+        assert selected["event"]["transit_body"] == "Lilith"
+        assert ctx["area_events"][area]["event"]["transit_body"] == "Lilith"
