@@ -1,3 +1,5 @@
+import importlib
+import json
 import sys
 import types
 
@@ -8,6 +10,26 @@ if "redis" not in sys.modules:
             (),
             {"from_url": staticmethod(lambda *args, **kwargs: None)},
         )
+    )
+
+if "jinja2" not in sys.modules:
+    class _StubTemplate:
+        def __init__(self, source=""):
+            self.source = source
+
+        def render(self, **kwargs):
+            return self.source
+
+    class _StubEnvironment:
+        def __init__(self, *args, **kwargs):
+            pass
+
+        def from_string(self, source):
+            return _StubTemplate(source)
+
+    sys.modules["jinja2"] = types.SimpleNamespace(
+        Environment=_StubEnvironment,
+        Template=_StubTemplate,
     )
 
 if "jsonschema" not in sys.modules:
@@ -43,7 +65,12 @@ if "api.schemas.forecasts" not in sys.modules:
     sys.modules["api.schemas"].forecasts = forecasts_module
     sys.modules["api.schemas.forecasts"] = forecasts_module
 
-from api.services.daily_template import _build_fallback, _trim_for_display
+daily_template = importlib.import_module("api.services.daily_template")
+
+_build_fallback = daily_template._build_fallback
+_ensure_sentence = daily_template._ensure_sentence
+_trim_for_display = daily_template._trim_for_display
+generate_daily_template = daily_template.generate_daily_template
 
 
 def _sample_daily_payload():
@@ -115,6 +142,12 @@ def test_trim_for_display_avoids_ellipses():
     assert trimmed.endswith(".")
 
 
+def test_trim_for_display_returns_full_text_when_width_disabled():
+    text = "A long sentence that should remain intact even when a traditional width limit would cut it."
+    trimmed = _trim_for_display(text, width=None, ensure_sentence=True)
+    assert trimmed == _ensure_sentence(text)
+
+
 def test_build_fallback_has_no_ellipses():
     fallback = _build_fallback(_sample_daily_payload())
     for text in _collect_strings(fallback.model_dump(mode="python")):
@@ -122,3 +155,64 @@ def test_build_fallback_has_no_ellipses():
             continue
         assert "..." not in text
         assert "…" not in text
+
+
+def test_generate_daily_template_skips_llm_when_use_ai_false(monkeypatch):
+    payload = _sample_daily_payload()
+    payload["meta"]["use_ai"] = False
+
+    def fail_get_client():
+        raise AssertionError("OpenAI client should not be created when use_ai is false")
+
+    def fail_render(*args, **kwargs):
+        raise AssertionError("LLM renderer should not be invoked when use_ai is false")
+
+    monkeypatch.setattr(daily_template, "_get_openai_client", fail_get_client)
+    monkeypatch.setattr(daily_template, "_render_with_llm", fail_render)
+
+    result = generate_daily_template(payload, {})
+
+    assert result.payload is not None
+    assert result.cache_hit is False
+
+
+def test_generate_daily_template_uses_llm_when_use_ai_true(monkeypatch):
+    payload = _sample_daily_payload()
+    payload["meta"]["use_ai"] = True
+
+    fake_client = object()
+    monkeypatch.setattr(daily_template, "_get_openai_client", lambda: fake_client)
+
+    expected_payload = _build_fallback(payload).model_dump(mode="json")
+
+    def fake_validate(data):
+        return True, []
+
+    def fake_sanitize(data):
+        return data
+
+    render_calls = {"count": 0}
+
+    def fake_render(client, daily, retry_payload=None):
+        assert client is fake_client
+        assert retry_payload is None
+        render_calls["count"] += 1
+        return expected_payload, json.dumps(expected_payload), 123
+
+    monkeypatch.setattr(daily_template, "_validate_payload", fake_validate)
+    monkeypatch.setattr(daily_template, "_sanitize_payload", fake_sanitize)
+    original_build = daily_template._build_fallback
+
+    def fail_fallback(*args, **kwargs):
+        raise AssertionError("Fallback should not be used when the LLM succeeds")
+
+    monkeypatch.setattr(daily_template, "_build_fallback", fail_fallback)
+    monkeypatch.setattr(daily_template, "_render_with_llm", fake_render)
+
+    try:
+        result = generate_daily_template(payload, {})
+    finally:
+        monkeypatch.setattr(daily_template, "_build_fallback", original_build)
+
+    assert render_calls["count"] == 1
+    assert result.payload == expected_payload

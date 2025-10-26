@@ -43,6 +43,7 @@ class DailyOptions(BaseModel):
     profile_name: Optional[str] = None
     step_days: int = 1
     window_days: int = 1
+    use_ai: Optional[bool] = None
     areas: List[str] = ["career", "love", "health", "finance"]
     transit_bodies: List[str] = [
         "Sun",
