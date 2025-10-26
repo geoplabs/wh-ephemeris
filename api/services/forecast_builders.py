@@ -271,6 +271,14 @@ def daily_payload(chart_input: Dict[str, Any], options: Dict[str, Any]) -> Dict[
         "profile_name": profile_name,
         "window_days": window,
     }
+    use_ai_option = options.get("use_ai")
+    if use_ai_option is not None:
+        if isinstance(use_ai_option, str):
+            normalized = use_ai_option.strip().lower()
+            use_ai_flag = normalized in {"1", "true", "yes", "on"}
+        else:
+            use_ai_flag = bool(use_ai_option)
+        meta["use_ai"] = use_ai_flag
     lucky = _build_lucky(top_events[0] if top_events else None)
 
     return {

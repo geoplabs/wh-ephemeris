@@ -329,7 +329,7 @@ def _guidance_clause(value: Any) -> str:
 def _trim_for_display(
     value: Any,
     *,
-    width: int,
+    width: Optional[int] = None,
     fallback: str = "",
     ensure_sentence: bool = False,
 ) -> str:
@@ -345,17 +345,15 @@ def _trim_for_display(
     if not normalized:
         return ""
 
-    if len(normalized) <= width:
-        result = normalized
-    else:
-        result = ""
-        # Prefer returning a full sentence when it fits.
+    result = normalized
+    if width and width > 0 and len(normalized) > width:
+        candidate_result = ""
         for sentence in re.split(r"(?<=[.!?])\s+", normalized):
             candidate = sentence.strip()
             if candidate and len(candidate) <= width:
-                result = candidate
+                candidate_result = candidate
                 break
-        if not result:
+        if not candidate_result:
             words = normalized.split()
             trimmed: List[str] = []
             current_len = 0
@@ -365,8 +363,10 @@ def _trim_for_display(
                     break
                 trimmed.append(word)
                 current_len += additional
-            result = " ".join(trimmed).rstrip(",;:-")
-        if not result:
+            candidate_result = " ".join(trimmed).rstrip(",;:-")
+        if candidate_result:
+            result = candidate_result
+        else:
             result = normalized[:width].rstrip()
     if ensure_sentence:
         result = _ensure_sentence(result)
@@ -525,7 +525,6 @@ def _build_fallback(daily: Dict[str, Any]) -> DailyTemplatedResponse:
     )
     theme = _trim_for_display(
         headline_source,
-        width=60,
         fallback="Focused Momentum",
     ) or "Focused Momentum"
 
@@ -562,7 +561,6 @@ def _build_fallback(daily: Dict[str, Any]) -> DailyTemplatedResponse:
             if note:
                 formatted = _trim_for_display(
                     note,
-                    width=120,
                     ensure_sentence=True,
                 )
             else:
@@ -633,7 +631,6 @@ def _build_fallback(daily: Dict[str, Any]) -> DailyTemplatedResponse:
             phrase = f"Focus on the {transit} {aspect} {natal} influence".strip()
         formatted_phrase = _trim_for_display(
             phrase,
-            width=120,
             ensure_sentence=True,
         )
         if aspect in positive_aspects and len(do_today) < SANITIZED_LIST_LIMIT:
@@ -687,7 +684,6 @@ def _build_fallback(daily: Dict[str, Any]) -> DailyTemplatedResponse:
 
     one_line_summary = _trim_for_display(
         opening_summary,
-        width=140,
         fallback=opening_summary,
         ensure_sentence=True,
     )
@@ -820,6 +816,16 @@ def generate_daily_template(
     cache_key = f"dailyTpl:{date}:{TEMPLATE_LANG}:{TEMPLATE_VERSION}:{TEMPLATE_MODEL}:{content_hash}"
     lock_key = f"lock:{cache_key}"
 
+    meta = daily_payload.get("meta", {})
+    use_ai_pref = meta.get("use_ai")
+    if isinstance(use_ai_pref, str):
+        normalized = use_ai_pref.strip().lower()
+        use_ai = normalized in {"1", "true", "yes", "on"}
+    elif use_ai_pref is None:
+        use_ai = True
+    else:
+        use_ai = bool(use_ai_pref)
+
     redis_client = _get_redis_client()
     cached_payload: Optional[Dict[str, Any]] = None
     cache_hit = False
@@ -911,7 +917,7 @@ def generate_daily_template(
                 logger.exception("daily_template_lock_second_attempt_failed", extra={"cache_key": cache_key})
                 lock_acquired = False
 
-    llm_client = _get_openai_client()
+    llm_client = _get_openai_client() if use_ai else None
     validation_errors: List[str] = []
     llm_tokens: Optional[int] = None
     generated_payload: Optional[Dict[str, Any]] = None
