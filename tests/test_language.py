@@ -3,24 +3,28 @@ from api.services.option_b_cleaner.language import (
     build_love_status,
     build_opening_summary,
 )
+from src.content.phrasebank import select_clause
 
 
 def test_opening_summary_backdrop():
+    clause = select_clause("Radiant Expansion", "gentle", "general", seed=42)
     out = build_opening_summary(
         "Notably radiant energy in drive",
         "Powerfully harmonizing energy in emotional rhythms.",
         ["Libra", "Scorpio"],
+        clause=clause,
     )
-    assert "Harness this radiant push toward progress." in out
+    assert clause in out
     assert "Cardinal Air (Libra)" in out
     assert "Fixed Water (Scorpio)" in out
 
 
 def test_career_paragraph_micro_phrase():
-    out = build_career_paragraph("Radiant focus supports progress at work.")
+    clause = select_clause("Radiant Expansion", "steady", "career", seed=7)
+    out = build_career_paragraph("Radiant focus supports progress at work.", clause=clause)
     sentences = [s for s in out.split(".") if s.strip()]
     assert len(sentences) == 2
-    assert out.endswith("Let this focused drive move your intentions into form.")
+    assert sentences[-1].strip().startswith("Momentum guides your career")
 
 
 def test_love_status_voice():

@@ -103,12 +103,6 @@ FOCUS_MAP = (
     ("body", "wellness rituals"),
 )
 
-MICRO_PHRASES = {
-    "opening": "Harness this radiant push toward progress.",
-    "career": "Let this focused drive move your intentions into form.",
-    "harmony": "Let emotional harmony guide practical choices.",
-}
-
 DESCRIPTOR_OVERRIDES = {
     "heart": "tender",
     "emotional": "soothing",
@@ -188,15 +182,24 @@ def element_modality_line(sign_a: str, sign_b: str) -> str:
     )
 
 
-def build_opening_summary(theme: str, raw: str, signs: Sequence[str], profile_name: str = "") -> str:
+def build_opening_summary(
+    theme: str,
+    raw: str,
+    signs: Sequence[str],
+    profile_name: str = "",
+    clause: str | None = None,
+) -> str:
     sign_a = signs[0] if signs else "Libra"
     sign_b = signs[1] if len(signs) > 1 else sign_a
     descriptor = descriptor_from_text(theme, raw, profile_name=profile_name)
     focus = focus_from_text(theme, raw, profile_name=profile_name)
     article = _article(descriptor)
+    closing = clause.strip() if clause else "Harness this radiant push toward progress."
+    if closing and not closing.endswith("."):
+        closing = f"{closing}."
     first_sentence = (
         f"You ride {article} {descriptor} wave through today's {focus}—"
-        f"{MICRO_PHRASES['opening']}"
+        f"{closing}"
     )
     backdrop = element_modality_line(sign_a, sign_b)
     return f"{first_sentence} {backdrop}"
@@ -212,7 +215,10 @@ def build_morning_paragraph(raw: str, profile_name: str, theme: str) -> str:
 
 
 def build_career_paragraph(
-    raw: str, profile_name: str = "", tone_hint: str | None = None
+    raw: str,
+    profile_name: str = "",
+    tone_hint: str | None = None,
+    clause: str | None = None,
 ) -> str:
     descriptor = descriptor_from_text(raw, default="steady", profile_name=profile_name)
     tone = tone_hint or tone_from_text(raw)
@@ -220,18 +226,28 @@ def build_career_paragraph(
         first = f"You steady {descriptor} demands by pacing commitments at work."
     else:
         first = f"You turn {descriptor} work into deliberate progress at work."
-    second = MICRO_PHRASES["career"]
-    return f"{first} {second}"
+    second = clause.strip() if clause else "Let this focused drive move your intentions into form."
+    if second and not second.endswith("."):
+        second = f"{second}."
+    return f"{first} {second}".strip()
 
 
 def build_love_paragraph(
-    raw: str, profile_name: str = "", tone_hint: str | None = None
+    raw: str,
+    profile_name: str = "",
+    tone_hint: str | None = None,
+    clause: str | None = None,
 ) -> str:
     descriptor = descriptor_from_text(raw, default="tender", profile_name=profile_name)
     tone = tone_hint or tone_from_text(raw)
     if tone == "challenge":
-        return f"You ease relationship friction by listening with {descriptor} patience."
-    return f"You nurture heart connections by sharing {descriptor} honesty."
+        base = f"You ease relationship friction by listening with {descriptor} patience."
+    else:
+        base = f"You nurture heart connections by sharing {descriptor} honesty."
+    extra = clause.strip() if clause else ""
+    if extra and not extra.endswith("."):
+        extra = f"{extra}."
+    return f"{base} {extra}".strip()
 
 
 def build_love_status(
@@ -248,30 +264,44 @@ def build_love_status(
 
 
 def build_health_paragraph(
-    raw: str, theme: str, profile_name: str = "", tone_hint: str | None = None
+    raw: str,
+    theme: str,
+    profile_name: str = "",
+    tone_hint: str | None = None,
+    clause: str | None = None,
 ) -> str:
     descriptor = descriptor_from_text(raw, theme, default="balanced", profile_name=profile_name)
     tone = tone_hint or tone_from_text(raw)
     if tone == "challenge":
-        second = "Keep movements gentle and responsive to your body's signals."
+        default_second = "Keep movements gentle and responsive to your body's signals."
     else:
-        second = "Balance movement with rest so your body stays responsive."
+        default_second = "Balance movement with rest so your body stays responsive."
+    second = clause.strip() if clause else default_second
+    if second and not second.endswith("."):
+        second = f"{second}."
     first = f"You protect wellbeing by honoring {descriptor} rhythms."
-    return f"{first} {second}"
+    return f"{first} {second}".strip()
 
 
 def build_finance_paragraph(
-    raw: str, theme: str, profile_name: str = "", tone_hint: str | None = None
+    raw: str,
+    theme: str,
+    profile_name: str = "",
+    tone_hint: str | None = None,
+    clause: str | None = None,
 ) -> str:
     descriptor = descriptor_from_text(raw, theme, default="calm", profile_name=profile_name)
     tone = tone_hint or tone_from_text(raw)
     if tone == "challenge":
         first = f"You navigate financial choices with {descriptor} patience today."
-        second = "Review numbers before you commit to new moves."
+        default_second = "Review numbers before you commit to new moves."
     else:
         first = f"You let {descriptor} awareness guide each money choice today."
-        second = MICRO_PHRASES["harmony"]
-    return f"{first} {second}"
+        default_second = "Let emotional harmony guide practical choices."
+    second = clause.strip() if clause else default_second
+    if second and not second.endswith("."):
+        second = f"{second}."
+    return f"{first} {second}".strip()
 
 
 def build_one_line_summary(raw: str, theme: str, profile_name: str = "") -> str:

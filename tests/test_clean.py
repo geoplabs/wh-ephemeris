@@ -4,6 +4,7 @@ from api.services.option_b_cleaner.clean import (
     imperative_bullet,
     to_you_pov,
 )
+from src.content.phrasebank import get_asset
 
 
 def test_de_jargon():
@@ -18,15 +19,28 @@ def test_pov():
 
 
 def test_bullet():
-    out = imperative_bullet("Notably radiant energy in drive. Applying…", order=0)
-    assert out.startswith(("Focus", "Choose", "Set", "Plan"))
+    asset = get_asset("Radiant Expansion", "steady", "career")
+    out = imperative_bullet(
+        "Notably radiant energy in drive. Applying…",
+        order=0,
+        area="career",
+        asset=asset,
+    )
+    assert out.startswith("Focus")
     assert "Applying" not in out and "…" not in out
     assert 3 <= len(out.rstrip(".").split()) <= 10
 
 
 def test_avoid_bullet():
-    out = imperative_bullet("Avoid overextending emotional energy…", order=1, mode="avoid")
-    assert out.startswith(("Avoid", "Skip", "Hold", "Delay"))
+    asset = get_asset("Phoenix Reframe", "strong", "love")
+    out = imperative_bullet(
+        "Avoid overextending emotional energy…",
+        order=1,
+        mode="avoid",
+        area="love",
+        asset=asset,
+    )
+    assert out.startswith("Skip")
     assert 3 <= len(out.rstrip(".").split()) <= 10
 
 
