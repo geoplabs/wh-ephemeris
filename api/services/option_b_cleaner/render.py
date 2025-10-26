@@ -212,6 +212,11 @@ def build_context(option_b_json: dict[str, Any]) -> dict[str, Any]:
     health = option_b_json.get("health", {})
     finance = option_b_json.get("finance", {})
 
+    area_events: dict[str, Any | None] = {}
+    for area in SECTION_TAGS:
+        selected = selected_area_events.get(area)
+        area_events[area] = selected.get("event") if selected else None
+
     ctx: dict[str, Any] = {
         "profile_name": profile_name,
         "date": date,
@@ -225,7 +230,10 @@ def build_context(option_b_json: dict[str, Any]) -> dict[str, Any]:
             clause=general_clause,
         ),
         "morning_paragraph": build_morning_paragraph(
-            morning.get("paragraph", ""), profile_name, option_b_json.get("theme", "")
+            morning.get("paragraph", ""),
+            profile_name,
+            option_b_json.get("theme", ""),
+            event=general_event,
         ),
         "mantra": (morning.get("mantra") or "I choose what strengthens me.").strip(),
         "career_paragraph": build_career_paragraph(
@@ -233,6 +241,7 @@ def build_context(option_b_json: dict[str, Any]) -> dict[str, Any]:
             profile_name=profile_name,
             tone_hint=tone_hints["career"],
             clause=phrase_context.get("career", {}).get("clause"),
+            event=area_events.get("career"),
         ),
         "career_bullets": normalize_bullets(
             career.get("bullets", []),
@@ -245,6 +254,7 @@ def build_context(option_b_json: dict[str, Any]) -> dict[str, Any]:
             profile_name=profile_name,
             tone_hint=tone_hints["love"],
             clause=phrase_context.get("love", {}).get("clause"),
+            event=area_events.get("love"),
         ),
         "love_attached": build_love_status(
             love.get("attached", ""), "attached", profile_name=profile_name, tone_hint=tone_hints["love"]
@@ -258,6 +268,7 @@ def build_context(option_b_json: dict[str, Any]) -> dict[str, Any]:
             profile_name=profile_name,
             tone_hint=tone_hints["health"],
             clause=phrase_context.get("health", {}).get("clause"),
+            event=area_events.get("health"),
         ),
         "health_opts": normalize_bullets(
             health.get("good_options", []),
@@ -271,6 +282,7 @@ def build_context(option_b_json: dict[str, Any]) -> dict[str, Any]:
             profile_name=profile_name,
             tone_hint=tone_hints["finance"],
             clause=phrase_context.get("finance", {}).get("clause"),
+            event=area_events.get("finance"),
         ),
         "finance_bullets": normalize_bullets(
             finance.get("bullets", []),
@@ -296,8 +308,8 @@ def build_context(option_b_json: dict[str, Any]) -> dict[str, Any]:
         ),
         "area_events": selected_area_events,
     }
-    for area, selected in selected_area_events.items():
-        ctx[f"{area}_event"] = selected.get("event") if selected else None
+    for area in SECTION_TAGS:
+        ctx[f"{area}_event"] = area_events.get(area)
 
     ctx["tech_notes"] = {
         "dominant": {"planet": dom_planet, "sign": dom_sign},

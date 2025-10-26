@@ -38,6 +38,7 @@ _STOPWORDS = {
 }
 
 _DIRECT_VERBS = {"review", "check", "plan", "stretch", "hydrate", "share", "breathe", "rest", "express", "address"}
+_TOKENIZER = re.compile(r"[A-Za-z0-9]+(?:['-][A-Za-z0-9]+)?")
 
 
 def de_jargon(s: str) -> str:
@@ -50,6 +51,35 @@ def de_jargon(s: str) -> str:
     s = _ELLIPSES.sub(" ", s)
     s = _MULTISPACE.sub(" ", s).strip()
     return s
+
+
+def clean_tokens(s: str, *, max_tokens: int = 8) -> list[str]:
+    """Return sanitized tokens extracted from ``s`` after ``de_jargon`` cleanup."""
+
+    if not isinstance(s, str):
+        return []
+    cleaned = de_jargon(s or "")
+    tokens: list[str] = []
+    for raw in _TOKENIZER.findall(cleaned):
+        token = raw.strip("'\"")
+        if not token:
+            continue
+        safe = re.sub(r"[^A-Za-z0-9-]", "", token)
+        if not safe:
+            continue
+        tokens.append(safe)
+        if len(tokens) >= max_tokens:
+            break
+    return tokens
+
+
+def clean_token_phrase(s: str, *, max_tokens: int = 5) -> str:
+    """Return a space-joined phrase of sanitized tokens suitable for reuse."""
+
+    tokens = clean_tokens(s, max_tokens=max_tokens)
+    if not tokens:
+        return ""
+    return " ".join(tokens)
 
 
 def to_you_pov(s: str, profile_name: str) -> str:

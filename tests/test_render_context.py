@@ -137,3 +137,45 @@ def test_area_rankings_apply_fallback_when_no_hints():
         assert selected.get("is_fallback") is True
         assert selected["event"]["transit_body"] == "Lilith"
         assert ctx["area_events"][area]["event"]["transit_body"] == "Lilith"
+
+
+def test_paragraphs_embed_event_details():
+    option_b = _base_option_b()
+    option_b["events"] = [
+        {
+            "transit_body": "Saturn",
+            "natal_body": "Sun",
+            "aspect": "square",
+            "score": -92,
+            "natal_house": 10,
+        },
+        {
+            "transit_body": "Venus",
+            "natal_body": "Moon",
+            "aspect": "trine",
+            "score": 78,
+            "natal_house": 7,
+        },
+        {
+            "transit_body": "Mars",
+            "natal_body": "Mercury",
+            "aspect": "conjunction",
+            "score": 65,
+            "natal_house": 6,
+        },
+        {
+            "transit_body": "Jupiter",
+            "natal_body": "Venus",
+            "aspect": "sextile",
+            "score": 62,
+            "natal_house": 2,
+        },
+    ]
+
+    ctx = build_context(option_b)
+
+    assert "Saturn presses on your Sun" in ctx["career_paragraph"]
+    assert "Venus flows with your Moon" in ctx["love_paragraph"]
+    assert "Mars aligns with your Mercury" in ctx["health_paragraph"]
+    assert "Jupiter supports your Venus" in ctx["finance_paragraph"]
+    assert "Saturn presses on your Sun" in ctx["morning_paragraph"]

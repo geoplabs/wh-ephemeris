@@ -1,9 +1,10 @@
 from __future__ import annotations
 
 import re
-from typing import Iterable, Sequence
+from typing import Iterable, Mapping, Sequence
 
 from .clean import de_jargon, to_you_pov
+from .event_tokens import MiniTemplate, event_phrase, render_mini_template
 
 
 SIGN_DETAILS = {
@@ -205,13 +206,30 @@ def build_opening_summary(
     return f"{first_sentence} {backdrop}"
 
 
-def build_morning_paragraph(raw: str, profile_name: str, theme: str) -> str:
+def build_morning_paragraph(
+    raw: str,
+    profile_name: str,
+    theme: str,
+    event: Mapping[str, Any] | None = None,
+) -> str:
     descriptor = descriptor_from_text(raw, theme, profile_name=profile_name)
     focus = focus_from_text(raw, theme, default="momentum", profile_name=profile_name)
-    sentence = (
-        f"You set the tone by taking one intentional pause before leaning into {descriptor} {focus} today."
+    event_clause = event_phrase(event)
+    tokens = {"descriptor": descriptor, "focus": focus, "event_clause": event_clause}
+    sentence = render_mini_template(
+        (
+            MiniTemplate(
+                "You set the tone with one intentional pause before leaning into {descriptor} {focus} today while {event_clause}.",
+                ("descriptor", "focus", "event_clause"),
+            ),
+            MiniTemplate(
+                "You set the tone by taking one intentional pause before leaning into {descriptor} {focus} today.",
+                ("descriptor", "focus"),
+            ),
+        ),
+        tokens,
     )
-    return sentence
+    return sentence or "You set the tone by taking one intentional pause before leaning into steady momentum today."
 
 
 def build_career_paragraph(
@@ -219,13 +237,42 @@ def build_career_paragraph(
     profile_name: str = "",
     tone_hint: str | None = None,
     clause: str | None = None,
+    event: Mapping[str, Any] | None = None,
 ) -> str:
     descriptor = descriptor_from_text(raw, default="steady", profile_name=profile_name)
     tone = tone_hint or tone_from_text(raw)
+    event_clause = event_phrase(event)
+    tokens = {"descriptor": descriptor, "event_clause": event_clause}
     if tone == "challenge":
-        first = f"You steady {descriptor} demands by pacing commitments at work."
+        first = render_mini_template(
+            (
+                MiniTemplate(
+                    "You steady {descriptor} demands by pacing commitments at work while {event_clause}.",
+                    ("descriptor", "event_clause"),
+                ),
+                MiniTemplate(
+                    "You steady {descriptor} demands by pacing commitments at work.",
+                    ("descriptor",),
+                ),
+            ),
+            tokens,
+        )
     else:
-        first = f"You turn {descriptor} work into deliberate progress at work."
+        first = render_mini_template(
+            (
+                MiniTemplate(
+                    "You turn {descriptor} work into deliberate progress at work while {event_clause}.",
+                    ("descriptor", "event_clause"),
+                ),
+                MiniTemplate(
+                    "You turn {descriptor} work into deliberate progress at work.",
+                    ("descriptor",),
+                ),
+            ),
+            tokens,
+        )
+    if not first:
+        first = "You turn steady work into deliberate progress at work."
     second = clause.strip() if clause else "Let this focused drive move your intentions into form."
     if second and not second.endswith("."):
         second = f"{second}."
@@ -237,13 +284,42 @@ def build_love_paragraph(
     profile_name: str = "",
     tone_hint: str | None = None,
     clause: str | None = None,
+    event: Mapping[str, Any] | None = None,
 ) -> str:
     descriptor = descriptor_from_text(raw, default="tender", profile_name=profile_name)
     tone = tone_hint or tone_from_text(raw)
+    event_clause = event_phrase(event)
+    tokens = {"descriptor": descriptor, "event_clause": event_clause}
     if tone == "challenge":
-        base = f"You ease relationship friction by listening with {descriptor} patience."
+        base = render_mini_template(
+            (
+                MiniTemplate(
+                    "You ease relationship friction by listening with {descriptor} patience while {event_clause}.",
+                    ("descriptor", "event_clause"),
+                ),
+                MiniTemplate(
+                    "You ease relationship friction by listening with {descriptor} patience.",
+                    ("descriptor",),
+                ),
+            ),
+            tokens,
+        )
     else:
-        base = f"You nurture heart connections by sharing {descriptor} honesty."
+        base = render_mini_template(
+            (
+                MiniTemplate(
+                    "You nurture heart connections by sharing {descriptor} honesty as {event_clause}.",
+                    ("descriptor", "event_clause"),
+                ),
+                MiniTemplate(
+                    "You nurture heart connections by sharing {descriptor} honesty.",
+                    ("descriptor",),
+                ),
+            ),
+            tokens,
+        )
+    if not base:
+        base = "You nurture heart connections by sharing tender honesty."
     extra = clause.strip() if clause else ""
     if extra and not extra.endswith("."):
         extra = f"{extra}."
@@ -269,6 +345,7 @@ def build_health_paragraph(
     profile_name: str = "",
     tone_hint: str | None = None,
     clause: str | None = None,
+    event: Mapping[str, Any] | None = None,
 ) -> str:
     descriptor = descriptor_from_text(raw, theme, default="balanced", profile_name=profile_name)
     tone = tone_hint or tone_from_text(raw)
@@ -279,7 +356,22 @@ def build_health_paragraph(
     second = clause.strip() if clause else default_second
     if second and not second.endswith("."):
         second = f"{second}."
-    first = f"You protect wellbeing by honoring {descriptor} rhythms."
+    event_clause = event_phrase(event)
+    first = render_mini_template(
+        (
+            MiniTemplate(
+                "You protect wellbeing by honoring {descriptor} rhythms while {event_clause}.",
+                ("descriptor", "event_clause"),
+            ),
+            MiniTemplate(
+                "You protect wellbeing by honoring {descriptor} rhythms.",
+                ("descriptor",),
+            ),
+        ),
+        {"descriptor": descriptor, "event_clause": event_clause},
+    )
+    if not first:
+        first = "You protect wellbeing by honoring balanced rhythms."
     return f"{first} {second}".strip()
 
 
@@ -289,15 +381,44 @@ def build_finance_paragraph(
     profile_name: str = "",
     tone_hint: str | None = None,
     clause: str | None = None,
+    event: Mapping[str, Any] | None = None,
 ) -> str:
     descriptor = descriptor_from_text(raw, theme, default="calm", profile_name=profile_name)
     tone = tone_hint or tone_from_text(raw)
+    event_clause = event_phrase(event)
+    tokens = {"descriptor": descriptor, "event_clause": event_clause}
     if tone == "challenge":
-        first = f"You navigate financial choices with {descriptor} patience today."
+        first = render_mini_template(
+            (
+                MiniTemplate(
+                    "You navigate financial choices with {descriptor} patience today while {event_clause}.",
+                    ("descriptor", "event_clause"),
+                ),
+                MiniTemplate(
+                    "You navigate financial choices with {descriptor} patience today.",
+                    ("descriptor",),
+                ),
+            ),
+            tokens,
+        )
         default_second = "Review numbers before you commit to new moves."
     else:
-        first = f"You let {descriptor} awareness guide each money choice today."
+        first = render_mini_template(
+            (
+                MiniTemplate(
+                    "You let {descriptor} awareness guide each money choice today while {event_clause}.",
+                    ("descriptor", "event_clause"),
+                ),
+                MiniTemplate(
+                    "You let {descriptor} awareness guide each money choice today.",
+                    ("descriptor",),
+                ),
+            ),
+            tokens,
+        )
         default_second = "Let emotional harmony guide practical choices."
+    if not first:
+        first = "You let calm awareness guide each money choice today."
     second = clause.strip() if clause else default_second
     if second and not second.endswith("."):
         second = f"{second}."
