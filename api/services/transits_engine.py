@@ -146,10 +146,12 @@ def compute_transits(chart_input: Dict[str,Any], opts: Dict[str,Any]) -> List[Di
                         phase = "Applying" if applying else "Separating"
                         transit_sign = sign_name_from_lon(t_pos["lon"])
                         natal_sign = sign_name_from_lon(n_pos["lon"])
+                        zodiac_mode = "sidereal" if sidereal else "tropical"
                         note = (
                             f"{_interpretive_note(t_name, n_name, a_name, score)} "
                             f"{phase} {a_name} at {orb:.2f}° orb. "
-                            f"{t_name} in {transit_sign}; {n_name} in {natal_sign}."
+                            f"{t_name} (transit, {zodiac_mode}) in {transit_sign}; "
+                            f"{n_name} (natal, {zodiac_mode}) in {natal_sign}."
                         )
                         events.append({
                             "date": dt.date().isoformat(),
@@ -162,6 +164,7 @@ def compute_transits(chart_input: Dict[str,Any], opts: Dict[str,Any]) -> List[Di
                             "note": note,
                             "transit_sign": transit_sign,
                             "natal_sign": natal_sign,
+                            "zodiac": zodiac_mode,
                         })
     # Sort: date then score desc
     events.sort(key=lambda e: (e["date"], -e["score"]))

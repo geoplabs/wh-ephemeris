@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from pydantic import BaseModel, Field, ConfigDict, conlist
 from typing import Optional, List, Dict, Any
 from .charts import ChartInput
@@ -71,6 +73,7 @@ class ForecastEvent(BaseModel):
     note: Optional[str] = None
     transit_sign: Optional[str] = None
     natal_sign: Optional[str] = None
+    zodiac: Optional[str] = None
 
 
 class YearlyForecastRequest(BaseModel):
