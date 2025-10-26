@@ -3,7 +3,6 @@ import logging
 import os
 import random
 import re
-import textwrap
 import time
 from collections.abc import Mapping
 from dataclasses import dataclass
@@ -327,6 +326,53 @@ def _guidance_clause(value: Any) -> str:
     return _lower_first(normalized)
 
 
+def _trim_for_display(
+    value: Any,
+    *,
+    width: int,
+    fallback: str = "",
+    ensure_sentence: bool = False,
+) -> str:
+    text = _coerce_string(value)
+    if not text:
+        text = fallback
+    if not text:
+        return ""
+
+    normalized = " ".join(text.split())
+    if not normalized:
+        normalized = fallback
+    if not normalized:
+        return ""
+
+    if len(normalized) <= width:
+        result = normalized
+    else:
+        result = ""
+        # Prefer returning a full sentence when it fits.
+        for sentence in re.split(r"(?<=[.!?])\s+", normalized):
+            candidate = sentence.strip()
+            if candidate and len(candidate) <= width:
+                result = candidate
+                break
+        if not result:
+            words = normalized.split()
+            trimmed: List[str] = []
+            current_len = 0
+            for word in words:
+                additional = len(word) if not trimmed else len(word) + 1
+                if current_len + additional > width:
+                    break
+                trimmed.append(word)
+                current_len += additional
+            result = " ".join(trimmed).rstrip(",;:-")
+        if not result:
+            result = normalized[:width].rstrip()
+    if ensure_sentence:
+        result = _ensure_sentence(result)
+    return result
+
+
 _jinja_env: Optional[Environment] = None
 
 
@@ -477,7 +523,11 @@ def _build_fallback(daily: Dict[str, Any]) -> DailyTemplatedResponse:
         ),
         "Focused Momentum",
     )
-    theme = textwrap.shorten(headline_source, width=60, placeholder="…") or "Focused Momentum"
+    theme = _trim_for_display(
+        headline_source,
+        width=60,
+        fallback="Focused Momentum",
+    ) or "Focused Momentum"
 
     focus_map: Dict[str, Dict[str, Any]] = {}
     for entry in focus_areas:
@@ -510,7 +560,11 @@ def _build_fallback(daily: Dict[str, Any]) -> DailyTemplatedResponse:
             event_map = _sanitize_mapping(event)
             note = _coerce_string(event_map.get("note"))
             if note:
-                formatted = textwrap.shorten(note, width=96, placeholder="…")
+                formatted = _trim_for_display(
+                    note,
+                    width=120,
+                    ensure_sentence=True,
+                )
             else:
                 transit = _coerce_string(event_map.get("transit_body"))
                 aspect = _coerce_string(event_map.get("aspect"))
@@ -577,7 +631,11 @@ def _build_fallback(daily: Dict[str, Any]) -> DailyTemplatedResponse:
             transit = _coerce_string(event_map.get("transit_body"))
             natal = _coerce_string(event_map.get("natal_body"))
             phrase = f"Focus on the {transit} {aspect} {natal} influence".strip()
-        formatted_phrase = textwrap.shorten(phrase, width=88, placeholder="…")
+        formatted_phrase = _trim_for_display(
+            phrase,
+            width=120,
+            ensure_sentence=True,
+        )
         if aspect in positive_aspects and len(do_today) < SANITIZED_LIST_LIMIT:
             do_today.append(formatted_phrase)
         elif aspect in challenging_aspects and len(avoid_today) < SANITIZED_LIST_LIMIT:
@@ -627,10 +685,11 @@ def _build_fallback(daily: Dict[str, Any]) -> DailyTemplatedResponse:
         ensure_sentence_output=False,
     ) or mantra_source
 
-    one_line_summary = textwrap.shorten(
+    one_line_summary = _trim_for_display(
         opening_summary,
-        width=96,
-        placeholder="…",
+        width=140,
+        fallback=opening_summary,
+        ensure_sentence=True,
     )
 
     fallback = {
