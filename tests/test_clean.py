@@ -18,9 +18,16 @@ def test_pov():
 
 
 def test_bullet():
-    out = imperative_bullet("Notably radiant energy in drive. Applying…")
-    assert out.startswith(("Focus", "Take", "Choose"))
+    out = imperative_bullet("Notably radiant energy in drive. Applying…", order=0)
+    assert out.startswith(("Focus", "Choose", "Set", "Plan"))
     assert "Applying" not in out and "…" not in out
+    assert 3 <= len(out.rstrip(".").split()) <= 10
+
+
+def test_avoid_bullet():
+    out = imperative_bullet("Avoid overextending emotional energy…", order=1, mode="avoid")
+    assert out.startswith(("Avoid", "Skip", "Hold", "Delay"))
+    assert 3 <= len(out.rstrip(".").split()) <= 10
 
 
 def test_clamp():
