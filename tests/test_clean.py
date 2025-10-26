@@ -1,5 +1,7 @@
 from api.services.option_b_cleaner.clean import (
     clamp_sentences,
+    clean_token_phrase,
+    clean_tokens,
     de_jargon,
     imperative_bullet,
     to_you_pov,
@@ -47,3 +49,13 @@ def test_avoid_bullet():
 def test_clamp():
     p = "Sentence one. Sentence two. Sentence three."
     assert clamp_sentences(p, 2).count(".") <= 2
+
+
+def test_clean_tokens_expose_sanitized_values():
+    tokens = clean_tokens("Mars' influence surges—stay ready.")
+    assert tokens[:2] == ["Mars", "influence"]
+
+
+def test_clean_token_phrase_combines_tokens():
+    phrase = clean_token_phrase("Neptune's dreamy pull")
+    assert phrase == "Neptunes dreamy pull"
