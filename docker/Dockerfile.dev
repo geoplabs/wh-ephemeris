@@ -6,7 +6,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends     libcairo2 l
 WORKDIR /app
 
 # Python deps (minimal to boot; expand later)
-RUN pip install --no-cache-dir fastapi uvicorn[standard] jinja2 weasyprint reportlab pyswisseph pydantic==2.* boto3 botocore requests python-dotenv pytest httpx timezonefinder redis jsonschema
+RUN pip install --no-cache-dir fastapi uvicorn[standard] jinja2 weasyprint reportlab pyswisseph pydantic==2.* boto3 botocore requests python-dotenv pytest httpx timezonefinder redis jsonschema openai
 
 # App code
 COPY api/ /app/api/
