@@ -211,9 +211,11 @@ def build_morning_paragraph(raw: str, profile_name: str, theme: str) -> str:
     return sentence
 
 
-def build_career_paragraph(raw: str, profile_name: str = "") -> str:
+def build_career_paragraph(
+    raw: str, profile_name: str = "", tone_hint: str | None = None
+) -> str:
     descriptor = descriptor_from_text(raw, default="steady", profile_name=profile_name)
-    tone = tone_from_text(raw)
+    tone = tone_hint or tone_from_text(raw)
     if tone == "challenge":
         first = f"You steady {descriptor} demands by pacing commitments at work."
     else:
@@ -222,16 +224,20 @@ def build_career_paragraph(raw: str, profile_name: str = "") -> str:
     return f"{first} {second}"
 
 
-def build_love_paragraph(raw: str, profile_name: str = "") -> str:
+def build_love_paragraph(
+    raw: str, profile_name: str = "", tone_hint: str | None = None
+) -> str:
     descriptor = descriptor_from_text(raw, default="tender", profile_name=profile_name)
-    tone = tone_from_text(raw)
+    tone = tone_hint or tone_from_text(raw)
     if tone == "challenge":
         return f"You ease relationship friction by listening with {descriptor} patience."
     return f"You nurture heart connections by sharing {descriptor} honesty."
 
 
-def build_love_status(raw: str, status: str, profile_name: str = "") -> str:
-    tone = tone_from_text(raw)
+def build_love_status(
+    raw: str, status: str, profile_name: str = "", tone_hint: str | None = None
+) -> str:
+    tone = tone_hint or tone_from_text(raw)
     if status == "attached":
         if tone == "challenge":
             return "If you're attached, you steady shared plans with calm check-ins today."
@@ -241,9 +247,11 @@ def build_love_status(raw: str, status: str, profile_name: str = "") -> str:
     return "If you're single, you follow conversations that feel naturally aligned."
 
 
-def build_health_paragraph(raw: str, theme: str, profile_name: str = "") -> str:
+def build_health_paragraph(
+    raw: str, theme: str, profile_name: str = "", tone_hint: str | None = None
+) -> str:
     descriptor = descriptor_from_text(raw, theme, default="balanced", profile_name=profile_name)
-    tone = tone_from_text(raw)
+    tone = tone_hint or tone_from_text(raw)
     if tone == "challenge":
         second = "Keep movements gentle and responsive to your body's signals."
     else:
@@ -252,9 +260,11 @@ def build_health_paragraph(raw: str, theme: str, profile_name: str = "") -> str:
     return f"{first} {second}"
 
 
-def build_finance_paragraph(raw: str, theme: str, profile_name: str = "") -> str:
+def build_finance_paragraph(
+    raw: str, theme: str, profile_name: str = "", tone_hint: str | None = None
+) -> str:
     descriptor = descriptor_from_text(raw, theme, default="calm", profile_name=profile_name)
-    tone = tone_from_text(raw)
+    tone = tone_hint or tone_from_text(raw)
     if tone == "challenge":
         first = f"You navigate financial choices with {descriptor} patience today."
         second = "Review numbers before you commit to new moves."

@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import re
 from pathlib import Path
-from typing import Any
+from typing import Any, Iterable
 
 from jinja2 import Environment, FileSystemLoader, select_autoescape
 
@@ -18,6 +18,7 @@ from .language import (
     build_one_line_summary,
     build_opening_summary,
 )
+from src.content.archetype_router import classify_event
 
 
 TEMPLATES_DIR = Path(__file__).resolve().parent
@@ -97,6 +98,43 @@ def normalize_avoid(bullets: list[str], profile_name: str) -> list[str]:
     return out[:4]
 
 
+def _tone_from_tags(tags: Iterable[str]) -> str:
+    for tag in tags:
+        if tag.startswith("tone:"):
+            return tag.split(":", 1)[1]
+    return "neutral"
+
+
+SECTION_TAGS = {
+    "career": {"career", "ambition", "strategy", "discipline"},
+    "love": {"love", "relationships", "family", "connection"},
+    "health": {"health", "routine", "vitality", "healing", "body"},
+    "finance": {"money", "resources", "strategy", "stability"},
+}
+
+
+def _enrich_events(events: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    enriched: list[dict[str, Any]] = []
+    for ev in events:
+        classification = classify_event(ev)
+        tone = _tone_from_tags(classification.get("tags", []))
+        score = float(ev.get("score", 0.0) or 0.0)
+        enriched.append({"event": ev, "classification": classification, "tone": tone, "score": score})
+    enriched.sort(key=lambda item: (abs(item["score"]), item["score"]), reverse=True)
+    return enriched
+
+
+def _section_tone(enriched: list[dict[str, Any]], section: str) -> str:
+    target_tags = SECTION_TAGS.get(section, set())
+    if not target_tags:
+        return "neutral"
+    for item in enriched:
+        tags = set(item["classification"].get("tags", []))
+        if tags.intersection(target_tags):
+            return item["tone"]
+    return "neutral"
+
+
 def build_context(option_b_json: dict[str, Any]) -> dict[str, Any]:
     meta = option_b_json.get("meta", {})
     profile_name = option_b_json.get("profile_name") or meta.get("profile_name") or "User"
@@ -106,6 +144,10 @@ def build_context(option_b_json: dict[str, Any]) -> dict[str, Any]:
     dom_planet, dom_sign = derive_dominant(events)
     dominant_signs = top_two_signs(events)
     lucky = lucky_from_dominant(dom_planet, dom_sign)
+
+    enriched_events = _enrich_events(events)
+    tone_hints = {section: _section_tone(enriched_events, section) for section in SECTION_TAGS}
+    top_classification = enriched_events[0]["classification"] if enriched_events else None
 
     morning = option_b_json.get("morning_mindset", {})
     career = option_b_json.get("career", {})
@@ -128,17 +170,31 @@ def build_context(option_b_json: dict[str, Any]) -> dict[str, Any]:
             morning.get("paragraph", ""), profile_name, option_b_json.get("theme", "")
         ),
         "mantra": (morning.get("mantra") or "I choose what strengthens me.").strip(),
-        "career_paragraph": build_career_paragraph(career.get("paragraph", ""), profile_name=profile_name),
+        "career_paragraph": build_career_paragraph(
+            career.get("paragraph", ""), profile_name=profile_name, tone_hint=tone_hints["career"]
+        ),
         "career_bullets": normalize_bullets(career.get("bullets", []), profile_name),
-        "love_paragraph": build_love_paragraph(love.get("paragraph", ""), profile_name=profile_name),
-        "love_attached": build_love_status(love.get("attached", ""), "attached", profile_name=profile_name),
-        "love_single": build_love_status(love.get("single", ""), "single", profile_name=profile_name),
+        "love_paragraph": build_love_paragraph(
+            love.get("paragraph", ""), profile_name=profile_name, tone_hint=tone_hints["love"]
+        ),
+        "love_attached": build_love_status(
+            love.get("attached", ""), "attached", profile_name=profile_name, tone_hint=tone_hints["love"]
+        ),
+        "love_single": build_love_status(
+            love.get("single", ""), "single", profile_name=profile_name, tone_hint=tone_hints["love"]
+        ),
         "health_paragraph": build_health_paragraph(
-            health.get("paragraph", ""), option_b_json.get("theme", ""), profile_name=profile_name
+            health.get("paragraph", ""),
+            option_b_json.get("theme", ""),
+            profile_name=profile_name,
+            tone_hint=tone_hints["health"],
         ),
         "health_opts": normalize_bullets(health.get("good_options", []), profile_name),
         "finance_paragraph": build_finance_paragraph(
-            finance.get("paragraph", ""), option_b_json.get("theme", ""), profile_name=profile_name
+            finance.get("paragraph", ""),
+            option_b_json.get("theme", ""),
+            profile_name=profile_name,
+            tone_hint=tone_hints["finance"],
         ),
         "finance_bullets": normalize_bullets(finance.get("bullets", []), profile_name),
         "do_today": normalize_bullets(option_b_json.get("do_today", []), profile_name),
@@ -150,6 +206,13 @@ def build_context(option_b_json: dict[str, Any]) -> dict[str, Any]:
         "tech_notes": {
             "dominant": {"planet": dom_planet, "sign": dom_sign},
             "raw_events": events[:5],
+            "classifier": {
+                "top_event": {
+                    **({} if not enriched_events else enriched_events[0]["event"]),
+                    **(top_classification or {}),
+                },
+                "section_tones": tone_hints,
+            },
         },
     }
     return ctx
