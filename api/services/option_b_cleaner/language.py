@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import hashlib
+import random
 import re
 from typing import Any, Iterable, Mapping, Sequence
 
@@ -118,6 +120,239 @@ DESCRIPTOR_OVERRIDES = {
 }
 
 
+STORYLETS: dict[str, dict[str, Any]] = {
+    "default": {
+        "openers": {
+            "support": (
+                "You move with {descriptor} confidence through today's {focus}.",
+                "Your {descriptor} rhythm keeps today's {focus} flowing forward.",
+            ),
+            "challenge": (
+                "You steady {descriptor} turbulence inside today's {focus}.",
+                "Your {descriptor} resolve helps you navigate today's {focus} demands.",
+            ),
+            "neutral": (
+                "You bring {descriptor} awareness to today's {focus}.",
+                "Your {descriptor} pace sets the tone for today's {focus}.",
+            ),
+        },
+        "coaching": (
+            "Name the step that matters most so you stay anchored.",
+            "Pause for one breath to notice what still feels aligned.",
+            "Document a small win so progress remains tangible.",
+        ),
+        "closers": {
+            "support": (
+                "Keep trusting the rituals that already work.",
+                "Let steady choices show you the path forward.",
+            ),
+            "challenge": (
+                "Protect your bandwidth so pressure can't run the day.",
+                "Move gently but deliberately—you're allowed to pace yourself.",
+            ),
+            "neutral": (
+                "Return to the practices that remind you why you're doing this.",
+                "Stay with the process, one grounded choice at a time.",
+            ),
+        },
+    },
+    "career": {
+        "openers": {
+            "support": (
+                "You channel {descriptor} drive into today's {focus}.",
+                "Your {descriptor} ambition steadies today's {focus}.",
+            ),
+            "challenge": (
+                "You steady {descriptor} pressure across today's {focus}.",
+                "Your {descriptor} grit keeps today's {focus} in motion.",
+            ),
+            "neutral": (
+                "You organize {descriptor} focus around today's {focus}.",
+                "Your {descriptor} pace sets an intentional tone for today's {focus}.",
+            ),
+        },
+        "coaching": (
+            "Break the workload into deliberate moves you can trust.",
+            "Map the moving pieces before you commit to the next milestone.",
+            "Share an update that keeps collaborators aligned.",
+        ),
+        "closers": {
+            "support": (
+                "Let steady wins show the momentum you're building.",
+                "Lean into allies who reinforce your vision.",
+            ),
+            "challenge": (
+                "Keep pacing yourself so the pressure doesn't run the show.",
+                "Protect your bandwidth with clear boundaries.",
+            ),
+            "neutral": (
+                "Stay with the process that makes results repeatable.",
+                "Keep your workflow anchored to what truly matters.",
+            ),
+        },
+    },
+    "love": {
+        "openers": {
+            "support": (
+                "You bring {descriptor} care into today's {focus}.",
+                "Your {descriptor} presence softens today's {focus}.",
+            ),
+            "challenge": (
+                "You ease {descriptor} tension inside today's {focus}.",
+                "Your {descriptor} honesty steadies today's {focus} conversations.",
+            ),
+            "neutral": (
+                "You invite {descriptor} attention into today's {focus}.",
+                "Your {descriptor} pace keeps today's {focus} sincere.",
+            ),
+        },
+        "coaching": (
+            "Ask one curious question so connection feels mutual.",
+            "Share how your body feels when a moment lands right.",
+            "Let listening lead before you decide the next move.",
+        ),
+        "closers": {
+            "support": (
+                "Follow the conversations that feel nourishing.",
+                "Let shared rituals remind you you're supported.",
+            ),
+            "challenge": (
+                "Keep soft boundaries so tenderness can return.",
+                "Name what you need while staying receptive.",
+            ),
+            "neutral": (
+                "Let the pace stay human—no need to force answers.",
+                "Stay tuned to the gestures that feel genuine.",
+            ),
+        },
+    },
+    "health": {
+        "openers": {
+            "support": (
+                "You honor {descriptor} rhythms through today's {focus}.",
+                "Your {descriptor} awareness protects today's {focus} rituals.",
+            ),
+            "challenge": (
+                "You soften {descriptor} strain across today's {focus}.",
+                "Your {descriptor} pacing defuses today's {focus} demands.",
+            ),
+            "neutral": (
+                "You bring {descriptor} care into today's {focus}.",
+                "Your {descriptor} presence steadies today's {focus} routines.",
+            ),
+        },
+        "coaching": (
+            "Schedule breathers so your body feels consulted.",
+            "Hydrate and stretch before momentum carries you away.",
+            "Track one ritual that keeps your system grounded.",
+        ),
+        "closers": {
+            "support": (
+                "Let gentle structure support your wellbeing.",
+                "Stay loyal to the practices that replenish you.",
+            ),
+            "challenge": (
+                "Keep adjustments responsive so recovery stays on track.",
+                "Trust the feedback your body keeps sharing.",
+            ),
+            "neutral": (
+                "Balance effort with rest so your energy can reset.",
+                "Stay present with the signals that guide your care.",
+            ),
+        },
+    },
+    "finance": {
+        "openers": {
+            "support": (
+                "You guide {descriptor} awareness through today's {focus}.",
+                "Your {descriptor} clarity shapes today's {focus} choices.",
+            ),
+            "challenge": (
+                "You bring {descriptor} patience to today's {focus} decisions.",
+                "Your {descriptor} caution steadies today's {focus} review.",
+            ),
+            "neutral": (
+                "You organize {descriptor} strategy around today's {focus}.",
+                "Your {descriptor} pacing makes today's {focus} sustainable.",
+            ),
+        },
+        "coaching": (
+            "Check the numbers twice before you commit.",
+            "Match each expense to the feeling it delivers.",
+            "Journal one win that proves your plan is working.",
+        ),
+        "closers": {
+            "support": (
+                "Let aligned choices build your long game.",
+                "Trust the budget that keeps breathing room intact.",
+            ),
+            "challenge": (
+                "Keep big moves on hold until the math confirms it.",
+                "Protect resources by filtering decisions through calm.",
+            ),
+            "neutral": (
+                "Stay curious about where your focus is funding momentum.",
+                "Let steady pacing make each decision easier to trust.",
+            ),
+        },
+    },
+}
+
+
+def _story_seed(*parts: Any) -> int:
+    material = "|".join(str(part) for part in parts if part not in {None, ""})
+    if not material:
+        material = "story"
+    digest = hashlib.sha256(material.encode("utf-8")).hexdigest()
+    return int(digest[:8], 16)
+
+
+def _storylet_pool(area: str, section: str, tone: str) -> Sequence[str]:
+    tone_key = tone if tone in {"support", "challenge", "neutral"} else "neutral"
+    area_pool = STORYLETS.get(area, {})
+    options: Sequence[str] = ()
+    target = area_pool.get(section)
+    if isinstance(target, Mapping):
+        options = target.get(tone_key) or target.get("neutral", ())
+    elif isinstance(target, Sequence):
+        options = target
+    if options:
+        return options
+    default_pool = STORYLETS.get("default", {})
+    fallback = default_pool.get(section)
+    if isinstance(fallback, Mapping):
+        return fallback.get(tone_key) or fallback.get("neutral", ()) or ()
+    if isinstance(fallback, Sequence):
+        return fallback
+    return ()
+
+
+def _deterministic_choice(options: Sequence[str], seed: int, default: str = "") -> str:
+    if not options:
+        return default
+    rng = random.Random(seed)
+    return rng.choice(list(options))
+
+
+def _render_storylet(
+    area: str,
+    section: str,
+    tone: str,
+    seed: int,
+    *,
+    tokens: Mapping[str, Any],
+    default: str = "",
+) -> str:
+    options = _storylet_pool(area, section, tone)
+    template = _deterministic_choice(options, seed, default)
+    if not template:
+        return default
+    try:
+        return template.format(**tokens)
+    except (KeyError, ValueError):  # pragma: no cover - defensive formatting
+        return default
+
+
 def _clean_text(text: str, profile_name: str) -> str:
     cleaned = de_jargon(text or "")
     return to_you_pov(cleaned, profile_name)
@@ -164,6 +399,17 @@ def tone_from_text(*texts: str) -> str:
     return "neutral"
 
 
+def _normalize_tone_label(value: str | None) -> str:
+    if not value:
+        return "neutral"
+    lowered = value.strip().lower()
+    if lowered.startswith("tone:"):
+        lowered = lowered.split(":", 1)[1]
+    if lowered not in {"support", "challenge", "neutral"}:
+        return "neutral"
+    return lowered
+
+
 def _article(word: str) -> str:
     if not word:
         return "a"
@@ -203,16 +449,105 @@ def _compose_paragraph(
 def _event_evidence_sentences(
     event: Mapping[str, Any] | None,
     supporting_event: Mapping[str, Any] | None = None,
+    *,
+    area: str | None = None,
+    seed: int | None = None,
 ) -> tuple[str, ...]:
     sentences: list[str] = []
     primary = event_phrase(event)
     supporting = event_phrase(supporting_event)
-    if primary:
+    if primary and supporting and supporting != primary:
+        templates_by_area = {
+            "career": (
+                "{primary} while {supporting}",
+                "{primary}; meanwhile, {supporting}",
+                "{primary}. In your workflow, {supporting}",
+            ),
+            "love": (
+                "{primary} while {supporting}",
+                "{primary}. Heart-wise, {supporting}",
+                "{primary}; intimacy-wise, {supporting}",
+            ),
+            "health": (
+                "{primary} while {supporting}",
+                "{primary}. For your body, {supporting}",
+                "{primary}; meanwhile your routines, {supporting}",
+            ),
+            "finance": (
+                "{primary} while {supporting}",
+                "{primary}. Money-wise, {supporting}",
+                "{primary}; budget-wise, {supporting}",
+            ),
+        }
+        templates = templates_by_area.get(area or "", templates_by_area["career"])
+        base_seed = seed or 0
+        template = templates[base_seed % len(templates)]
+        sentences.append(template.format(primary=primary, supporting=supporting))
+    elif primary:
         sentences.append(primary)
-    if supporting and supporting != primary:
-        connector = f"Meanwhile, {supporting}"
-        sentences.append(connector)
+    elif supporting:
+        sentences.append(supporting)
     return tuple(sentences)
+
+
+def _build_story_paragraph(
+    area: str,
+    *,
+    raw: str,
+    descriptor: str,
+    focus: str,
+    tone: str,
+    clause: str | None,
+    event: Mapping[str, Any] | None,
+    supporting_event: Mapping[str, Any] | None,
+    opener_default: str,
+    closing_default: str,
+    force_default_opener: bool = False,
+) -> str:
+    tokens = {"descriptor": descriptor, "focus": focus}
+    primary_phrase = event_phrase(event)
+    supporting_phrase = event_phrase(supporting_event)
+    base_seed = _story_seed(area, raw, descriptor, focus, tone, primary_phrase, supporting_phrase)
+    opener_default_text = opener_default.format(**tokens)
+    if force_default_opener:
+        opener = opener_default_text
+    else:
+        opener = _render_storylet(
+            area,
+            "openers",
+            tone,
+            base_seed,
+            tokens=tokens,
+            default=opener_default_text,
+        )
+    evidence = list(
+        _event_evidence_sentences(
+            event,
+            supporting_event,
+            area=area,
+            seed=base_seed + 1,
+        )
+    )
+    coaching = _render_storylet(
+        area,
+        "coaching",
+        tone,
+        base_seed + 2,
+        tokens=tokens,
+        default="",
+    )
+    if coaching:
+        evidence.append(coaching)
+    default_closing = closing_default.format(**tokens)
+    closing = clause.strip() if clause else _render_storylet(
+        area,
+        "closers",
+        tone,
+        base_seed + 3,
+        tokens=tokens,
+        default=default_closing,
+    )
+    return _compose_paragraph(opener, evidence, closing)
 
 
 def element_modality_line(sign_a: str, sign_b: str) -> str:
@@ -286,42 +621,21 @@ def build_career_paragraph(
     supporting_event: Mapping[str, Any] | None = None,
 ) -> str:
     descriptor = descriptor_from_text(raw, default="steady", profile_name=profile_name)
-    tone = tone_hint or tone_from_text(raw)
-    event_clause = event_phrase(event)
-    tokens = {"descriptor": descriptor, "event_clause": event_clause}
-    if tone == "challenge":
-        first = render_mini_template(
-            (
-                MiniTemplate(
-                    "You steady {descriptor} demands by pacing commitments at work while {event_clause}.",
-                    ("descriptor", "event_clause"),
-                ),
-                MiniTemplate(
-                    "You steady {descriptor} demands by pacing commitments at work.",
-                    ("descriptor",),
-                ),
-            ),
-            tokens,
-        )
-    else:
-        first = render_mini_template(
-            (
-                MiniTemplate(
-                    "You turn {descriptor} work into deliberate progress at work while {event_clause}.",
-                    ("descriptor", "event_clause"),
-                ),
-                MiniTemplate(
-                    "You turn {descriptor} work into deliberate progress at work.",
-                    ("descriptor",),
-                ),
-            ),
-            tokens,
-        )
-    if not first:
-        first = "You turn steady work into deliberate progress at work."
-    closing = clause.strip() if clause else "Let this focused drive move your intentions into form."
-    evidence = _event_evidence_sentences(event, supporting_event)
-    return _compose_paragraph(first, evidence, closing)
+    focus = focus_from_text(raw, default="work", profile_name=profile_name)
+    tone_value = tone_hint if tone_hint else tone_from_text(raw, clause or "")
+    tone = _normalize_tone_label(tone_value)
+    return _build_story_paragraph(
+        "career",
+        raw=raw,
+        descriptor=descriptor,
+        focus=focus,
+        tone=tone,
+        clause=clause,
+        event=event,
+        supporting_event=supporting_event,
+        opener_default="You turn {descriptor} work into deliberate progress at work.",
+        closing_default="Let this focused drive move your intentions into form.",
+    )
 
 
 def build_love_paragraph(
@@ -333,42 +647,21 @@ def build_love_paragraph(
     supporting_event: Mapping[str, Any] | None = None,
 ) -> str:
     descriptor = descriptor_from_text(raw, default="tender", profile_name=profile_name)
-    tone = tone_hint or tone_from_text(raw)
-    event_clause = event_phrase(event)
-    tokens = {"descriptor": descriptor, "event_clause": event_clause}
-    if tone == "challenge":
-        base = render_mini_template(
-            (
-                MiniTemplate(
-                    "You ease relationship friction by listening with {descriptor} patience while {event_clause}.",
-                    ("descriptor", "event_clause"),
-                ),
-                MiniTemplate(
-                    "You ease relationship friction by listening with {descriptor} patience.",
-                    ("descriptor",),
-                ),
-            ),
-            tokens,
-        )
-    else:
-        base = render_mini_template(
-            (
-                MiniTemplate(
-                    "You nurture heart connections by sharing {descriptor} honesty as {event_clause}.",
-                    ("descriptor", "event_clause"),
-                ),
-                MiniTemplate(
-                    "You nurture heart connections by sharing {descriptor} honesty.",
-                    ("descriptor",),
-                ),
-            ),
-            tokens,
-        )
-    if not base:
-        base = "You nurture heart connections by sharing tender honesty."
-    closing = clause.strip() if clause else ""
-    evidence = _event_evidence_sentences(event, supporting_event)
-    return _compose_paragraph(base, evidence, closing)
+    focus = focus_from_text(raw, default="heart space", profile_name=profile_name)
+    tone_value = tone_hint if tone_hint else tone_from_text(raw, clause or "")
+    tone = _normalize_tone_label(tone_value)
+    return _build_story_paragraph(
+        "love",
+        raw=raw,
+        descriptor=descriptor,
+        focus=focus,
+        tone=tone,
+        clause=clause,
+        event=event,
+        supporting_event=supporting_event,
+        opener_default="You nurture heart connections by sharing {descriptor} honesty.",
+        closing_default="Let shared space stay honest and kind.",
+    )
 
 
 def build_love_status(
@@ -394,30 +687,28 @@ def build_health_paragraph(
     supporting_event: Mapping[str, Any] | None = None,
 ) -> str:
     descriptor = descriptor_from_text(raw, theme, default="balanced", profile_name=profile_name)
-    tone = tone_hint or tone_from_text(raw)
-    if tone == "challenge":
-        default_second = "Keep movements gentle and responsive to your body's signals."
-    else:
-        default_second = "Balance movement with rest so your body stays responsive."
-    closing = clause.strip() if clause else default_second
-    event_clause = event_phrase(event)
-    first = render_mini_template(
-        (
-            MiniTemplate(
-                "You protect wellbeing by honoring {descriptor} rhythms while {event_clause}.",
-                ("descriptor", "event_clause"),
-            ),
-            MiniTemplate(
-                "You protect wellbeing by honoring {descriptor} rhythms.",
-                ("descriptor",),
-            ),
-        ),
-        {"descriptor": descriptor, "event_clause": event_clause},
+    focus = focus_from_text(raw, theme, default="wellness rituals", profile_name=profile_name)
+    tone_value = tone_hint if tone_hint else tone_from_text(raw, theme, clause or "")
+    tone = _normalize_tone_label(tone_value)
+    closing_default = (
+        "Keep movements gentle and responsive to your body's signals."
+        if tone == "challenge"
+        else "Balance movement with rest so your body stays responsive."
     )
-    if not first:
-        first = "You protect wellbeing by honoring balanced rhythms."
-    evidence = _event_evidence_sentences(event, supporting_event)
-    return _compose_paragraph(first, evidence, closing)
+    force_default_opener = event is None and supporting_event is None
+    return _build_story_paragraph(
+        "health",
+        raw=raw or theme,
+        descriptor=descriptor,
+        focus=focus,
+        tone=tone,
+        clause=clause,
+        event=event,
+        supporting_event=supporting_event,
+        opener_default="You protect wellbeing by honoring {descriptor} rhythms.",
+        closing_default=closing_default,
+        force_default_opener=force_default_opener,
+    )
 
 
 def build_finance_paragraph(
@@ -430,44 +721,26 @@ def build_finance_paragraph(
     supporting_event: Mapping[str, Any] | None = None,
 ) -> str:
     descriptor = descriptor_from_text(raw, theme, default="calm", profile_name=profile_name)
-    tone = tone_hint or tone_from_text(raw)
-    event_clause = event_phrase(event)
-    tokens = {"descriptor": descriptor, "event_clause": event_clause}
-    if tone == "challenge":
-        first = render_mini_template(
-            (
-                MiniTemplate(
-                    "You navigate financial choices with {descriptor} patience today while {event_clause}.",
-                    ("descriptor", "event_clause"),
-                ),
-                MiniTemplate(
-                    "You navigate financial choices with {descriptor} patience today.",
-                    ("descriptor",),
-                ),
-            ),
-            tokens,
-        )
-        default_second = "Review numbers before you commit to new moves."
-    else:
-        first = render_mini_template(
-            (
-                MiniTemplate(
-                    "You let {descriptor} awareness guide each money choice today while {event_clause}.",
-                    ("descriptor", "event_clause"),
-                ),
-                MiniTemplate(
-                    "You let {descriptor} awareness guide each money choice today.",
-                    ("descriptor",),
-                ),
-            ),
-            tokens,
-        )
-        default_second = "Let emotional harmony guide practical choices."
-    if not first:
-        first = "You let calm awareness guide each money choice today."
-    closing = clause.strip() if clause else default_second
-    evidence = _event_evidence_sentences(event, supporting_event)
-    return _compose_paragraph(first, evidence, closing)
+    focus = focus_from_text(raw, theme, default="money choices", profile_name=profile_name)
+    tone_value = tone_hint if tone_hint else tone_from_text(raw, theme, clause or "")
+    tone = _normalize_tone_label(tone_value)
+    closing_default = (
+        "Review numbers before you commit to new moves."
+        if tone == "challenge"
+        else "Let emotional harmony guide practical choices."
+    )
+    return _build_story_paragraph(
+        "finance",
+        raw=raw or theme,
+        descriptor=descriptor,
+        focus=focus,
+        tone=tone,
+        clause=clause,
+        event=event,
+        supporting_event=supporting_event,
+        opener_default="You let {descriptor} awareness guide each money choice today.",
+        closing_default=closing_default,
+    )
 
 
 def build_one_line_summary(raw: str, theme: str, profile_name: str = "") -> str:
