@@ -27,9 +27,21 @@ if "jinja2" not in sys.modules:
         def from_string(self, source):
             return _StubTemplate(source)
 
+        def get_template(self, source):  # pragma: no cover - simple stub
+            return _StubTemplate(source)
+
+    class _StubFileSystemLoader:
+        def __init__(self, *args, **kwargs):
+            pass
+
+    def _stub_autoescape(*args, **kwargs):  # pragma: no cover - simple stub
+        return lambda *a, **kw: False
+
     sys.modules["jinja2"] = types.SimpleNamespace(
         Environment=_StubEnvironment,
         Template=_StubTemplate,
+        FileSystemLoader=_StubFileSystemLoader,
+        select_autoescape=_stub_autoescape,
     )
 
 if "jsonschema" not in sys.modules:

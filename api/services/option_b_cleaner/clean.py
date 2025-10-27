@@ -23,10 +23,13 @@ _STOPWORDS = {
     "from",
     "in",
     "into",
+    "keep",
     "may",
     "now",
     "of",
     "on",
+    "set",
+    "take",
     "should",
     "the",
     "this",
@@ -97,13 +100,14 @@ def to_you_pov(s: str, profile_name: str) -> str:
 
 
 def _keywords_for_bullet(text: str) -> list[str]:
-    words = [w.lower() for w in re.findall(r"[A-Za-z']+", text)]
+    primary_clause = text.split(".", 1)[0]
+    words = [w.lower() for w in re.findall(r"[A-Za-z']+", primary_clause)]
     keywords = [w for w in words if len(w) > 2 and w not in _STOPWORDS and not w.endswith("ly")]
     if not keywords:
         keywords = [w for w in words if w not in _STOPWORDS]
     if "drive" in keywords and "energy" in keywords:
         keywords = [w for w in keywords if w != "energy"]
-    return keywords[:3] if keywords else ["steady"]
+    return keywords[:4] if keywords else ["steady"]
 
 
 def _format_phrase(words: list[str], mode: str = "do") -> str:
@@ -158,6 +162,10 @@ def _format_phrase(words: list[str], mode: str = "do") -> str:
                 tokens = [w for w in tokens if w != "steady"]
                 block.insert(0, "steady")
         tokens = block + tokens
+    if "challenges" in tokens:
+        idx = tokens.index("challenges")
+        if idx + 1 < len(tokens) and tokens[idx + 1] != "around":
+            tokens = tokens[: idx + 1] + ["around"] + tokens[idx + 1 :]
     if "self" in tokens:
         tokens = ["self-expression" if w == "self" else w for w in tokens]
     if "self-expression" in tokens and "challenges" in tokens:
@@ -230,12 +238,12 @@ def imperative_bullet(s: str, order: int = 0, mode: str = "do", *, area: str | N
         return candidate
     templates = _resolve_templates(area, mode, asset)
     template = templates[order % len(templates)]
-    # Trim phrase to keep word count between 3 and 10 once formatted
+    # Trim phrase to keep word count within the readable range once formatted
     for cut in range(len(phrase_words), 0, -1):
         phrase = _format_phrase(phrase_words[:cut], mode)
         candidate = template.format(phrase=phrase)
         word_count = len(candidate.rstrip(".").split())
-        if 3 <= word_count <= 10:
+        if 3 <= word_count <= 14:
             return candidate
     phrase = _format_phrase([words[0]], mode)
     candidate = template.format(phrase=phrase)

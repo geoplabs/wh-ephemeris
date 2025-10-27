@@ -17,6 +17,7 @@ from .language import (
     build_morning_paragraph,
     build_one_line_summary,
     build_opening_summary,
+    fix_indefinite_articles,
 )
 from src.content.archetype_router import classify_event
 from src.content.area_selector import rank_events_by_area, summarize_rankings
@@ -177,7 +178,7 @@ def _format_variation_sentences(sentences: Sequence[str], tokens: Mapping[str, s
             continue
         if text[-1] not in ".!?":
             text = f"{text}."
-        formatted.append(text)
+        formatted.append(fix_indefinite_articles(text))
     return tuple(formatted)
 
 
@@ -189,8 +190,10 @@ def _append_variation_sentences(base: str, extras: Sequence[str]) -> str:
     if base_clean and base_clean[-1] not in ".!?":
         base_clean = f"{base_clean}."
     if base_clean:
-        return " ".join([base_clean, *extra_list]).strip()
-    return " ".join(extra_list).strip()
+        combined = " ".join([base_clean, *extra_list]).strip()
+    else:
+        combined = " ".join(extra_list).strip()
+    return fix_indefinite_articles(combined)
 
 
 def build_context(option_b_json: dict[str, Any]) -> dict[str, Any]:

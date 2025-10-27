@@ -5,6 +5,47 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Any, Dict, Iterable, Mapping, MutableSequence, Sequence, Tuple
 
+
+DOMICILE_SIGNS: Mapping[str, tuple[str, ...]] = {
+    "Sun": ("Leo",),
+    "Moon": ("Cancer",),
+    "Mercury": ("Gemini", "Virgo"),
+    "Venus": ("Taurus", "Libra"),
+    "Mars": ("Aries", "Scorpio"),
+    "Jupiter": ("Sagittarius", "Pisces"),
+    "Saturn": ("Capricorn", "Aquarius"),
+}
+
+EXALTATION_SIGNS: Mapping[str, tuple[str, ...]] = {
+    "Sun": ("Aries",),
+    "Moon": ("Taurus",),
+    "Mercury": ("Virgo",),
+    "Venus": ("Pisces",),
+    "Mars": ("Capricorn",),
+    "Jupiter": ("Cancer",),
+    "Saturn": ("Libra",),
+}
+
+DETRIMENT_SIGNS: Mapping[str, tuple[str, ...]] = {
+    "Sun": ("Aquarius",),
+    "Moon": ("Capricorn",),
+    "Mercury": ("Sagittarius", "Pisces"),
+    "Venus": ("Scorpio", "Aries"),
+    "Mars": ("Libra", "Taurus"),
+    "Jupiter": ("Gemini", "Virgo"),
+    "Saturn": ("Cancer", "Leo"),
+}
+
+FALL_SIGNS: Mapping[str, tuple[str, ...]] = {
+    "Sun": ("Libra",),
+    "Moon": ("Scorpio",),
+    "Mercury": ("Pisces",),
+    "Venus": ("Virgo",),
+    "Mars": ("Cancer",),
+    "Jupiter": ("Capricorn",),
+    "Saturn": ("Aries",),
+}
+
 SUPPORTIVE_ASPECTS = {"trine", "sextile"}
 CHALLENGING_ASPECTS = {"square", "opposition"}
 TRANSFORMATIONAL_ASPECTS = {"conjunction"}
@@ -43,6 +84,15 @@ HOUSE_TAGS = {
     11: ("community", "ambition"),
     12: ("spiritual", "healing"),
 }
+
+CLUSTER_BODY_FIELDS: tuple[str, ...] = (
+    "cluster_bodies",
+    "co_present_bodies",
+    "linked_transits",
+    "linked_bodies",
+    "supporting_bodies",
+    "conjunction_bodies",
+)
 
 
 INTENSITY_ORDER: Tuple[str, ...] = ("background", "gentle", "steady", "strong", "surge")
@@ -96,6 +146,16 @@ class Rule:
             elif key == "malefic":
                 if bool(metadata.get("is_malefic")) is not expected:
                     return False
+            elif key == "cluster_min":
+                if metadata.get("cluster_size", 0) < int(expected):
+                    return False
+            elif key == "cluster_profile":
+                if metadata.get("cluster_profile") not in expected:
+                    return False
+            elif key == "any_dignity":
+                dignity = metadata.get("dignity_set", set())
+                if not dignity.intersection(expected):
+                    return False
             else:
                 value = metadata.get(key)
                 if value not in expected:
@@ -110,6 +170,18 @@ RULES: Sequence[Rule] = (
         extra_tags=("growth", "momentum"),
         tone_override="tone:support",
         weight=2.4,
+    ),
+    Rule(
+        archetype="Radiant Expansion",
+        when={
+            "aspect_type": {"transformational", "supportive"},
+            "cluster_min": 3,
+            "cluster_profile": {"benefic", "mixed"},
+        },
+        extra_tags=("collaboration", "synergy"),
+        tone_override="tone:support",
+        weight=2.7,
+        intensity_bias=1,
     ),
     Rule(
         archetype="Radiant Expansion",
@@ -174,6 +246,17 @@ RULES: Sequence[Rule] = (
         weight=1.7,
     ),
     Rule(
+        archetype="Disciplined Crossroads",
+        when={
+            "cluster_min": 2,
+            "cluster_profile": {"malefic"},
+        },
+        extra_tags=("fortitude", "pressure"),
+        tone_override="tone:challenge",
+        weight=2.2,
+        intensity_bias=2,
+    ),
+    Rule(
         archetype="Visionary Alignment",
         when={
             "any_tags": {"innovation", "spiritual", "education", "travel"},
@@ -189,6 +272,16 @@ RULES: Sequence[Rule] = (
         extra_tags=("study", "pilgrimage"),
         tone_override=None,
         weight=1.5,
+    ),
+    Rule(
+        archetype="Visionary Alignment",
+        when={
+            "any_dignity": {"domicile", "exaltation"},
+            "aspect_type": {"supportive", "transformational"},
+        },
+        extra_tags=("sovereignty", "blessing"),
+        tone_override="tone:support",
+        weight=1.9,
     ),
     Rule(
         archetype="Phoenix Reframe",
@@ -208,6 +301,28 @@ RULES: Sequence[Rule] = (
         extra_tags=("shadow_work", "rebirth"),
         tone_override="tone:challenge",
         weight=1.4,
+    ),
+    Rule(
+        archetype="Phoenix Reframe",
+        when={
+            "any_dignity": {"detriment", "fall"},
+            "aspect_type": {"challenging", "transformational"},
+        },
+        extra_tags=("underworld", "reinvention"),
+        tone_override="tone:challenge",
+        weight=2.0,
+        intensity_bias=1,
+    ),
+    Rule(
+        archetype="Phoenix Reframe",
+        when={
+            "cluster_min": 2,
+            "cluster_profile": {"mixed"},
+        },
+        extra_tags=("alchemy", "integration"),
+        tone_override="tone:neutral",
+        weight=1.6,
+        intensity_bias=1,
     ),
     Rule(
         archetype=None,
@@ -258,6 +373,53 @@ def _score_bucket(score: float) -> str:
     if magnitude >= 10:
         return "gentle"
     return "background"
+
+
+def _flatten_body_values(value: Any) -> Iterable[str]:
+    if value is None:
+        return []
+    if isinstance(value, str):
+        return [value]
+    if isinstance(value, Mapping):
+        collected: list[str] = []
+        for nested in value.values():
+            collected.extend(_flatten_body_values(nested))
+        return collected
+    if isinstance(value, Iterable):
+        collected = []
+        for item in value:
+            collected.extend(_flatten_body_values(item))
+        return collected
+    return []
+
+
+def _collect_cluster_bodies(event: Mapping[str, Any]) -> list[str]:
+    bodies: set[str] = set()
+    for field in CLUSTER_BODY_FIELDS:
+        if field not in event:
+            continue
+        for body in _flatten_body_values(event.get(field)):
+            cleaned = str(body or "").strip()
+            if cleaned:
+                bodies.add(cleaned)
+    return sorted(bodies)
+
+
+def _dignity_state(body: str, sign: str | None) -> str | None:
+    if not body or not sign:
+        return None
+    sign = sign.strip()
+    if not sign:
+        return None
+    if sign in DOMICILE_SIGNS.get(body, ()):  # type: ignore[arg-type]
+        return "domicile"
+    if sign in EXALTATION_SIGNS.get(body, ()):  # type: ignore[arg-type]
+        return "exaltation"
+    if sign in DETRIMENT_SIGNS.get(body, ()):  # type: ignore[arg-type]
+        return "detriment"
+    if sign in FALL_SIGNS.get(body, ()):  # type: ignore[arg-type]
+        return "fall"
+    return "neutral"
 
 
 def _intensity_from_score(score: float) -> str:
@@ -336,6 +498,8 @@ def classify_event(event: Mapping[str, Any]) -> Dict[str, Any]:
     focus_area = event.get("focus_area") or event.get("dominant_focus") or event.get("primary_focus")
     if isinstance(focus_area, str):
         focus_area = focus_area.strip().lower() or None
+    transit_sign = event.get("transit_sign") or event.get("transit_zodiac")
+    natal_sign = event.get("natal_sign") or event.get("natal_zodiac")
     house_family = None
     if isinstance(natal_house, int):
         if natal_house in {1, 4, 7, 10}:
@@ -344,6 +508,34 @@ def classify_event(event: Mapping[str, Any]) -> Dict[str, Any]:
             house_family = "succedent"
         elif natal_house in {3, 6, 9, 12}:
             house_family = "cadent"
+
+    cluster_bodies = _collect_cluster_bodies(event)
+    cluster_all = set(cluster_bodies)
+    if transit_body:
+        cluster_all.add(transit_body)
+    if natal_body:
+        cluster_all.add(natal_body)
+    cluster_size = len(cluster_all)
+    benefic_count = len(cluster_all.intersection(BENEFIC_PLANETS))
+    malefic_count = len(cluster_all.intersection(MALEFIC_PLANETS))
+    if cluster_size <= 1:
+        cluster_profile = "solo"
+    elif malefic_count and not benefic_count:
+        cluster_profile = "malefic"
+    elif benefic_count and not malefic_count:
+        cluster_profile = "benefic"
+    elif benefic_count and malefic_count:
+        cluster_profile = "mixed"
+    else:
+        cluster_profile = "neutral"
+
+    transit_dignity = _dignity_state(transit_body, transit_sign if isinstance(transit_sign, str) else None)
+    natal_dignity = _dignity_state(natal_body, natal_sign if isinstance(natal_sign, str) else None)
+    dignity_set = {
+        value
+        for value in (transit_dignity, natal_dignity)
+        if value and value not in {"neutral"}
+    }
 
     is_benefic = _normalize_bool(
         event.get("is_benefic")
@@ -367,6 +559,22 @@ def classify_event(event: Mapping[str, Any]) -> Dict[str, Any]:
         base_tags.append("opening")
     if score_sign == "negative":
         base_tags.append("pressure")
+    if cluster_size >= 2:
+        base_tags.append("multi_body")
+        if aspect_type == "transformational":
+            base_tags.append("conjunction_cluster")
+        if cluster_profile == "benefic":
+            base_tags.append("coalition")
+        elif cluster_profile == "malefic":
+            base_tags.append("gauntlet")
+        elif cluster_profile == "mixed":
+            base_tags.append("tension_blend")
+    if transit_dignity == "domicile" or natal_dignity == "domicile":
+        base_tags.append("sovereignty")
+    if transit_dignity == "exaltation" or natal_dignity == "exaltation":
+        base_tags.append("spotlight")
+    if transit_dignity in {"detriment", "fall"} or natal_dignity in {"detriment", "fall"}:
+        base_tags.append("vulnerability")
 
     metadata = {
         "score": score,
@@ -382,6 +590,15 @@ def classify_event(event: Mapping[str, Any]) -> Dict[str, Any]:
         "focus_area": focus_area,
         "base_tags": base_tags,
         "tone_tag": _tone_tag(aspect_type, score_sign, is_malefic),
+        "cluster_size": cluster_size,
+        "cluster_profile": cluster_profile,
+        "cluster_bodies": sorted(cluster_all),
+        "has_cluster": cluster_size >= 2,
+        "benefic_cluster": cluster_profile == "benefic",
+        "malefic_cluster": cluster_profile == "malefic",
+        "transit_dignity": transit_dignity,
+        "natal_dignity": natal_dignity,
+        "dignity_set": dignity_set,
     }
     metadata["tag_set"] = set(base_tags)
 
@@ -392,6 +609,7 @@ def classify_event(event: Mapping[str, Any]) -> Dict[str, Any]:
     archetype_scores: dict[str, float] = {}
     intensity_bias = 0
     aggregated_tags: list[str] = []
+    natural_bias = 0
 
     def _register_tone(tag: str, weight: float) -> None:
         tone_votes[tag] = tone_votes.get(tag, 0.0) + weight
@@ -418,7 +636,15 @@ def classify_event(event: Mapping[str, Any]) -> Dict[str, Any]:
     tags = _merge_tags([tone_choice], base_without_tone, aggregated_tags)
 
     base_index = INTENSITY_ORDER.index(base_intensity)
-    adjusted_index = min(max(base_index + intensity_bias, 0), len(INTENSITY_ORDER) - 1)
+    if metadata.get("cluster_size", 0) >= 3:
+        natural_bias += 1
+    cluster_profile = metadata.get("cluster_profile")
+    if cluster_profile == "malefic":
+        natural_bias += 1
+    adjusted_index = min(
+        max(base_index + intensity_bias + natural_bias, 0),
+        len(INTENSITY_ORDER) - 1,
+    )
     intensity = INTENSITY_ORDER[adjusted_index]
 
     return {
