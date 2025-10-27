@@ -22,6 +22,34 @@
           "Hold back from {phrase} until timing improves.",
           "Delay {phrase} choices that feel rushed."
         ]
+      },
+      "variation_groups": {
+        "clauses": {
+          "mode": "permutation",
+          "items": [
+            "Subtle radiant energy supports your day flow.",
+            "Momentum guides your day choices with quiet clarity."
+          ]
+        },
+        "adjective": {
+          "mode": "choice",
+          "items": [
+            "steady",
+            "radiant",
+            "grounded"
+          ],
+          "pick": 1
+        },
+        "optional_sentences": {
+          "mode": "subset",
+          "items": [
+            "Keep a {adjective} pace as you move through today.",
+            "Share a {adjective} insight with someone you trust.",
+            "Note one {adjective} choice that feels aligned."
+          ],
+          "minimum": 0,
+          "maximum": 2
+        }
       }
     },
     {
@@ -45,6 +73,34 @@
           "Hold back from {phrase} until the plan is solid.",
           "Delay {phrase} moves that stretch resources too thin."
         ]
+      },
+      "variation_groups": {
+        "clauses": {
+          "mode": "permutation",
+          "items": [
+            "Subtle radiant energy supports your career progress.",
+            "Momentum guides your career moves with quiet clarity."
+          ]
+        },
+        "adjective": {
+          "mode": "choice",
+          "items": [
+            "strategic",
+            "confident",
+            "steady"
+          ],
+          "pick": 1
+        },
+        "optional_sentences": {
+          "mode": "subset",
+          "items": [
+            "Let your {adjective} focus highlight the wins at work.",
+            "Organize your plans around one {adjective} priority.",
+            "Share a {adjective} update with your collaborators."
+          ],
+          "minimum": 0,
+          "maximum": 2
+        }
       }
     },
     {
@@ -68,6 +124,34 @@
           "Hold back from {phrase} until emotions settle.",
           "Delay {phrase} choices that disrupt trust."
         ]
+      },
+      "variation_groups": {
+        "clauses": {
+          "mode": "permutation",
+          "items": [
+            "Subtle radiant energy supports your relationships connections.",
+            "Momentum guides your relationships openings with quiet clarity."
+          ]
+        },
+        "adjective": {
+          "mode": "choice",
+          "items": [
+            "warm",
+            "tender",
+            "open-hearted"
+          ],
+          "pick": 1
+        },
+        "optional_sentences": {
+          "mode": "subset",
+          "items": [
+            "Offer a {adjective} gesture that feels true.",
+            "Name one {adjective} boundary that supports connection.",
+            "Bring {adjective} attention to the way you listen."
+          ],
+          "minimum": 0,
+          "maximum": 2
+        }
       }
     },
     {
@@ -91,6 +175,34 @@
           "Hold back from {phrase} until strength returns.",
           "Delay {phrase} pushes that tax your system."
         ]
+      },
+      "variation_groups": {
+        "clauses": {
+          "mode": "permutation",
+          "items": [
+            "Subtle radiant energy supports your wellness rhythms.",
+            "Momentum guides your wellness care with quiet clarity."
+          ]
+        },
+        "adjective": {
+          "mode": "choice",
+          "items": [
+            "restorative",
+            "energizing",
+            "gentle"
+          ],
+          "pick": 1
+        },
+        "optional_sentences": {
+          "mode": "subset",
+          "items": [
+            "Choose a {adjective} ritual that anchors you.",
+            "Track one {adjective} shift in your body.",
+            "Move with a {adjective} rhythm that respects your energy."
+          ],
+          "minimum": 0,
+          "maximum": 2
+        }
       }
     },
     {
@@ -114,6 +226,34 @@
           "Hold back from {phrase} until numbers align.",
           "Delay {phrase} commitments that add risk."
         ]
+      },
+      "variation_groups": {
+        "clauses": {
+          "mode": "permutation",
+          "items": [
+            "Subtle radiant energy supports your finances decisions.",
+            "Momentum guides your finances planning with quiet clarity."
+          ]
+        },
+        "adjective": {
+          "mode": "choice",
+          "items": [
+            "savvy",
+            "practical",
+            "resourceful"
+          ],
+          "pick": 1
+        },
+        "optional_sentences": {
+          "mode": "subset",
+          "items": [
+            "Outline a {adjective} move for your resources.",
+            "Review a {adjective} detail before you commit.",
+            "Celebrate a {adjective} decision that reinforced stability."
+          ],
+          "minimum": 0,
+          "maximum": 2
+        }
       }
     },
     {
@@ -137,6 +277,34 @@
           "Hold back from {phrase} until timing improves.",
           "Delay {phrase} choices that feel rushed."
         ]
+      },
+      "variation_groups": {
+        "clauses": {
+          "mode": "permutation",
+          "items": [
+            "Gentle radiant energy supports your day flow.",
+            "Momentum guides your day choices with measured clarity."
+          ]
+        },
+        "adjective": {
+          "mode": "choice",
+          "items": [
+            "steady",
+            "radiant",
+            "grounded"
+          ],
+          "pick": 1
+        },
+        "optional_sentences": {
+          "mode": "subset",
+          "items": [
+            "Keep a {adjective} pace as you move through today.",
+            "Share a {adjective} insight with someone you trust.",
+            "Note one {adjective} choice that feels aligned."
+          ],
+          "minimum": 0,
+          "maximum": 2
+        }
       }
     },
     {
@@ -160,6 +328,34 @@
           "Hold back from {phrase} until the plan is solid.",
           "Delay {phrase} moves that stretch resources too thin."
         ]
+      },
+      "variation_groups": {
+        "clauses": {
+          "mode": "permutation",
+          "items": [
+            "Gentle radiant energy supports your career progress.",
+            "Momentum guides your career moves with measured clarity."
+          ]
+        },
+        "adjective": {
+          "mode": "choice",
+          "items": [
+            "strategic",
+            "confident",
+            "steady"
+          ],
+          "pick": 1
+        },
+        "optional_sentences": {
+          "mode": "subset",
+          "items": [
+            "Let your {adjective} focus highlight the wins at work.",
+            "Organize your plans around one {adjective} priority.",
+            "Share a {adjective} update with your collaborators."
+          ],
+          "minimum": 0,
+          "maximum": 2
+        }
       }
     },
     {
@@ -183,6 +379,34 @@
           "Hold back from {phrase} until emotions settle.",
           "Delay {phrase} choices that disrupt trust."
         ]
+      },
+      "variation_groups": {
+        "clauses": {
+          "mode": "permutation",
+          "items": [
+            "Gentle radiant energy supports your relationships connections.",
+            "Momentum guides your relationships openings with measured clarity."
+          ]
+        },
+        "adjective": {
+          "mode": "choice",
+          "items": [
+            "warm",
+            "tender",
+            "open-hearted"
+          ],
+          "pick": 1
+        },
+        "optional_sentences": {
+          "mode": "subset",
+          "items": [
+            "Offer a {adjective} gesture that feels true.",
+            "Name one {adjective} boundary that supports connection.",
+            "Bring {adjective} attention to the way you listen."
+          ],
+          "minimum": 0,
+          "maximum": 2
+        }
       }
     },
     {
@@ -206,6 +430,34 @@
           "Hold back from {phrase} until strength returns.",
           "Delay {phrase} pushes that tax your system."
         ]
+      },
+      "variation_groups": {
+        "clauses": {
+          "mode": "permutation",
+          "items": [
+            "Gentle radiant energy supports your wellness rhythms.",
+            "Momentum guides your wellness care with measured clarity."
+          ]
+        },
+        "adjective": {
+          "mode": "choice",
+          "items": [
+            "restorative",
+            "energizing",
+            "gentle"
+          ],
+          "pick": 1
+        },
+        "optional_sentences": {
+          "mode": "subset",
+          "items": [
+            "Choose a {adjective} ritual that anchors you.",
+            "Track one {adjective} shift in your body.",
+            "Move with a {adjective} rhythm that respects your energy."
+          ],
+          "minimum": 0,
+          "maximum": 2
+        }
       }
     },
     {
@@ -229,6 +481,34 @@
           "Hold back from {phrase} until numbers align.",
           "Delay {phrase} commitments that add risk."
         ]
+      },
+      "variation_groups": {
+        "clauses": {
+          "mode": "permutation",
+          "items": [
+            "Gentle radiant energy supports your finances decisions.",
+            "Momentum guides your finances planning with measured clarity."
+          ]
+        },
+        "adjective": {
+          "mode": "choice",
+          "items": [
+            "savvy",
+            "practical",
+            "resourceful"
+          ],
+          "pick": 1
+        },
+        "optional_sentences": {
+          "mode": "subset",
+          "items": [
+            "Outline a {adjective} move for your resources.",
+            "Review a {adjective} detail before you commit.",
+            "Celebrate a {adjective} decision that reinforced stability."
+          ],
+          "minimum": 0,
+          "maximum": 2
+        }
       }
     },
     {
@@ -252,6 +532,34 @@
           "Hold back from {phrase} until timing improves.",
           "Delay {phrase} choices that feel rushed."
         ]
+      },
+      "variation_groups": {
+        "clauses": {
+          "mode": "permutation",
+          "items": [
+            "Steady radiant energy supports your day flow.",
+            "Momentum guides your day choices with reliable clarity."
+          ]
+        },
+        "adjective": {
+          "mode": "choice",
+          "items": [
+            "steady",
+            "radiant",
+            "grounded"
+          ],
+          "pick": 1
+        },
+        "optional_sentences": {
+          "mode": "subset",
+          "items": [
+            "Keep a {adjective} pace as you move through today.",
+            "Share a {adjective} insight with someone you trust.",
+            "Note one {adjective} choice that feels aligned."
+          ],
+          "minimum": 0,
+          "maximum": 2
+        }
       }
     },
     {
@@ -275,6 +583,34 @@
           "Hold back from {phrase} until the plan is solid.",
           "Delay {phrase} moves that stretch resources too thin."
         ]
+      },
+      "variation_groups": {
+        "clauses": {
+          "mode": "permutation",
+          "items": [
+            "Steady radiant energy supports your career progress.",
+            "Momentum guides your career moves with reliable clarity."
+          ]
+        },
+        "adjective": {
+          "mode": "choice",
+          "items": [
+            "strategic",
+            "confident",
+            "steady"
+          ],
+          "pick": 1
+        },
+        "optional_sentences": {
+          "mode": "subset",
+          "items": [
+            "Let your {adjective} focus highlight the wins at work.",
+            "Organize your plans around one {adjective} priority.",
+            "Share a {adjective} update with your collaborators."
+          ],
+          "minimum": 0,
+          "maximum": 2
+        }
       }
     },
     {
@@ -298,6 +634,34 @@
           "Hold back from {phrase} until emotions settle.",
           "Delay {phrase} choices that disrupt trust."
         ]
+      },
+      "variation_groups": {
+        "clauses": {
+          "mode": "permutation",
+          "items": [
+            "Steady radiant energy supports your relationships connections.",
+            "Momentum guides your relationships openings with reliable clarity."
+          ]
+        },
+        "adjective": {
+          "mode": "choice",
+          "items": [
+            "warm",
+            "tender",
+            "open-hearted"
+          ],
+          "pick": 1
+        },
+        "optional_sentences": {
+          "mode": "subset",
+          "items": [
+            "Offer a {adjective} gesture that feels true.",
+            "Name one {adjective} boundary that supports connection.",
+            "Bring {adjective} attention to the way you listen."
+          ],
+          "minimum": 0,
+          "maximum": 2
+        }
       }
     },
     {
@@ -321,6 +685,34 @@
           "Hold back from {phrase} until strength returns.",
           "Delay {phrase} pushes that tax your system."
         ]
+      },
+      "variation_groups": {
+        "clauses": {
+          "mode": "permutation",
+          "items": [
+            "Steady radiant energy supports your wellness rhythms.",
+            "Momentum guides your wellness care with reliable clarity."
+          ]
+        },
+        "adjective": {
+          "mode": "choice",
+          "items": [
+            "restorative",
+            "energizing",
+            "gentle"
+          ],
+          "pick": 1
+        },
+        "optional_sentences": {
+          "mode": "subset",
+          "items": [
+            "Choose a {adjective} ritual that anchors you.",
+            "Track one {adjective} shift in your body.",
+            "Move with a {adjective} rhythm that respects your energy."
+          ],
+          "minimum": 0,
+          "maximum": 2
+        }
       }
     },
     {
@@ -344,6 +736,34 @@
           "Hold back from {phrase} until numbers align.",
           "Delay {phrase} commitments that add risk."
         ]
+      },
+      "variation_groups": {
+        "clauses": {
+          "mode": "permutation",
+          "items": [
+            "Steady radiant energy supports your finances decisions.",
+            "Momentum guides your finances planning with reliable clarity."
+          ]
+        },
+        "adjective": {
+          "mode": "choice",
+          "items": [
+            "savvy",
+            "practical",
+            "resourceful"
+          ],
+          "pick": 1
+        },
+        "optional_sentences": {
+          "mode": "subset",
+          "items": [
+            "Outline a {adjective} move for your resources.",
+            "Review a {adjective} detail before you commit.",
+            "Celebrate a {adjective} decision that reinforced stability."
+          ],
+          "minimum": 0,
+          "maximum": 2
+        }
       }
     },
     {
@@ -367,6 +787,34 @@
           "Hold back from {phrase} until timing improves.",
           "Delay {phrase} choices that feel rushed."
         ]
+      },
+      "variation_groups": {
+        "clauses": {
+          "mode": "permutation",
+          "items": [
+            "Strong radiant energy supports your day flow.",
+            "Momentum guides your day choices with bold clarity."
+          ]
+        },
+        "adjective": {
+          "mode": "choice",
+          "items": [
+            "steady",
+            "radiant",
+            "grounded"
+          ],
+          "pick": 1
+        },
+        "optional_sentences": {
+          "mode": "subset",
+          "items": [
+            "Keep a {adjective} pace as you move through today.",
+            "Share a {adjective} insight with someone you trust.",
+            "Note one {adjective} choice that feels aligned."
+          ],
+          "minimum": 0,
+          "maximum": 2
+        }
       }
     },
     {
@@ -390,6 +838,34 @@
           "Hold back from {phrase} until the plan is solid.",
           "Delay {phrase} moves that stretch resources too thin."
         ]
+      },
+      "variation_groups": {
+        "clauses": {
+          "mode": "permutation",
+          "items": [
+            "Strong radiant energy supports your career progress.",
+            "Momentum guides your career moves with bold clarity."
+          ]
+        },
+        "adjective": {
+          "mode": "choice",
+          "items": [
+            "strategic",
+            "confident",
+            "steady"
+          ],
+          "pick": 1
+        },
+        "optional_sentences": {
+          "mode": "subset",
+          "items": [
+            "Let your {adjective} focus highlight the wins at work.",
+            "Organize your plans around one {adjective} priority.",
+            "Share a {adjective} update with your collaborators."
+          ],
+          "minimum": 0,
+          "maximum": 2
+        }
       }
     },
     {
@@ -413,6 +889,34 @@
           "Hold back from {phrase} until emotions settle.",
           "Delay {phrase} choices that disrupt trust."
         ]
+      },
+      "variation_groups": {
+        "clauses": {
+          "mode": "permutation",
+          "items": [
+            "Strong radiant energy supports your relationships connections.",
+            "Momentum guides your relationships openings with bold clarity."
+          ]
+        },
+        "adjective": {
+          "mode": "choice",
+          "items": [
+            "warm",
+            "tender",
+            "open-hearted"
+          ],
+          "pick": 1
+        },
+        "optional_sentences": {
+          "mode": "subset",
+          "items": [
+            "Offer a {adjective} gesture that feels true.",
+            "Name one {adjective} boundary that supports connection.",
+            "Bring {adjective} attention to the way you listen."
+          ],
+          "minimum": 0,
+          "maximum": 2
+        }
       }
     },
     {
@@ -436,6 +940,34 @@
           "Hold back from {phrase} until strength returns.",
           "Delay {phrase} pushes that tax your system."
         ]
+      },
+      "variation_groups": {
+        "clauses": {
+          "mode": "permutation",
+          "items": [
+            "Strong radiant energy supports your wellness rhythms.",
+            "Momentum guides your wellness care with bold clarity."
+          ]
+        },
+        "adjective": {
+          "mode": "choice",
+          "items": [
+            "restorative",
+            "energizing",
+            "gentle"
+          ],
+          "pick": 1
+        },
+        "optional_sentences": {
+          "mode": "subset",
+          "items": [
+            "Choose a {adjective} ritual that anchors you.",
+            "Track one {adjective} shift in your body.",
+            "Move with a {adjective} rhythm that respects your energy."
+          ],
+          "minimum": 0,
+          "maximum": 2
+        }
       }
     },
     {
@@ -459,6 +991,34 @@
           "Hold back from {phrase} until numbers align.",
           "Delay {phrase} commitments that add risk."
         ]
+      },
+      "variation_groups": {
+        "clauses": {
+          "mode": "permutation",
+          "items": [
+            "Strong radiant energy supports your finances decisions.",
+            "Momentum guides your finances planning with bold clarity."
+          ]
+        },
+        "adjective": {
+          "mode": "choice",
+          "items": [
+            "savvy",
+            "practical",
+            "resourceful"
+          ],
+          "pick": 1
+        },
+        "optional_sentences": {
+          "mode": "subset",
+          "items": [
+            "Outline a {adjective} move for your resources.",
+            "Review a {adjective} detail before you commit.",
+            "Celebrate a {adjective} decision that reinforced stability."
+          ],
+          "minimum": 0,
+          "maximum": 2
+        }
       }
     },
     {
@@ -482,6 +1042,34 @@
           "Hold back from {phrase} until timing improves.",
           "Delay {phrase} choices that feel rushed."
         ]
+      },
+      "variation_groups": {
+        "clauses": {
+          "mode": "permutation",
+          "items": [
+            "Peak radiant energy supports your day flow.",
+            "Momentum guides your day choices with urgent clarity."
+          ]
+        },
+        "adjective": {
+          "mode": "choice",
+          "items": [
+            "steady",
+            "radiant",
+            "grounded"
+          ],
+          "pick": 1
+        },
+        "optional_sentences": {
+          "mode": "subset",
+          "items": [
+            "Keep a {adjective} pace as you move through today.",
+            "Share a {adjective} insight with someone you trust.",
+            "Note one {adjective} choice that feels aligned."
+          ],
+          "minimum": 0,
+          "maximum": 2
+        }
       }
     },
     {
@@ -505,6 +1093,34 @@
           "Hold back from {phrase} until the plan is solid.",
           "Delay {phrase} moves that stretch resources too thin."
         ]
+      },
+      "variation_groups": {
+        "clauses": {
+          "mode": "permutation",
+          "items": [
+            "Peak radiant energy supports your career progress.",
+            "Momentum guides your career moves with urgent clarity."
+          ]
+        },
+        "adjective": {
+          "mode": "choice",
+          "items": [
+            "strategic",
+            "confident",
+            "steady"
+          ],
+          "pick": 1
+        },
+        "optional_sentences": {
+          "mode": "subset",
+          "items": [
+            "Let your {adjective} focus highlight the wins at work.",
+            "Organize your plans around one {adjective} priority.",
+            "Share a {adjective} update with your collaborators."
+          ],
+          "minimum": 0,
+          "maximum": 2
+        }
       }
     },
     {
@@ -528,6 +1144,34 @@
           "Hold back from {phrase} until emotions settle.",
           "Delay {phrase} choices that disrupt trust."
         ]
+      },
+      "variation_groups": {
+        "clauses": {
+          "mode": "permutation",
+          "items": [
+            "Peak radiant energy supports your relationships connections.",
+            "Momentum guides your relationships openings with urgent clarity."
+          ]
+        },
+        "adjective": {
+          "mode": "choice",
+          "items": [
+            "warm",
+            "tender",
+            "open-hearted"
+          ],
+          "pick": 1
+        },
+        "optional_sentences": {
+          "mode": "subset",
+          "items": [
+            "Offer a {adjective} gesture that feels true.",
+            "Name one {adjective} boundary that supports connection.",
+            "Bring {adjective} attention to the way you listen."
+          ],
+          "minimum": 0,
+          "maximum": 2
+        }
       }
     },
     {
@@ -551,6 +1195,34 @@
           "Hold back from {phrase} until strength returns.",
           "Delay {phrase} pushes that tax your system."
         ]
+      },
+      "variation_groups": {
+        "clauses": {
+          "mode": "permutation",
+          "items": [
+            "Peak radiant energy supports your wellness rhythms.",
+            "Momentum guides your wellness care with urgent clarity."
+          ]
+        },
+        "adjective": {
+          "mode": "choice",
+          "items": [
+            "restorative",
+            "energizing",
+            "gentle"
+          ],
+          "pick": 1
+        },
+        "optional_sentences": {
+          "mode": "subset",
+          "items": [
+            "Choose a {adjective} ritual that anchors you.",
+            "Track one {adjective} shift in your body.",
+            "Move with a {adjective} rhythm that respects your energy."
+          ],
+          "minimum": 0,
+          "maximum": 2
+        }
       }
     },
     {
@@ -574,6 +1246,34 @@
           "Hold back from {phrase} until numbers align.",
           "Delay {phrase} commitments that add risk."
         ]
+      },
+      "variation_groups": {
+        "clauses": {
+          "mode": "permutation",
+          "items": [
+            "Peak radiant energy supports your finances decisions.",
+            "Momentum guides your finances planning with urgent clarity."
+          ]
+        },
+        "adjective": {
+          "mode": "choice",
+          "items": [
+            "savvy",
+            "practical",
+            "resourceful"
+          ],
+          "pick": 1
+        },
+        "optional_sentences": {
+          "mode": "subset",
+          "items": [
+            "Outline a {adjective} move for your resources.",
+            "Review a {adjective} detail before you commit.",
+            "Celebrate a {adjective} decision that reinforced stability."
+          ],
+          "minimum": 0,
+          "maximum": 2
+        }
       }
     },
     {
@@ -597,6 +1297,34 @@
           "Hold back from {phrase} until timing improves.",
           "Delay {phrase} choices that feel rushed."
         ]
+      },
+      "variation_groups": {
+        "clauses": {
+          "mode": "permutation",
+          "items": [
+            "Subtle grounded energy supports your day flow.",
+            "Strategy guides your day choices with quiet clarity."
+          ]
+        },
+        "adjective": {
+          "mode": "choice",
+          "items": [
+            "steady",
+            "radiant",
+            "grounded"
+          ],
+          "pick": 1
+        },
+        "optional_sentences": {
+          "mode": "subset",
+          "items": [
+            "Keep a {adjective} pace as you move through today.",
+            "Share a {adjective} insight with someone you trust.",
+            "Note one {adjective} choice that feels aligned."
+          ],
+          "minimum": 0,
+          "maximum": 2
+        }
       }
     },
     {
@@ -620,6 +1348,34 @@
           "Hold back from {phrase} until the plan is solid.",
           "Delay {phrase} moves that stretch resources too thin."
         ]
+      },
+      "variation_groups": {
+        "clauses": {
+          "mode": "permutation",
+          "items": [
+            "Subtle grounded energy supports your career progress.",
+            "Strategy guides your career moves with quiet clarity."
+          ]
+        },
+        "adjective": {
+          "mode": "choice",
+          "items": [
+            "strategic",
+            "confident",
+            "steady"
+          ],
+          "pick": 1
+        },
+        "optional_sentences": {
+          "mode": "subset",
+          "items": [
+            "Let your {adjective} focus highlight the wins at work.",
+            "Organize your plans around one {adjective} priority.",
+            "Share a {adjective} update with your collaborators."
+          ],
+          "minimum": 0,
+          "maximum": 2
+        }
       }
     },
     {
@@ -643,6 +1399,34 @@
           "Hold back from {phrase} until emotions settle.",
           "Delay {phrase} choices that disrupt trust."
         ]
+      },
+      "variation_groups": {
+        "clauses": {
+          "mode": "permutation",
+          "items": [
+            "Subtle grounded energy supports your relationships connections.",
+            "Strategy guides your relationships openings with quiet clarity."
+          ]
+        },
+        "adjective": {
+          "mode": "choice",
+          "items": [
+            "warm",
+            "tender",
+            "open-hearted"
+          ],
+          "pick": 1
+        },
+        "optional_sentences": {
+          "mode": "subset",
+          "items": [
+            "Offer a {adjective} gesture that feels true.",
+            "Name one {adjective} boundary that supports connection.",
+            "Bring {adjective} attention to the way you listen."
+          ],
+          "minimum": 0,
+          "maximum": 2
+        }
       }
     },
     {
@@ -666,6 +1450,34 @@
           "Hold back from {phrase} until strength returns.",
           "Delay {phrase} pushes that tax your system."
         ]
+      },
+      "variation_groups": {
+        "clauses": {
+          "mode": "permutation",
+          "items": [
+            "Subtle grounded energy supports your wellness rhythms.",
+            "Strategy guides your wellness care with quiet clarity."
+          ]
+        },
+        "adjective": {
+          "mode": "choice",
+          "items": [
+            "restorative",
+            "energizing",
+            "gentle"
+          ],
+          "pick": 1
+        },
+        "optional_sentences": {
+          "mode": "subset",
+          "items": [
+            "Choose a {adjective} ritual that anchors you.",
+            "Track one {adjective} shift in your body.",
+            "Move with a {adjective} rhythm that respects your energy."
+          ],
+          "minimum": 0,
+          "maximum": 2
+        }
       }
     },
     {
@@ -689,6 +1501,34 @@
           "Hold back from {phrase} until numbers align.",
           "Delay {phrase} commitments that add risk."
         ]
+      },
+      "variation_groups": {
+        "clauses": {
+          "mode": "permutation",
+          "items": [
+            "Subtle grounded energy supports your finances decisions.",
+            "Strategy guides your finances planning with quiet clarity."
+          ]
+        },
+        "adjective": {
+          "mode": "choice",
+          "items": [
+            "savvy",
+            "practical",
+            "resourceful"
+          ],
+          "pick": 1
+        },
+        "optional_sentences": {
+          "mode": "subset",
+          "items": [
+            "Outline a {adjective} move for your resources.",
+            "Review a {adjective} detail before you commit.",
+            "Celebrate a {adjective} decision that reinforced stability."
+          ],
+          "minimum": 0,
+          "maximum": 2
+        }
       }
     },
     {
@@ -712,6 +1552,34 @@
           "Hold back from {phrase} until timing improves.",
           "Delay {phrase} choices that feel rushed."
         ]
+      },
+      "variation_groups": {
+        "clauses": {
+          "mode": "permutation",
+          "items": [
+            "Gentle grounded energy supports your day flow.",
+            "Strategy guides your day choices with measured clarity."
+          ]
+        },
+        "adjective": {
+          "mode": "choice",
+          "items": [
+            "steady",
+            "radiant",
+            "grounded"
+          ],
+          "pick": 1
+        },
+        "optional_sentences": {
+          "mode": "subset",
+          "items": [
+            "Keep a {adjective} pace as you move through today.",
+            "Share a {adjective} insight with someone you trust.",
+            "Note one {adjective} choice that feels aligned."
+          ],
+          "minimum": 0,
+          "maximum": 2
+        }
       }
     },
     {
@@ -735,6 +1603,34 @@
           "Hold back from {phrase} until the plan is solid.",
           "Delay {phrase} moves that stretch resources too thin."
         ]
+      },
+      "variation_groups": {
+        "clauses": {
+          "mode": "permutation",
+          "items": [
+            "Gentle grounded energy supports your career progress.",
+            "Strategy guides your career moves with measured clarity."
+          ]
+        },
+        "adjective": {
+          "mode": "choice",
+          "items": [
+            "strategic",
+            "confident",
+            "steady"
+          ],
+          "pick": 1
+        },
+        "optional_sentences": {
+          "mode": "subset",
+          "items": [
+            "Let your {adjective} focus highlight the wins at work.",
+            "Organize your plans around one {adjective} priority.",
+            "Share a {adjective} update with your collaborators."
+          ],
+          "minimum": 0,
+          "maximum": 2
+        }
       }
     },
     {
@@ -758,6 +1654,34 @@
           "Hold back from {phrase} until emotions settle.",
           "Delay {phrase} choices that disrupt trust."
         ]
+      },
+      "variation_groups": {
+        "clauses": {
+          "mode": "permutation",
+          "items": [
+            "Gentle grounded energy supports your relationships connections.",
+            "Strategy guides your relationships openings with measured clarity."
+          ]
+        },
+        "adjective": {
+          "mode": "choice",
+          "items": [
+            "warm",
+            "tender",
+            "open-hearted"
+          ],
+          "pick": 1
+        },
+        "optional_sentences": {
+          "mode": "subset",
+          "items": [
+            "Offer a {adjective} gesture that feels true.",
+            "Name one {adjective} boundary that supports connection.",
+            "Bring {adjective} attention to the way you listen."
+          ],
+          "minimum": 0,
+          "maximum": 2
+        }
       }
     },
     {
@@ -781,6 +1705,34 @@
           "Hold back from {phrase} until strength returns.",
           "Delay {phrase} pushes that tax your system."
         ]
+      },
+      "variation_groups": {
+        "clauses": {
+          "mode": "permutation",
+          "items": [
+            "Gentle grounded energy supports your wellness rhythms.",
+            "Strategy guides your wellness care with measured clarity."
+          ]
+        },
+        "adjective": {
+          "mode": "choice",
+          "items": [
+            "restorative",
+            "energizing",
+            "gentle"
+          ],
+          "pick": 1
+        },
+        "optional_sentences": {
+          "mode": "subset",
+          "items": [
+            "Choose a {adjective} ritual that anchors you.",
+            "Track one {adjective} shift in your body.",
+            "Move with a {adjective} rhythm that respects your energy."
+          ],
+          "minimum": 0,
+          "maximum": 2
+        }
       }
     },
     {
@@ -804,6 +1756,34 @@
           "Hold back from {phrase} until numbers align.",
           "Delay {phrase} commitments that add risk."
         ]
+      },
+      "variation_groups": {
+        "clauses": {
+          "mode": "permutation",
+          "items": [
+            "Gentle grounded energy supports your finances decisions.",
+            "Strategy guides your finances planning with measured clarity."
+          ]
+        },
+        "adjective": {
+          "mode": "choice",
+          "items": [
+            "savvy",
+            "practical",
+            "resourceful"
+          ],
+          "pick": 1
+        },
+        "optional_sentences": {
+          "mode": "subset",
+          "items": [
+            "Outline a {adjective} move for your resources.",
+            "Review a {adjective} detail before you commit.",
+            "Celebrate a {adjective} decision that reinforced stability."
+          ],
+          "minimum": 0,
+          "maximum": 2
+        }
       }
     },
     {
@@ -827,6 +1807,34 @@
           "Hold back from {phrase} until timing improves.",
           "Delay {phrase} choices that feel rushed."
         ]
+      },
+      "variation_groups": {
+        "clauses": {
+          "mode": "permutation",
+          "items": [
+            "Steady grounded energy supports your day flow.",
+            "Strategy guides your day choices with reliable clarity."
+          ]
+        },
+        "adjective": {
+          "mode": "choice",
+          "items": [
+            "steady",
+            "radiant",
+            "grounded"
+          ],
+          "pick": 1
+        },
+        "optional_sentences": {
+          "mode": "subset",
+          "items": [
+            "Keep a {adjective} pace as you move through today.",
+            "Share a {adjective} insight with someone you trust.",
+            "Note one {adjective} choice that feels aligned."
+          ],
+          "minimum": 0,
+          "maximum": 2
+        }
       }
     },
     {
@@ -850,6 +1858,34 @@
           "Hold back from {phrase} until the plan is solid.",
           "Delay {phrase} moves that stretch resources too thin."
         ]
+      },
+      "variation_groups": {
+        "clauses": {
+          "mode": "permutation",
+          "items": [
+            "Steady grounded energy supports your career progress.",
+            "Strategy guides your career moves with reliable clarity."
+          ]
+        },
+        "adjective": {
+          "mode": "choice",
+          "items": [
+            "strategic",
+            "confident",
+            "steady"
+          ],
+          "pick": 1
+        },
+        "optional_sentences": {
+          "mode": "subset",
+          "items": [
+            "Let your {adjective} focus highlight the wins at work.",
+            "Organize your plans around one {adjective} priority.",
+            "Share a {adjective} update with your collaborators."
+          ],
+          "minimum": 0,
+          "maximum": 2
+        }
       }
     },
     {
@@ -873,6 +1909,34 @@
           "Hold back from {phrase} until emotions settle.",
           "Delay {phrase} choices that disrupt trust."
         ]
+      },
+      "variation_groups": {
+        "clauses": {
+          "mode": "permutation",
+          "items": [
+            "Steady grounded energy supports your relationships connections.",
+            "Strategy guides your relationships openings with reliable clarity."
+          ]
+        },
+        "adjective": {
+          "mode": "choice",
+          "items": [
+            "warm",
+            "tender",
+            "open-hearted"
+          ],
+          "pick": 1
+        },
+        "optional_sentences": {
+          "mode": "subset",
+          "items": [
+            "Offer a {adjective} gesture that feels true.",
+            "Name one {adjective} boundary that supports connection.",
+            "Bring {adjective} attention to the way you listen."
+          ],
+          "minimum": 0,
+          "maximum": 2
+        }
       }
     },
     {
@@ -896,6 +1960,34 @@
           "Hold back from {phrase} until strength returns.",
           "Delay {phrase} pushes that tax your system."
         ]
+      },
+      "variation_groups": {
+        "clauses": {
+          "mode": "permutation",
+          "items": [
+            "Steady grounded energy supports your wellness rhythms.",
+            "Strategy guides your wellness care with reliable clarity."
+          ]
+        },
+        "adjective": {
+          "mode": "choice",
+          "items": [
+            "restorative",
+            "energizing",
+            "gentle"
+          ],
+          "pick": 1
+        },
+        "optional_sentences": {
+          "mode": "subset",
+          "items": [
+            "Choose a {adjective} ritual that anchors you.",
+            "Track one {adjective} shift in your body.",
+            "Move with a {adjective} rhythm that respects your energy."
+          ],
+          "minimum": 0,
+          "maximum": 2
+        }
       }
     },
     {
@@ -919,6 +2011,34 @@
           "Hold back from {phrase} until numbers align.",
           "Delay {phrase} commitments that add risk."
         ]
+      },
+      "variation_groups": {
+        "clauses": {
+          "mode": "permutation",
+          "items": [
+            "Steady grounded energy supports your finances decisions.",
+            "Strategy guides your finances planning with reliable clarity."
+          ]
+        },
+        "adjective": {
+          "mode": "choice",
+          "items": [
+            "savvy",
+            "practical",
+            "resourceful"
+          ],
+          "pick": 1
+        },
+        "optional_sentences": {
+          "mode": "subset",
+          "items": [
+            "Outline a {adjective} move for your resources.",
+            "Review a {adjective} detail before you commit.",
+            "Celebrate a {adjective} decision that reinforced stability."
+          ],
+          "minimum": 0,
+          "maximum": 2
+        }
       }
     },
     {
@@ -942,6 +2062,34 @@
           "Hold back from {phrase} until timing improves.",
           "Delay {phrase} choices that feel rushed."
         ]
+      },
+      "variation_groups": {
+        "clauses": {
+          "mode": "permutation",
+          "items": [
+            "Strong grounded energy supports your day flow.",
+            "Strategy guides your day choices with bold clarity."
+          ]
+        },
+        "adjective": {
+          "mode": "choice",
+          "items": [
+            "steady",
+            "radiant",
+            "grounded"
+          ],
+          "pick": 1
+        },
+        "optional_sentences": {
+          "mode": "subset",
+          "items": [
+            "Keep a {adjective} pace as you move through today.",
+            "Share a {adjective} insight with someone you trust.",
+            "Note one {adjective} choice that feels aligned."
+          ],
+          "minimum": 0,
+          "maximum": 2
+        }
       }
     },
     {
@@ -965,6 +2113,34 @@
           "Hold back from {phrase} until the plan is solid.",
           "Delay {phrase} moves that stretch resources too thin."
         ]
+      },
+      "variation_groups": {
+        "clauses": {
+          "mode": "permutation",
+          "items": [
+            "Strong grounded energy supports your career progress.",
+            "Strategy guides your career moves with bold clarity."
+          ]
+        },
+        "adjective": {
+          "mode": "choice",
+          "items": [
+            "strategic",
+            "confident",
+            "steady"
+          ],
+          "pick": 1
+        },
+        "optional_sentences": {
+          "mode": "subset",
+          "items": [
+            "Let your {adjective} focus highlight the wins at work.",
+            "Organize your plans around one {adjective} priority.",
+            "Share a {adjective} update with your collaborators."
+          ],
+          "minimum": 0,
+          "maximum": 2
+        }
       }
     },
     {
@@ -988,6 +2164,34 @@
           "Hold back from {phrase} until emotions settle.",
           "Delay {phrase} choices that disrupt trust."
         ]
+      },
+      "variation_groups": {
+        "clauses": {
+          "mode": "permutation",
+          "items": [
+            "Strong grounded energy supports your relationships connections.",
+            "Strategy guides your relationships openings with bold clarity."
+          ]
+        },
+        "adjective": {
+          "mode": "choice",
+          "items": [
+            "warm",
+            "tender",
+            "open-hearted"
+          ],
+          "pick": 1
+        },
+        "optional_sentences": {
+          "mode": "subset",
+          "items": [
+            "Offer a {adjective} gesture that feels true.",
+            "Name one {adjective} boundary that supports connection.",
+            "Bring {adjective} attention to the way you listen."
+          ],
+          "minimum": 0,
+          "maximum": 2
+        }
       }
     },
     {
@@ -1011,6 +2215,34 @@
           "Hold back from {phrase} until strength returns.",
           "Delay {phrase} pushes that tax your system."
         ]
+      },
+      "variation_groups": {
+        "clauses": {
+          "mode": "permutation",
+          "items": [
+            "Strong grounded energy supports your wellness rhythms.",
+            "Strategy guides your wellness care with bold clarity."
+          ]
+        },
+        "adjective": {
+          "mode": "choice",
+          "items": [
+            "restorative",
+            "energizing",
+            "gentle"
+          ],
+          "pick": 1
+        },
+        "optional_sentences": {
+          "mode": "subset",
+          "items": [
+            "Choose a {adjective} ritual that anchors you.",
+            "Track one {adjective} shift in your body.",
+            "Move with a {adjective} rhythm that respects your energy."
+          ],
+          "minimum": 0,
+          "maximum": 2
+        }
       }
     },
     {
@@ -1034,6 +2266,34 @@
           "Hold back from {phrase} until numbers align.",
           "Delay {phrase} commitments that add risk."
         ]
+      },
+      "variation_groups": {
+        "clauses": {
+          "mode": "permutation",
+          "items": [
+            "Strong grounded energy supports your finances decisions.",
+            "Strategy guides your finances planning with bold clarity."
+          ]
+        },
+        "adjective": {
+          "mode": "choice",
+          "items": [
+            "savvy",
+            "practical",
+            "resourceful"
+          ],
+          "pick": 1
+        },
+        "optional_sentences": {
+          "mode": "subset",
+          "items": [
+            "Outline a {adjective} move for your resources.",
+            "Review a {adjective} detail before you commit.",
+            "Celebrate a {adjective} decision that reinforced stability."
+          ],
+          "minimum": 0,
+          "maximum": 2
+        }
       }
     },
     {
@@ -1057,6 +2317,34 @@
           "Hold back from {phrase} until timing improves.",
           "Delay {phrase} choices that feel rushed."
         ]
+      },
+      "variation_groups": {
+        "clauses": {
+          "mode": "permutation",
+          "items": [
+            "Peak grounded energy supports your day flow.",
+            "Strategy guides your day choices with urgent clarity."
+          ]
+        },
+        "adjective": {
+          "mode": "choice",
+          "items": [
+            "steady",
+            "radiant",
+            "grounded"
+          ],
+          "pick": 1
+        },
+        "optional_sentences": {
+          "mode": "subset",
+          "items": [
+            "Keep a {adjective} pace as you move through today.",
+            "Share a {adjective} insight with someone you trust.",
+            "Note one {adjective} choice that feels aligned."
+          ],
+          "minimum": 0,
+          "maximum": 2
+        }
       }
     },
     {
@@ -1080,6 +2368,34 @@
           "Hold back from {phrase} until the plan is solid.",
           "Delay {phrase} moves that stretch resources too thin."
         ]
+      },
+      "variation_groups": {
+        "clauses": {
+          "mode": "permutation",
+          "items": [
+            "Peak grounded energy supports your career progress.",
+            "Strategy guides your career moves with urgent clarity."
+          ]
+        },
+        "adjective": {
+          "mode": "choice",
+          "items": [
+            "strategic",
+            "confident",
+            "steady"
+          ],
+          "pick": 1
+        },
+        "optional_sentences": {
+          "mode": "subset",
+          "items": [
+            "Let your {adjective} focus highlight the wins at work.",
+            "Organize your plans around one {adjective} priority.",
+            "Share a {adjective} update with your collaborators."
+          ],
+          "minimum": 0,
+          "maximum": 2
+        }
       }
     },
     {
@@ -1103,6 +2419,34 @@
           "Hold back from {phrase} until emotions settle.",
           "Delay {phrase} choices that disrupt trust."
         ]
+      },
+      "variation_groups": {
+        "clauses": {
+          "mode": "permutation",
+          "items": [
+            "Peak grounded energy supports your relationships connections.",
+            "Strategy guides your relationships openings with urgent clarity."
+          ]
+        },
+        "adjective": {
+          "mode": "choice",
+          "items": [
+            "warm",
+            "tender",
+            "open-hearted"
+          ],
+          "pick": 1
+        },
+        "optional_sentences": {
+          "mode": "subset",
+          "items": [
+            "Offer a {adjective} gesture that feels true.",
+            "Name one {adjective} boundary that supports connection.",
+            "Bring {adjective} attention to the way you listen."
+          ],
+          "minimum": 0,
+          "maximum": 2
+        }
       }
     },
     {
@@ -1126,6 +2470,34 @@
           "Hold back from {phrase} until strength returns.",
           "Delay {phrase} pushes that tax your system."
         ]
+      },
+      "variation_groups": {
+        "clauses": {
+          "mode": "permutation",
+          "items": [
+            "Peak grounded energy supports your wellness rhythms.",
+            "Strategy guides your wellness care with urgent clarity."
+          ]
+        },
+        "adjective": {
+          "mode": "choice",
+          "items": [
+            "restorative",
+            "energizing",
+            "gentle"
+          ],
+          "pick": 1
+        },
+        "optional_sentences": {
+          "mode": "subset",
+          "items": [
+            "Choose a {adjective} ritual that anchors you.",
+            "Track one {adjective} shift in your body.",
+            "Move with a {adjective} rhythm that respects your energy."
+          ],
+          "minimum": 0,
+          "maximum": 2
+        }
       }
     },
     {
@@ -1149,6 +2521,34 @@
           "Hold back from {phrase} until numbers align.",
           "Delay {phrase} commitments that add risk."
         ]
+      },
+      "variation_groups": {
+        "clauses": {
+          "mode": "permutation",
+          "items": [
+            "Peak grounded energy supports your finances decisions.",
+            "Strategy guides your finances planning with urgent clarity."
+          ]
+        },
+        "adjective": {
+          "mode": "choice",
+          "items": [
+            "savvy",
+            "practical",
+            "resourceful"
+          ],
+          "pick": 1
+        },
+        "optional_sentences": {
+          "mode": "subset",
+          "items": [
+            "Outline a {adjective} move for your resources.",
+            "Review a {adjective} detail before you commit.",
+            "Celebrate a {adjective} decision that reinforced stability."
+          ],
+          "minimum": 0,
+          "maximum": 2
+        }
       }
     },
     {
@@ -1172,6 +2572,34 @@
           "Hold back from {phrase} until timing improves.",
           "Delay {phrase} choices that feel rushed."
         ]
+      },
+      "variation_groups": {
+        "clauses": {
+          "mode": "permutation",
+          "items": [
+            "Subtle heart-led energy supports your day flow.",
+            "Compassion guides your day choices with quiet clarity."
+          ]
+        },
+        "adjective": {
+          "mode": "choice",
+          "items": [
+            "steady",
+            "radiant",
+            "grounded"
+          ],
+          "pick": 1
+        },
+        "optional_sentences": {
+          "mode": "subset",
+          "items": [
+            "Keep a {adjective} pace as you move through today.",
+            "Share a {adjective} insight with someone you trust.",
+            "Note one {adjective} choice that feels aligned."
+          ],
+          "minimum": 0,
+          "maximum": 2
+        }
       }
     },
     {
@@ -1195,6 +2623,34 @@
           "Hold back from {phrase} until the plan is solid.",
           "Delay {phrase} moves that stretch resources too thin."
         ]
+      },
+      "variation_groups": {
+        "clauses": {
+          "mode": "permutation",
+          "items": [
+            "Subtle heart-led energy supports your career progress.",
+            "Compassion guides your career moves with quiet clarity."
+          ]
+        },
+        "adjective": {
+          "mode": "choice",
+          "items": [
+            "strategic",
+            "confident",
+            "steady"
+          ],
+          "pick": 1
+        },
+        "optional_sentences": {
+          "mode": "subset",
+          "items": [
+            "Let your {adjective} focus highlight the wins at work.",
+            "Organize your plans around one {adjective} priority.",
+            "Share a {adjective} update with your collaborators."
+          ],
+          "minimum": 0,
+          "maximum": 2
+        }
       }
     },
     {
@@ -1218,6 +2674,34 @@
           "Hold back from {phrase} until emotions settle.",
           "Delay {phrase} choices that disrupt trust."
         ]
+      },
+      "variation_groups": {
+        "clauses": {
+          "mode": "permutation",
+          "items": [
+            "Subtle heart-led energy supports your relationships connections.",
+            "Compassion guides your relationships openings with quiet clarity."
+          ]
+        },
+        "adjective": {
+          "mode": "choice",
+          "items": [
+            "warm",
+            "tender",
+            "open-hearted"
+          ],
+          "pick": 1
+        },
+        "optional_sentences": {
+          "mode": "subset",
+          "items": [
+            "Offer a {adjective} gesture that feels true.",
+            "Name one {adjective} boundary that supports connection.",
+            "Bring {adjective} attention to the way you listen."
+          ],
+          "minimum": 0,
+          "maximum": 2
+        }
       }
     },
     {
@@ -1241,6 +2725,34 @@
           "Hold back from {phrase} until strength returns.",
           "Delay {phrase} pushes that tax your system."
         ]
+      },
+      "variation_groups": {
+        "clauses": {
+          "mode": "permutation",
+          "items": [
+            "Subtle heart-led energy supports your wellness rhythms.",
+            "Compassion guides your wellness care with quiet clarity."
+          ]
+        },
+        "adjective": {
+          "mode": "choice",
+          "items": [
+            "restorative",
+            "energizing",
+            "gentle"
+          ],
+          "pick": 1
+        },
+        "optional_sentences": {
+          "mode": "subset",
+          "items": [
+            "Choose a {adjective} ritual that anchors you.",
+            "Track one {adjective} shift in your body.",
+            "Move with a {adjective} rhythm that respects your energy."
+          ],
+          "minimum": 0,
+          "maximum": 2
+        }
       }
     },
     {
@@ -1264,6 +2776,34 @@
           "Hold back from {phrase} until numbers align.",
           "Delay {phrase} commitments that add risk."
         ]
+      },
+      "variation_groups": {
+        "clauses": {
+          "mode": "permutation",
+          "items": [
+            "Subtle heart-led energy supports your finances decisions.",
+            "Compassion guides your finances planning with quiet clarity."
+          ]
+        },
+        "adjective": {
+          "mode": "choice",
+          "items": [
+            "savvy",
+            "practical",
+            "resourceful"
+          ],
+          "pick": 1
+        },
+        "optional_sentences": {
+          "mode": "subset",
+          "items": [
+            "Outline a {adjective} move for your resources.",
+            "Review a {adjective} detail before you commit.",
+            "Celebrate a {adjective} decision that reinforced stability."
+          ],
+          "minimum": 0,
+          "maximum": 2
+        }
       }
     },
     {
@@ -1287,6 +2827,34 @@
           "Hold back from {phrase} until timing improves.",
           "Delay {phrase} choices that feel rushed."
         ]
+      },
+      "variation_groups": {
+        "clauses": {
+          "mode": "permutation",
+          "items": [
+            "Gentle heart-led energy supports your day flow.",
+            "Compassion guides your day choices with measured clarity."
+          ]
+        },
+        "adjective": {
+          "mode": "choice",
+          "items": [
+            "steady",
+            "radiant",
+            "grounded"
+          ],
+          "pick": 1
+        },
+        "optional_sentences": {
+          "mode": "subset",
+          "items": [
+            "Keep a {adjective} pace as you move through today.",
+            "Share a {adjective} insight with someone you trust.",
+            "Note one {adjective} choice that feels aligned."
+          ],
+          "minimum": 0,
+          "maximum": 2
+        }
       }
     },
     {
@@ -1310,6 +2878,34 @@
           "Hold back from {phrase} until the plan is solid.",
           "Delay {phrase} moves that stretch resources too thin."
         ]
+      },
+      "variation_groups": {
+        "clauses": {
+          "mode": "permutation",
+          "items": [
+            "Gentle heart-led energy supports your career progress.",
+            "Compassion guides your career moves with measured clarity."
+          ]
+        },
+        "adjective": {
+          "mode": "choice",
+          "items": [
+            "strategic",
+            "confident",
+            "steady"
+          ],
+          "pick": 1
+        },
+        "optional_sentences": {
+          "mode": "subset",
+          "items": [
+            "Let your {adjective} focus highlight the wins at work.",
+            "Organize your plans around one {adjective} priority.",
+            "Share a {adjective} update with your collaborators."
+          ],
+          "minimum": 0,
+          "maximum": 2
+        }
       }
     },
     {
@@ -1333,6 +2929,34 @@
           "Hold back from {phrase} until emotions settle.",
           "Delay {phrase} choices that disrupt trust."
         ]
+      },
+      "variation_groups": {
+        "clauses": {
+          "mode": "permutation",
+          "items": [
+            "Gentle heart-led energy supports your relationships connections.",
+            "Compassion guides your relationships openings with measured clarity."
+          ]
+        },
+        "adjective": {
+          "mode": "choice",
+          "items": [
+            "warm",
+            "tender",
+            "open-hearted"
+          ],
+          "pick": 1
+        },
+        "optional_sentences": {
+          "mode": "subset",
+          "items": [
+            "Offer a {adjective} gesture that feels true.",
+            "Name one {adjective} boundary that supports connection.",
+            "Bring {adjective} attention to the way you listen."
+          ],
+          "minimum": 0,
+          "maximum": 2
+        }
       }
     },
     {
@@ -1356,6 +2980,34 @@
           "Hold back from {phrase} until strength returns.",
           "Delay {phrase} pushes that tax your system."
         ]
+      },
+      "variation_groups": {
+        "clauses": {
+          "mode": "permutation",
+          "items": [
+            "Gentle heart-led energy supports your wellness rhythms.",
+            "Compassion guides your wellness care with measured clarity."
+          ]
+        },
+        "adjective": {
+          "mode": "choice",
+          "items": [
+            "restorative",
+            "energizing",
+            "gentle"
+          ],
+          "pick": 1
+        },
+        "optional_sentences": {
+          "mode": "subset",
+          "items": [
+            "Choose a {adjective} ritual that anchors you.",
+            "Track one {adjective} shift in your body.",
+            "Move with a {adjective} rhythm that respects your energy."
+          ],
+          "minimum": 0,
+          "maximum": 2
+        }
       }
     },
     {
@@ -1379,6 +3031,34 @@
           "Hold back from {phrase} until numbers align.",
           "Delay {phrase} commitments that add risk."
         ]
+      },
+      "variation_groups": {
+        "clauses": {
+          "mode": "permutation",
+          "items": [
+            "Gentle heart-led energy supports your finances decisions.",
+            "Compassion guides your finances planning with measured clarity."
+          ]
+        },
+        "adjective": {
+          "mode": "choice",
+          "items": [
+            "savvy",
+            "practical",
+            "resourceful"
+          ],
+          "pick": 1
+        },
+        "optional_sentences": {
+          "mode": "subset",
+          "items": [
+            "Outline a {adjective} move for your resources.",
+            "Review a {adjective} detail before you commit.",
+            "Celebrate a {adjective} decision that reinforced stability."
+          ],
+          "minimum": 0,
+          "maximum": 2
+        }
       }
     },
     {
@@ -1402,6 +3082,34 @@
           "Hold back from {phrase} until timing improves.",
           "Delay {phrase} choices that feel rushed."
         ]
+      },
+      "variation_groups": {
+        "clauses": {
+          "mode": "permutation",
+          "items": [
+            "Steady heart-led energy supports your day flow.",
+            "Compassion guides your day choices with reliable clarity."
+          ]
+        },
+        "adjective": {
+          "mode": "choice",
+          "items": [
+            "steady",
+            "radiant",
+            "grounded"
+          ],
+          "pick": 1
+        },
+        "optional_sentences": {
+          "mode": "subset",
+          "items": [
+            "Keep a {adjective} pace as you move through today.",
+            "Share a {adjective} insight with someone you trust.",
+            "Note one {adjective} choice that feels aligned."
+          ],
+          "minimum": 0,
+          "maximum": 2
+        }
       }
     },
     {
@@ -1425,6 +3133,34 @@
           "Hold back from {phrase} until the plan is solid.",
           "Delay {phrase} moves that stretch resources too thin."
         ]
+      },
+      "variation_groups": {
+        "clauses": {
+          "mode": "permutation",
+          "items": [
+            "Steady heart-led energy supports your career progress.",
+            "Compassion guides your career moves with reliable clarity."
+          ]
+        },
+        "adjective": {
+          "mode": "choice",
+          "items": [
+            "strategic",
+            "confident",
+            "steady"
+          ],
+          "pick": 1
+        },
+        "optional_sentences": {
+          "mode": "subset",
+          "items": [
+            "Let your {adjective} focus highlight the wins at work.",
+            "Organize your plans around one {adjective} priority.",
+            "Share a {adjective} update with your collaborators."
+          ],
+          "minimum": 0,
+          "maximum": 2
+        }
       }
     },
     {
@@ -1448,6 +3184,34 @@
           "Hold back from {phrase} until emotions settle.",
           "Delay {phrase} choices that disrupt trust."
         ]
+      },
+      "variation_groups": {
+        "clauses": {
+          "mode": "permutation",
+          "items": [
+            "Steady heart-led energy supports your relationships connections.",
+            "Compassion guides your relationships openings with reliable clarity."
+          ]
+        },
+        "adjective": {
+          "mode": "choice",
+          "items": [
+            "warm",
+            "tender",
+            "open-hearted"
+          ],
+          "pick": 1
+        },
+        "optional_sentences": {
+          "mode": "subset",
+          "items": [
+            "Offer a {adjective} gesture that feels true.",
+            "Name one {adjective} boundary that supports connection.",
+            "Bring {adjective} attention to the way you listen."
+          ],
+          "minimum": 0,
+          "maximum": 2
+        }
       }
     },
     {
@@ -1471,6 +3235,34 @@
           "Hold back from {phrase} until strength returns.",
           "Delay {phrase} pushes that tax your system."
         ]
+      },
+      "variation_groups": {
+        "clauses": {
+          "mode": "permutation",
+          "items": [
+            "Steady heart-led energy supports your wellness rhythms.",
+            "Compassion guides your wellness care with reliable clarity."
+          ]
+        },
+        "adjective": {
+          "mode": "choice",
+          "items": [
+            "restorative",
+            "energizing",
+            "gentle"
+          ],
+          "pick": 1
+        },
+        "optional_sentences": {
+          "mode": "subset",
+          "items": [
+            "Choose a {adjective} ritual that anchors you.",
+            "Track one {adjective} shift in your body.",
+            "Move with a {adjective} rhythm that respects your energy."
+          ],
+          "minimum": 0,
+          "maximum": 2
+        }
       }
     },
     {
@@ -1494,6 +3286,34 @@
           "Hold back from {phrase} until numbers align.",
           "Delay {phrase} commitments that add risk."
         ]
+      },
+      "variation_groups": {
+        "clauses": {
+          "mode": "permutation",
+          "items": [
+            "Steady heart-led energy supports your finances decisions.",
+            "Compassion guides your finances planning with reliable clarity."
+          ]
+        },
+        "adjective": {
+          "mode": "choice",
+          "items": [
+            "savvy",
+            "practical",
+            "resourceful"
+          ],
+          "pick": 1
+        },
+        "optional_sentences": {
+          "mode": "subset",
+          "items": [
+            "Outline a {adjective} move for your resources.",
+            "Review a {adjective} detail before you commit.",
+            "Celebrate a {adjective} decision that reinforced stability."
+          ],
+          "minimum": 0,
+          "maximum": 2
+        }
       }
     },
     {
@@ -1517,6 +3337,34 @@
           "Hold back from {phrase} until timing improves.",
           "Delay {phrase} choices that feel rushed."
         ]
+      },
+      "variation_groups": {
+        "clauses": {
+          "mode": "permutation",
+          "items": [
+            "Strong heart-led energy supports your day flow.",
+            "Compassion guides your day choices with bold clarity."
+          ]
+        },
+        "adjective": {
+          "mode": "choice",
+          "items": [
+            "steady",
+            "radiant",
+            "grounded"
+          ],
+          "pick": 1
+        },
+        "optional_sentences": {
+          "mode": "subset",
+          "items": [
+            "Keep a {adjective} pace as you move through today.",
+            "Share a {adjective} insight with someone you trust.",
+            "Note one {adjective} choice that feels aligned."
+          ],
+          "minimum": 0,
+          "maximum": 2
+        }
       }
     },
     {
@@ -1540,6 +3388,34 @@
           "Hold back from {phrase} until the plan is solid.",
           "Delay {phrase} moves that stretch resources too thin."
         ]
+      },
+      "variation_groups": {
+        "clauses": {
+          "mode": "permutation",
+          "items": [
+            "Strong heart-led energy supports your career progress.",
+            "Compassion guides your career moves with bold clarity."
+          ]
+        },
+        "adjective": {
+          "mode": "choice",
+          "items": [
+            "strategic",
+            "confident",
+            "steady"
+          ],
+          "pick": 1
+        },
+        "optional_sentences": {
+          "mode": "subset",
+          "items": [
+            "Let your {adjective} focus highlight the wins at work.",
+            "Organize your plans around one {adjective} priority.",
+            "Share a {adjective} update with your collaborators."
+          ],
+          "minimum": 0,
+          "maximum": 2
+        }
       }
     },
     {
@@ -1563,6 +3439,34 @@
           "Hold back from {phrase} until emotions settle.",
           "Delay {phrase} choices that disrupt trust."
         ]
+      },
+      "variation_groups": {
+        "clauses": {
+          "mode": "permutation",
+          "items": [
+            "Strong heart-led energy supports your relationships connections.",
+            "Compassion guides your relationships openings with bold clarity."
+          ]
+        },
+        "adjective": {
+          "mode": "choice",
+          "items": [
+            "warm",
+            "tender",
+            "open-hearted"
+          ],
+          "pick": 1
+        },
+        "optional_sentences": {
+          "mode": "subset",
+          "items": [
+            "Offer a {adjective} gesture that feels true.",
+            "Name one {adjective} boundary that supports connection.",
+            "Bring {adjective} attention to the way you listen."
+          ],
+          "minimum": 0,
+          "maximum": 2
+        }
       }
     },
     {
@@ -1586,6 +3490,34 @@
           "Hold back from {phrase} until strength returns.",
           "Delay {phrase} pushes that tax your system."
         ]
+      },
+      "variation_groups": {
+        "clauses": {
+          "mode": "permutation",
+          "items": [
+            "Strong heart-led energy supports your wellness rhythms.",
+            "Compassion guides your wellness care with bold clarity."
+          ]
+        },
+        "adjective": {
+          "mode": "choice",
+          "items": [
+            "restorative",
+            "energizing",
+            "gentle"
+          ],
+          "pick": 1
+        },
+        "optional_sentences": {
+          "mode": "subset",
+          "items": [
+            "Choose a {adjective} ritual that anchors you.",
+            "Track one {adjective} shift in your body.",
+            "Move with a {adjective} rhythm that respects your energy."
+          ],
+          "minimum": 0,
+          "maximum": 2
+        }
       }
     },
     {
@@ -1609,6 +3541,34 @@
           "Hold back from {phrase} until numbers align.",
           "Delay {phrase} commitments that add risk."
         ]
+      },
+      "variation_groups": {
+        "clauses": {
+          "mode": "permutation",
+          "items": [
+            "Strong heart-led energy supports your finances decisions.",
+            "Compassion guides your finances planning with bold clarity."
+          ]
+        },
+        "adjective": {
+          "mode": "choice",
+          "items": [
+            "savvy",
+            "practical",
+            "resourceful"
+          ],
+          "pick": 1
+        },
+        "optional_sentences": {
+          "mode": "subset",
+          "items": [
+            "Outline a {adjective} move for your resources.",
+            "Review a {adjective} detail before you commit.",
+            "Celebrate a {adjective} decision that reinforced stability."
+          ],
+          "minimum": 0,
+          "maximum": 2
+        }
       }
     },
     {
@@ -1632,6 +3592,34 @@
           "Hold back from {phrase} until timing improves.",
           "Delay {phrase} choices that feel rushed."
         ]
+      },
+      "variation_groups": {
+        "clauses": {
+          "mode": "permutation",
+          "items": [
+            "Peak heart-led energy supports your day flow.",
+            "Compassion guides your day choices with urgent clarity."
+          ]
+        },
+        "adjective": {
+          "mode": "choice",
+          "items": [
+            "steady",
+            "radiant",
+            "grounded"
+          ],
+          "pick": 1
+        },
+        "optional_sentences": {
+          "mode": "subset",
+          "items": [
+            "Keep a {adjective} pace as you move through today.",
+            "Share a {adjective} insight with someone you trust.",
+            "Note one {adjective} choice that feels aligned."
+          ],
+          "minimum": 0,
+          "maximum": 2
+        }
       }
     },
     {
@@ -1655,6 +3643,34 @@
           "Hold back from {phrase} until the plan is solid.",
           "Delay {phrase} moves that stretch resources too thin."
         ]
+      },
+      "variation_groups": {
+        "clauses": {
+          "mode": "permutation",
+          "items": [
+            "Peak heart-led energy supports your career progress.",
+            "Compassion guides your career moves with urgent clarity."
+          ]
+        },
+        "adjective": {
+          "mode": "choice",
+          "items": [
+            "strategic",
+            "confident",
+            "steady"
+          ],
+          "pick": 1
+        },
+        "optional_sentences": {
+          "mode": "subset",
+          "items": [
+            "Let your {adjective} focus highlight the wins at work.",
+            "Organize your plans around one {adjective} priority.",
+            "Share a {adjective} update with your collaborators."
+          ],
+          "minimum": 0,
+          "maximum": 2
+        }
       }
     },
     {
@@ -1678,6 +3694,34 @@
           "Hold back from {phrase} until emotions settle.",
           "Delay {phrase} choices that disrupt trust."
         ]
+      },
+      "variation_groups": {
+        "clauses": {
+          "mode": "permutation",
+          "items": [
+            "Peak heart-led energy supports your relationships connections.",
+            "Compassion guides your relationships openings with urgent clarity."
+          ]
+        },
+        "adjective": {
+          "mode": "choice",
+          "items": [
+            "warm",
+            "tender",
+            "open-hearted"
+          ],
+          "pick": 1
+        },
+        "optional_sentences": {
+          "mode": "subset",
+          "items": [
+            "Offer a {adjective} gesture that feels true.",
+            "Name one {adjective} boundary that supports connection.",
+            "Bring {adjective} attention to the way you listen."
+          ],
+          "minimum": 0,
+          "maximum": 2
+        }
       }
     },
     {
@@ -1701,6 +3745,34 @@
           "Hold back from {phrase} until strength returns.",
           "Delay {phrase} pushes that tax your system."
         ]
+      },
+      "variation_groups": {
+        "clauses": {
+          "mode": "permutation",
+          "items": [
+            "Peak heart-led energy supports your wellness rhythms.",
+            "Compassion guides your wellness care with urgent clarity."
+          ]
+        },
+        "adjective": {
+          "mode": "choice",
+          "items": [
+            "restorative",
+            "energizing",
+            "gentle"
+          ],
+          "pick": 1
+        },
+        "optional_sentences": {
+          "mode": "subset",
+          "items": [
+            "Choose a {adjective} ritual that anchors you.",
+            "Track one {adjective} shift in your body.",
+            "Move with a {adjective} rhythm that respects your energy."
+          ],
+          "minimum": 0,
+          "maximum": 2
+        }
       }
     },
     {
@@ -1724,6 +3796,34 @@
           "Hold back from {phrase} until numbers align.",
           "Delay {phrase} commitments that add risk."
         ]
+      },
+      "variation_groups": {
+        "clauses": {
+          "mode": "permutation",
+          "items": [
+            "Peak heart-led energy supports your finances decisions.",
+            "Compassion guides your finances planning with urgent clarity."
+          ]
+        },
+        "adjective": {
+          "mode": "choice",
+          "items": [
+            "savvy",
+            "practical",
+            "resourceful"
+          ],
+          "pick": 1
+        },
+        "optional_sentences": {
+          "mode": "subset",
+          "items": [
+            "Outline a {adjective} move for your resources.",
+            "Review a {adjective} detail before you commit.",
+            "Celebrate a {adjective} decision that reinforced stability."
+          ],
+          "minimum": 0,
+          "maximum": 2
+        }
       }
     },
     {
@@ -1747,6 +3847,34 @@
           "Hold back from {phrase} until timing improves.",
           "Delay {phrase} choices that feel rushed."
         ]
+      },
+      "variation_groups": {
+        "clauses": {
+          "mode": "permutation",
+          "items": [
+            "Subtle disciplined energy supports your day flow.",
+            "Resolve guides your day choices with quiet clarity."
+          ]
+        },
+        "adjective": {
+          "mode": "choice",
+          "items": [
+            "steady",
+            "radiant",
+            "grounded"
+          ],
+          "pick": 1
+        },
+        "optional_sentences": {
+          "mode": "subset",
+          "items": [
+            "Keep a {adjective} pace as you move through today.",
+            "Share a {adjective} insight with someone you trust.",
+            "Note one {adjective} choice that feels aligned."
+          ],
+          "minimum": 0,
+          "maximum": 2
+        }
       }
     },
     {
@@ -1770,6 +3898,34 @@
           "Hold back from {phrase} until the plan is solid.",
           "Delay {phrase} moves that stretch resources too thin."
         ]
+      },
+      "variation_groups": {
+        "clauses": {
+          "mode": "permutation",
+          "items": [
+            "Subtle disciplined energy supports your career progress.",
+            "Resolve guides your career moves with quiet clarity."
+          ]
+        },
+        "adjective": {
+          "mode": "choice",
+          "items": [
+            "strategic",
+            "confident",
+            "steady"
+          ],
+          "pick": 1
+        },
+        "optional_sentences": {
+          "mode": "subset",
+          "items": [
+            "Let your {adjective} focus highlight the wins at work.",
+            "Organize your plans around one {adjective} priority.",
+            "Share a {adjective} update with your collaborators."
+          ],
+          "minimum": 0,
+          "maximum": 2
+        }
       }
     },
     {
@@ -1793,6 +3949,34 @@
           "Hold back from {phrase} until emotions settle.",
           "Delay {phrase} choices that disrupt trust."
         ]
+      },
+      "variation_groups": {
+        "clauses": {
+          "mode": "permutation",
+          "items": [
+            "Subtle disciplined energy supports your relationships connections.",
+            "Resolve guides your relationships openings with quiet clarity."
+          ]
+        },
+        "adjective": {
+          "mode": "choice",
+          "items": [
+            "warm",
+            "tender",
+            "open-hearted"
+          ],
+          "pick": 1
+        },
+        "optional_sentences": {
+          "mode": "subset",
+          "items": [
+            "Offer a {adjective} gesture that feels true.",
+            "Name one {adjective} boundary that supports connection.",
+            "Bring {adjective} attention to the way you listen."
+          ],
+          "minimum": 0,
+          "maximum": 2
+        }
       }
     },
     {
@@ -1816,6 +4000,34 @@
           "Hold back from {phrase} until strength returns.",
           "Delay {phrase} pushes that tax your system."
         ]
+      },
+      "variation_groups": {
+        "clauses": {
+          "mode": "permutation",
+          "items": [
+            "Subtle disciplined energy supports your wellness rhythms.",
+            "Resolve guides your wellness care with quiet clarity."
+          ]
+        },
+        "adjective": {
+          "mode": "choice",
+          "items": [
+            "restorative",
+            "energizing",
+            "gentle"
+          ],
+          "pick": 1
+        },
+        "optional_sentences": {
+          "mode": "subset",
+          "items": [
+            "Choose a {adjective} ritual that anchors you.",
+            "Track one {adjective} shift in your body.",
+            "Move with a {adjective} rhythm that respects your energy."
+          ],
+          "minimum": 0,
+          "maximum": 2
+        }
       }
     },
     {
@@ -1839,6 +4051,34 @@
           "Hold back from {phrase} until numbers align.",
           "Delay {phrase} commitments that add risk."
         ]
+      },
+      "variation_groups": {
+        "clauses": {
+          "mode": "permutation",
+          "items": [
+            "Subtle disciplined energy supports your finances decisions.",
+            "Resolve guides your finances planning with quiet clarity."
+          ]
+        },
+        "adjective": {
+          "mode": "choice",
+          "items": [
+            "savvy",
+            "practical",
+            "resourceful"
+          ],
+          "pick": 1
+        },
+        "optional_sentences": {
+          "mode": "subset",
+          "items": [
+            "Outline a {adjective} move for your resources.",
+            "Review a {adjective} detail before you commit.",
+            "Celebrate a {adjective} decision that reinforced stability."
+          ],
+          "minimum": 0,
+          "maximum": 2
+        }
       }
     },
     {
@@ -1862,6 +4102,34 @@
           "Hold back from {phrase} until timing improves.",
           "Delay {phrase} choices that feel rushed."
         ]
+      },
+      "variation_groups": {
+        "clauses": {
+          "mode": "permutation",
+          "items": [
+            "Gentle disciplined energy supports your day flow.",
+            "Resolve guides your day choices with measured clarity."
+          ]
+        },
+        "adjective": {
+          "mode": "choice",
+          "items": [
+            "steady",
+            "radiant",
+            "grounded"
+          ],
+          "pick": 1
+        },
+        "optional_sentences": {
+          "mode": "subset",
+          "items": [
+            "Keep a {adjective} pace as you move through today.",
+            "Share a {adjective} insight with someone you trust.",
+            "Note one {adjective} choice that feels aligned."
+          ],
+          "minimum": 0,
+          "maximum": 2
+        }
       }
     },
     {
@@ -1885,6 +4153,34 @@
           "Hold back from {phrase} until the plan is solid.",
           "Delay {phrase} moves that stretch resources too thin."
         ]
+      },
+      "variation_groups": {
+        "clauses": {
+          "mode": "permutation",
+          "items": [
+            "Gentle disciplined energy supports your career progress.",
+            "Resolve guides your career moves with measured clarity."
+          ]
+        },
+        "adjective": {
+          "mode": "choice",
+          "items": [
+            "strategic",
+            "confident",
+            "steady"
+          ],
+          "pick": 1
+        },
+        "optional_sentences": {
+          "mode": "subset",
+          "items": [
+            "Let your {adjective} focus highlight the wins at work.",
+            "Organize your plans around one {adjective} priority.",
+            "Share a {adjective} update with your collaborators."
+          ],
+          "minimum": 0,
+          "maximum": 2
+        }
       }
     },
     {
@@ -1908,6 +4204,34 @@
           "Hold back from {phrase} until emotions settle.",
           "Delay {phrase} choices that disrupt trust."
         ]
+      },
+      "variation_groups": {
+        "clauses": {
+          "mode": "permutation",
+          "items": [
+            "Gentle disciplined energy supports your relationships connections.",
+            "Resolve guides your relationships openings with measured clarity."
+          ]
+        },
+        "adjective": {
+          "mode": "choice",
+          "items": [
+            "warm",
+            "tender",
+            "open-hearted"
+          ],
+          "pick": 1
+        },
+        "optional_sentences": {
+          "mode": "subset",
+          "items": [
+            "Offer a {adjective} gesture that feels true.",
+            "Name one {adjective} boundary that supports connection.",
+            "Bring {adjective} attention to the way you listen."
+          ],
+          "minimum": 0,
+          "maximum": 2
+        }
       }
     },
     {
@@ -1931,6 +4255,34 @@
           "Hold back from {phrase} until strength returns.",
           "Delay {phrase} pushes that tax your system."
         ]
+      },
+      "variation_groups": {
+        "clauses": {
+          "mode": "permutation",
+          "items": [
+            "Gentle disciplined energy supports your wellness rhythms.",
+            "Resolve guides your wellness care with measured clarity."
+          ]
+        },
+        "adjective": {
+          "mode": "choice",
+          "items": [
+            "restorative",
+            "energizing",
+            "gentle"
+          ],
+          "pick": 1
+        },
+        "optional_sentences": {
+          "mode": "subset",
+          "items": [
+            "Choose a {adjective} ritual that anchors you.",
+            "Track one {adjective} shift in your body.",
+            "Move with a {adjective} rhythm that respects your energy."
+          ],
+          "minimum": 0,
+          "maximum": 2
+        }
       }
     },
     {
@@ -1954,6 +4306,34 @@
           "Hold back from {phrase} until numbers align.",
           "Delay {phrase} commitments that add risk."
         ]
+      },
+      "variation_groups": {
+        "clauses": {
+          "mode": "permutation",
+          "items": [
+            "Gentle disciplined energy supports your finances decisions.",
+            "Resolve guides your finances planning with measured clarity."
+          ]
+        },
+        "adjective": {
+          "mode": "choice",
+          "items": [
+            "savvy",
+            "practical",
+            "resourceful"
+          ],
+          "pick": 1
+        },
+        "optional_sentences": {
+          "mode": "subset",
+          "items": [
+            "Outline a {adjective} move for your resources.",
+            "Review a {adjective} detail before you commit.",
+            "Celebrate a {adjective} decision that reinforced stability."
+          ],
+          "minimum": 0,
+          "maximum": 2
+        }
       }
     },
     {
@@ -1977,6 +4357,34 @@
           "Hold back from {phrase} until timing improves.",
           "Delay {phrase} choices that feel rushed."
         ]
+      },
+      "variation_groups": {
+        "clauses": {
+          "mode": "permutation",
+          "items": [
+            "Steady disciplined energy supports your day flow.",
+            "Resolve guides your day choices with reliable clarity."
+          ]
+        },
+        "adjective": {
+          "mode": "choice",
+          "items": [
+            "steady",
+            "radiant",
+            "grounded"
+          ],
+          "pick": 1
+        },
+        "optional_sentences": {
+          "mode": "subset",
+          "items": [
+            "Keep a {adjective} pace as you move through today.",
+            "Share a {adjective} insight with someone you trust.",
+            "Note one {adjective} choice that feels aligned."
+          ],
+          "minimum": 0,
+          "maximum": 2
+        }
       }
     },
     {
@@ -2000,6 +4408,34 @@
           "Hold back from {phrase} until the plan is solid.",
           "Delay {phrase} moves that stretch resources too thin."
         ]
+      },
+      "variation_groups": {
+        "clauses": {
+          "mode": "permutation",
+          "items": [
+            "Steady disciplined energy supports your career progress.",
+            "Resolve guides your career moves with reliable clarity."
+          ]
+        },
+        "adjective": {
+          "mode": "choice",
+          "items": [
+            "strategic",
+            "confident",
+            "steady"
+          ],
+          "pick": 1
+        },
+        "optional_sentences": {
+          "mode": "subset",
+          "items": [
+            "Let your {adjective} focus highlight the wins at work.",
+            "Organize your plans around one {adjective} priority.",
+            "Share a {adjective} update with your collaborators."
+          ],
+          "minimum": 0,
+          "maximum": 2
+        }
       }
     },
     {
@@ -2023,6 +4459,34 @@
           "Hold back from {phrase} until emotions settle.",
           "Delay {phrase} choices that disrupt trust."
         ]
+      },
+      "variation_groups": {
+        "clauses": {
+          "mode": "permutation",
+          "items": [
+            "Steady disciplined energy supports your relationships connections.",
+            "Resolve guides your relationships openings with reliable clarity."
+          ]
+        },
+        "adjective": {
+          "mode": "choice",
+          "items": [
+            "warm",
+            "tender",
+            "open-hearted"
+          ],
+          "pick": 1
+        },
+        "optional_sentences": {
+          "mode": "subset",
+          "items": [
+            "Offer a {adjective} gesture that feels true.",
+            "Name one {adjective} boundary that supports connection.",
+            "Bring {adjective} attention to the way you listen."
+          ],
+          "minimum": 0,
+          "maximum": 2
+        }
       }
     },
     {
@@ -2046,6 +4510,34 @@
           "Hold back from {phrase} until strength returns.",
           "Delay {phrase} pushes that tax your system."
         ]
+      },
+      "variation_groups": {
+        "clauses": {
+          "mode": "permutation",
+          "items": [
+            "Steady disciplined energy supports your wellness rhythms.",
+            "Resolve guides your wellness care with reliable clarity."
+          ]
+        },
+        "adjective": {
+          "mode": "choice",
+          "items": [
+            "restorative",
+            "energizing",
+            "gentle"
+          ],
+          "pick": 1
+        },
+        "optional_sentences": {
+          "mode": "subset",
+          "items": [
+            "Choose a {adjective} ritual that anchors you.",
+            "Track one {adjective} shift in your body.",
+            "Move with a {adjective} rhythm that respects your energy."
+          ],
+          "minimum": 0,
+          "maximum": 2
+        }
       }
     },
     {
@@ -2069,6 +4561,34 @@
           "Hold back from {phrase} until numbers align.",
           "Delay {phrase} commitments that add risk."
         ]
+      },
+      "variation_groups": {
+        "clauses": {
+          "mode": "permutation",
+          "items": [
+            "Steady disciplined energy supports your finances decisions.",
+            "Resolve guides your finances planning with reliable clarity."
+          ]
+        },
+        "adjective": {
+          "mode": "choice",
+          "items": [
+            "savvy",
+            "practical",
+            "resourceful"
+          ],
+          "pick": 1
+        },
+        "optional_sentences": {
+          "mode": "subset",
+          "items": [
+            "Outline a {adjective} move for your resources.",
+            "Review a {adjective} detail before you commit.",
+            "Celebrate a {adjective} decision that reinforced stability."
+          ],
+          "minimum": 0,
+          "maximum": 2
+        }
       }
     },
     {
@@ -2092,6 +4612,34 @@
           "Hold back from {phrase} until timing improves.",
           "Delay {phrase} choices that feel rushed."
         ]
+      },
+      "variation_groups": {
+        "clauses": {
+          "mode": "permutation",
+          "items": [
+            "Strong disciplined energy supports your day flow.",
+            "Resolve guides your day choices with bold clarity."
+          ]
+        },
+        "adjective": {
+          "mode": "choice",
+          "items": [
+            "steady",
+            "radiant",
+            "grounded"
+          ],
+          "pick": 1
+        },
+        "optional_sentences": {
+          "mode": "subset",
+          "items": [
+            "Keep a {adjective} pace as you move through today.",
+            "Share a {adjective} insight with someone you trust.",
+            "Note one {adjective} choice that feels aligned."
+          ],
+          "minimum": 0,
+          "maximum": 2
+        }
       }
     },
     {
@@ -2115,6 +4663,34 @@
           "Hold back from {phrase} until the plan is solid.",
           "Delay {phrase} moves that stretch resources too thin."
         ]
+      },
+      "variation_groups": {
+        "clauses": {
+          "mode": "permutation",
+          "items": [
+            "Strong disciplined energy supports your career progress.",
+            "Resolve guides your career moves with bold clarity."
+          ]
+        },
+        "adjective": {
+          "mode": "choice",
+          "items": [
+            "strategic",
+            "confident",
+            "steady"
+          ],
+          "pick": 1
+        },
+        "optional_sentences": {
+          "mode": "subset",
+          "items": [
+            "Let your {adjective} focus highlight the wins at work.",
+            "Organize your plans around one {adjective} priority.",
+            "Share a {adjective} update with your collaborators."
+          ],
+          "minimum": 0,
+          "maximum": 2
+        }
       }
     },
     {
@@ -2138,6 +4714,34 @@
           "Hold back from {phrase} until emotions settle.",
           "Delay {phrase} choices that disrupt trust."
         ]
+      },
+      "variation_groups": {
+        "clauses": {
+          "mode": "permutation",
+          "items": [
+            "Strong disciplined energy supports your relationships connections.",
+            "Resolve guides your relationships openings with bold clarity."
+          ]
+        },
+        "adjective": {
+          "mode": "choice",
+          "items": [
+            "warm",
+            "tender",
+            "open-hearted"
+          ],
+          "pick": 1
+        },
+        "optional_sentences": {
+          "mode": "subset",
+          "items": [
+            "Offer a {adjective} gesture that feels true.",
+            "Name one {adjective} boundary that supports connection.",
+            "Bring {adjective} attention to the way you listen."
+          ],
+          "minimum": 0,
+          "maximum": 2
+        }
       }
     },
     {
@@ -2161,6 +4765,34 @@
           "Hold back from {phrase} until strength returns.",
           "Delay {phrase} pushes that tax your system."
         ]
+      },
+      "variation_groups": {
+        "clauses": {
+          "mode": "permutation",
+          "items": [
+            "Strong disciplined energy supports your wellness rhythms.",
+            "Resolve guides your wellness care with bold clarity."
+          ]
+        },
+        "adjective": {
+          "mode": "choice",
+          "items": [
+            "restorative",
+            "energizing",
+            "gentle"
+          ],
+          "pick": 1
+        },
+        "optional_sentences": {
+          "mode": "subset",
+          "items": [
+            "Choose a {adjective} ritual that anchors you.",
+            "Track one {adjective} shift in your body.",
+            "Move with a {adjective} rhythm that respects your energy."
+          ],
+          "minimum": 0,
+          "maximum": 2
+        }
       }
     },
     {
@@ -2184,6 +4816,34 @@
           "Hold back from {phrase} until numbers align.",
           "Delay {phrase} commitments that add risk."
         ]
+      },
+      "variation_groups": {
+        "clauses": {
+          "mode": "permutation",
+          "items": [
+            "Strong disciplined energy supports your finances decisions.",
+            "Resolve guides your finances planning with bold clarity."
+          ]
+        },
+        "adjective": {
+          "mode": "choice",
+          "items": [
+            "savvy",
+            "practical",
+            "resourceful"
+          ],
+          "pick": 1
+        },
+        "optional_sentences": {
+          "mode": "subset",
+          "items": [
+            "Outline a {adjective} move for your resources.",
+            "Review a {adjective} detail before you commit.",
+            "Celebrate a {adjective} decision that reinforced stability."
+          ],
+          "minimum": 0,
+          "maximum": 2
+        }
       }
     },
     {
@@ -2207,6 +4867,34 @@
           "Hold back from {phrase} until timing improves.",
           "Delay {phrase} choices that feel rushed."
         ]
+      },
+      "variation_groups": {
+        "clauses": {
+          "mode": "permutation",
+          "items": [
+            "Peak disciplined energy supports your day flow.",
+            "Resolve guides your day choices with urgent clarity."
+          ]
+        },
+        "adjective": {
+          "mode": "choice",
+          "items": [
+            "steady",
+            "radiant",
+            "grounded"
+          ],
+          "pick": 1
+        },
+        "optional_sentences": {
+          "mode": "subset",
+          "items": [
+            "Keep a {adjective} pace as you move through today.",
+            "Share a {adjective} insight with someone you trust.",
+            "Note one {adjective} choice that feels aligned."
+          ],
+          "minimum": 0,
+          "maximum": 2
+        }
       }
     },
     {
@@ -2230,6 +4918,34 @@
           "Hold back from {phrase} until the plan is solid.",
           "Delay {phrase} moves that stretch resources too thin."
         ]
+      },
+      "variation_groups": {
+        "clauses": {
+          "mode": "permutation",
+          "items": [
+            "Peak disciplined energy supports your career progress.",
+            "Resolve guides your career moves with urgent clarity."
+          ]
+        },
+        "adjective": {
+          "mode": "choice",
+          "items": [
+            "strategic",
+            "confident",
+            "steady"
+          ],
+          "pick": 1
+        },
+        "optional_sentences": {
+          "mode": "subset",
+          "items": [
+            "Let your {adjective} focus highlight the wins at work.",
+            "Organize your plans around one {adjective} priority.",
+            "Share a {adjective} update with your collaborators."
+          ],
+          "minimum": 0,
+          "maximum": 2
+        }
       }
     },
     {
@@ -2253,6 +4969,34 @@
           "Hold back from {phrase} until emotions settle.",
           "Delay {phrase} choices that disrupt trust."
         ]
+      },
+      "variation_groups": {
+        "clauses": {
+          "mode": "permutation",
+          "items": [
+            "Peak disciplined energy supports your relationships connections.",
+            "Resolve guides your relationships openings with urgent clarity."
+          ]
+        },
+        "adjective": {
+          "mode": "choice",
+          "items": [
+            "warm",
+            "tender",
+            "open-hearted"
+          ],
+          "pick": 1
+        },
+        "optional_sentences": {
+          "mode": "subset",
+          "items": [
+            "Offer a {adjective} gesture that feels true.",
+            "Name one {adjective} boundary that supports connection.",
+            "Bring {adjective} attention to the way you listen."
+          ],
+          "minimum": 0,
+          "maximum": 2
+        }
       }
     },
     {
@@ -2276,6 +5020,34 @@
           "Hold back from {phrase} until strength returns.",
           "Delay {phrase} pushes that tax your system."
         ]
+      },
+      "variation_groups": {
+        "clauses": {
+          "mode": "permutation",
+          "items": [
+            "Peak disciplined energy supports your wellness rhythms.",
+            "Resolve guides your wellness care with urgent clarity."
+          ]
+        },
+        "adjective": {
+          "mode": "choice",
+          "items": [
+            "restorative",
+            "energizing",
+            "gentle"
+          ],
+          "pick": 1
+        },
+        "optional_sentences": {
+          "mode": "subset",
+          "items": [
+            "Choose a {adjective} ritual that anchors you.",
+            "Track one {adjective} shift in your body.",
+            "Move with a {adjective} rhythm that respects your energy."
+          ],
+          "minimum": 0,
+          "maximum": 2
+        }
       }
     },
     {
@@ -2299,6 +5071,34 @@
           "Hold back from {phrase} until numbers align.",
           "Delay {phrase} commitments that add risk."
         ]
+      },
+      "variation_groups": {
+        "clauses": {
+          "mode": "permutation",
+          "items": [
+            "Peak disciplined energy supports your finances decisions.",
+            "Resolve guides your finances planning with urgent clarity."
+          ]
+        },
+        "adjective": {
+          "mode": "choice",
+          "items": [
+            "savvy",
+            "practical",
+            "resourceful"
+          ],
+          "pick": 1
+        },
+        "optional_sentences": {
+          "mode": "subset",
+          "items": [
+            "Outline a {adjective} move for your resources.",
+            "Review a {adjective} detail before you commit.",
+            "Celebrate a {adjective} decision that reinforced stability."
+          ],
+          "minimum": 0,
+          "maximum": 2
+        }
       }
     },
     {
@@ -2322,6 +5122,34 @@
           "Hold back from {phrase} until timing improves.",
           "Delay {phrase} choices that feel rushed."
         ]
+      },
+      "variation_groups": {
+        "clauses": {
+          "mode": "permutation",
+          "items": [
+            "Subtle visionary energy supports your day flow.",
+            "Insight guides your day choices with quiet clarity."
+          ]
+        },
+        "adjective": {
+          "mode": "choice",
+          "items": [
+            "steady",
+            "radiant",
+            "grounded"
+          ],
+          "pick": 1
+        },
+        "optional_sentences": {
+          "mode": "subset",
+          "items": [
+            "Keep a {adjective} pace as you move through today.",
+            "Share a {adjective} insight with someone you trust.",
+            "Note one {adjective} choice that feels aligned."
+          ],
+          "minimum": 0,
+          "maximum": 2
+        }
       }
     },
     {
@@ -2345,6 +5173,34 @@
           "Hold back from {phrase} until the plan is solid.",
           "Delay {phrase} moves that stretch resources too thin."
         ]
+      },
+      "variation_groups": {
+        "clauses": {
+          "mode": "permutation",
+          "items": [
+            "Subtle visionary energy supports your career progress.",
+            "Insight guides your career moves with quiet clarity."
+          ]
+        },
+        "adjective": {
+          "mode": "choice",
+          "items": [
+            "strategic",
+            "confident",
+            "steady"
+          ],
+          "pick": 1
+        },
+        "optional_sentences": {
+          "mode": "subset",
+          "items": [
+            "Let your {adjective} focus highlight the wins at work.",
+            "Organize your plans around one {adjective} priority.",
+            "Share a {adjective} update with your collaborators."
+          ],
+          "minimum": 0,
+          "maximum": 2
+        }
       }
     },
     {
@@ -2368,6 +5224,34 @@
           "Hold back from {phrase} until emotions settle.",
           "Delay {phrase} choices that disrupt trust."
         ]
+      },
+      "variation_groups": {
+        "clauses": {
+          "mode": "permutation",
+          "items": [
+            "Subtle visionary energy supports your relationships connections.",
+            "Insight guides your relationships openings with quiet clarity."
+          ]
+        },
+        "adjective": {
+          "mode": "choice",
+          "items": [
+            "warm",
+            "tender",
+            "open-hearted"
+          ],
+          "pick": 1
+        },
+        "optional_sentences": {
+          "mode": "subset",
+          "items": [
+            "Offer a {adjective} gesture that feels true.",
+            "Name one {adjective} boundary that supports connection.",
+            "Bring {adjective} attention to the way you listen."
+          ],
+          "minimum": 0,
+          "maximum": 2
+        }
       }
     },
     {
@@ -2391,6 +5275,34 @@
           "Hold back from {phrase} until strength returns.",
           "Delay {phrase} pushes that tax your system."
         ]
+      },
+      "variation_groups": {
+        "clauses": {
+          "mode": "permutation",
+          "items": [
+            "Subtle visionary energy supports your wellness rhythms.",
+            "Insight guides your wellness care with quiet clarity."
+          ]
+        },
+        "adjective": {
+          "mode": "choice",
+          "items": [
+            "restorative",
+            "energizing",
+            "gentle"
+          ],
+          "pick": 1
+        },
+        "optional_sentences": {
+          "mode": "subset",
+          "items": [
+            "Choose a {adjective} ritual that anchors you.",
+            "Track one {adjective} shift in your body.",
+            "Move with a {adjective} rhythm that respects your energy."
+          ],
+          "minimum": 0,
+          "maximum": 2
+        }
       }
     },
     {
@@ -2414,6 +5326,34 @@
           "Hold back from {phrase} until numbers align.",
           "Delay {phrase} commitments that add risk."
         ]
+      },
+      "variation_groups": {
+        "clauses": {
+          "mode": "permutation",
+          "items": [
+            "Subtle visionary energy supports your finances decisions.",
+            "Insight guides your finances planning with quiet clarity."
+          ]
+        },
+        "adjective": {
+          "mode": "choice",
+          "items": [
+            "savvy",
+            "practical",
+            "resourceful"
+          ],
+          "pick": 1
+        },
+        "optional_sentences": {
+          "mode": "subset",
+          "items": [
+            "Outline a {adjective} move for your resources.",
+            "Review a {adjective} detail before you commit.",
+            "Celebrate a {adjective} decision that reinforced stability."
+          ],
+          "minimum": 0,
+          "maximum": 2
+        }
       }
     },
     {
@@ -2437,6 +5377,34 @@
           "Hold back from {phrase} until timing improves.",
           "Delay {phrase} choices that feel rushed."
         ]
+      },
+      "variation_groups": {
+        "clauses": {
+          "mode": "permutation",
+          "items": [
+            "Gentle visionary energy supports your day flow.",
+            "Insight guides your day choices with measured clarity."
+          ]
+        },
+        "adjective": {
+          "mode": "choice",
+          "items": [
+            "steady",
+            "radiant",
+            "grounded"
+          ],
+          "pick": 1
+        },
+        "optional_sentences": {
+          "mode": "subset",
+          "items": [
+            "Keep a {adjective} pace as you move through today.",
+            "Share a {adjective} insight with someone you trust.",
+            "Note one {adjective} choice that feels aligned."
+          ],
+          "minimum": 0,
+          "maximum": 2
+        }
       }
     },
     {
@@ -2460,6 +5428,34 @@
           "Hold back from {phrase} until the plan is solid.",
           "Delay {phrase} moves that stretch resources too thin."
         ]
+      },
+      "variation_groups": {
+        "clauses": {
+          "mode": "permutation",
+          "items": [
+            "Gentle visionary energy supports your career progress.",
+            "Insight guides your career moves with measured clarity."
+          ]
+        },
+        "adjective": {
+          "mode": "choice",
+          "items": [
+            "strategic",
+            "confident",
+            "steady"
+          ],
+          "pick": 1
+        },
+        "optional_sentences": {
+          "mode": "subset",
+          "items": [
+            "Let your {adjective} focus highlight the wins at work.",
+            "Organize your plans around one {adjective} priority.",
+            "Share a {adjective} update with your collaborators."
+          ],
+          "minimum": 0,
+          "maximum": 2
+        }
       }
     },
     {
@@ -2483,6 +5479,34 @@
           "Hold back from {phrase} until emotions settle.",
           "Delay {phrase} choices that disrupt trust."
         ]
+      },
+      "variation_groups": {
+        "clauses": {
+          "mode": "permutation",
+          "items": [
+            "Gentle visionary energy supports your relationships connections.",
+            "Insight guides your relationships openings with measured clarity."
+          ]
+        },
+        "adjective": {
+          "mode": "choice",
+          "items": [
+            "warm",
+            "tender",
+            "open-hearted"
+          ],
+          "pick": 1
+        },
+        "optional_sentences": {
+          "mode": "subset",
+          "items": [
+            "Offer a {adjective} gesture that feels true.",
+            "Name one {adjective} boundary that supports connection.",
+            "Bring {adjective} attention to the way you listen."
+          ],
+          "minimum": 0,
+          "maximum": 2
+        }
       }
     },
     {
@@ -2506,6 +5530,34 @@
           "Hold back from {phrase} until strength returns.",
           "Delay {phrase} pushes that tax your system."
         ]
+      },
+      "variation_groups": {
+        "clauses": {
+          "mode": "permutation",
+          "items": [
+            "Gentle visionary energy supports your wellness rhythms.",
+            "Insight guides your wellness care with measured clarity."
+          ]
+        },
+        "adjective": {
+          "mode": "choice",
+          "items": [
+            "restorative",
+            "energizing",
+            "gentle"
+          ],
+          "pick": 1
+        },
+        "optional_sentences": {
+          "mode": "subset",
+          "items": [
+            "Choose a {adjective} ritual that anchors you.",
+            "Track one {adjective} shift in your body.",
+            "Move with a {adjective} rhythm that respects your energy."
+          ],
+          "minimum": 0,
+          "maximum": 2
+        }
       }
     },
     {
@@ -2529,6 +5581,34 @@
           "Hold back from {phrase} until numbers align.",
           "Delay {phrase} commitments that add risk."
         ]
+      },
+      "variation_groups": {
+        "clauses": {
+          "mode": "permutation",
+          "items": [
+            "Gentle visionary energy supports your finances decisions.",
+            "Insight guides your finances planning with measured clarity."
+          ]
+        },
+        "adjective": {
+          "mode": "choice",
+          "items": [
+            "savvy",
+            "practical",
+            "resourceful"
+          ],
+          "pick": 1
+        },
+        "optional_sentences": {
+          "mode": "subset",
+          "items": [
+            "Outline a {adjective} move for your resources.",
+            "Review a {adjective} detail before you commit.",
+            "Celebrate a {adjective} decision that reinforced stability."
+          ],
+          "minimum": 0,
+          "maximum": 2
+        }
       }
     },
     {
@@ -2552,6 +5632,34 @@
           "Hold back from {phrase} until timing improves.",
           "Delay {phrase} choices that feel rushed."
         ]
+      },
+      "variation_groups": {
+        "clauses": {
+          "mode": "permutation",
+          "items": [
+            "Steady visionary energy supports your day flow.",
+            "Insight guides your day choices with reliable clarity."
+          ]
+        },
+        "adjective": {
+          "mode": "choice",
+          "items": [
+            "steady",
+            "radiant",
+            "grounded"
+          ],
+          "pick": 1
+        },
+        "optional_sentences": {
+          "mode": "subset",
+          "items": [
+            "Keep a {adjective} pace as you move through today.",
+            "Share a {adjective} insight with someone you trust.",
+            "Note one {adjective} choice that feels aligned."
+          ],
+          "minimum": 0,
+          "maximum": 2
+        }
       }
     },
     {
@@ -2575,6 +5683,34 @@
           "Hold back from {phrase} until the plan is solid.",
           "Delay {phrase} moves that stretch resources too thin."
         ]
+      },
+      "variation_groups": {
+        "clauses": {
+          "mode": "permutation",
+          "items": [
+            "Steady visionary energy supports your career progress.",
+            "Insight guides your career moves with reliable clarity."
+          ]
+        },
+        "adjective": {
+          "mode": "choice",
+          "items": [
+            "strategic",
+            "confident",
+            "steady"
+          ],
+          "pick": 1
+        },
+        "optional_sentences": {
+          "mode": "subset",
+          "items": [
+            "Let your {adjective} focus highlight the wins at work.",
+            "Organize your plans around one {adjective} priority.",
+            "Share a {adjective} update with your collaborators."
+          ],
+          "minimum": 0,
+          "maximum": 2
+        }
       }
     },
     {
@@ -2598,6 +5734,34 @@
           "Hold back from {phrase} until emotions settle.",
           "Delay {phrase} choices that disrupt trust."
         ]
+      },
+      "variation_groups": {
+        "clauses": {
+          "mode": "permutation",
+          "items": [
+            "Steady visionary energy supports your relationships connections.",
+            "Insight guides your relationships openings with reliable clarity."
+          ]
+        },
+        "adjective": {
+          "mode": "choice",
+          "items": [
+            "warm",
+            "tender",
+            "open-hearted"
+          ],
+          "pick": 1
+        },
+        "optional_sentences": {
+          "mode": "subset",
+          "items": [
+            "Offer a {adjective} gesture that feels true.",
+            "Name one {adjective} boundary that supports connection.",
+            "Bring {adjective} attention to the way you listen."
+          ],
+          "minimum": 0,
+          "maximum": 2
+        }
       }
     },
     {
@@ -2621,6 +5785,34 @@
           "Hold back from {phrase} until strength returns.",
           "Delay {phrase} pushes that tax your system."
         ]
+      },
+      "variation_groups": {
+        "clauses": {
+          "mode": "permutation",
+          "items": [
+            "Steady visionary energy supports your wellness rhythms.",
+            "Insight guides your wellness care with reliable clarity."
+          ]
+        },
+        "adjective": {
+          "mode": "choice",
+          "items": [
+            "restorative",
+            "energizing",
+            "gentle"
+          ],
+          "pick": 1
+        },
+        "optional_sentences": {
+          "mode": "subset",
+          "items": [
+            "Choose a {adjective} ritual that anchors you.",
+            "Track one {adjective} shift in your body.",
+            "Move with a {adjective} rhythm that respects your energy."
+          ],
+          "minimum": 0,
+          "maximum": 2
+        }
       }
     },
     {
@@ -2644,6 +5836,34 @@
           "Hold back from {phrase} until numbers align.",
           "Delay {phrase} commitments that add risk."
         ]
+      },
+      "variation_groups": {
+        "clauses": {
+          "mode": "permutation",
+          "items": [
+            "Steady visionary energy supports your finances decisions.",
+            "Insight guides your finances planning with reliable clarity."
+          ]
+        },
+        "adjective": {
+          "mode": "choice",
+          "items": [
+            "savvy",
+            "practical",
+            "resourceful"
+          ],
+          "pick": 1
+        },
+        "optional_sentences": {
+          "mode": "subset",
+          "items": [
+            "Outline a {adjective} move for your resources.",
+            "Review a {adjective} detail before you commit.",
+            "Celebrate a {adjective} decision that reinforced stability."
+          ],
+          "minimum": 0,
+          "maximum": 2
+        }
       }
     },
     {
@@ -2667,6 +5887,34 @@
           "Hold back from {phrase} until timing improves.",
           "Delay {phrase} choices that feel rushed."
         ]
+      },
+      "variation_groups": {
+        "clauses": {
+          "mode": "permutation",
+          "items": [
+            "Strong visionary energy supports your day flow.",
+            "Insight guides your day choices with bold clarity."
+          ]
+        },
+        "adjective": {
+          "mode": "choice",
+          "items": [
+            "steady",
+            "radiant",
+            "grounded"
+          ],
+          "pick": 1
+        },
+        "optional_sentences": {
+          "mode": "subset",
+          "items": [
+            "Keep a {adjective} pace as you move through today.",
+            "Share a {adjective} insight with someone you trust.",
+            "Note one {adjective} choice that feels aligned."
+          ],
+          "minimum": 0,
+          "maximum": 2
+        }
       }
     },
     {
@@ -2690,6 +5938,34 @@
           "Hold back from {phrase} until the plan is solid.",
           "Delay {phrase} moves that stretch resources too thin."
         ]
+      },
+      "variation_groups": {
+        "clauses": {
+          "mode": "permutation",
+          "items": [
+            "Strong visionary energy supports your career progress.",
+            "Insight guides your career moves with bold clarity."
+          ]
+        },
+        "adjective": {
+          "mode": "choice",
+          "items": [
+            "strategic",
+            "confident",
+            "steady"
+          ],
+          "pick": 1
+        },
+        "optional_sentences": {
+          "mode": "subset",
+          "items": [
+            "Let your {adjective} focus highlight the wins at work.",
+            "Organize your plans around one {adjective} priority.",
+            "Share a {adjective} update with your collaborators."
+          ],
+          "minimum": 0,
+          "maximum": 2
+        }
       }
     },
     {
@@ -2713,6 +5989,34 @@
           "Hold back from {phrase} until emotions settle.",
           "Delay {phrase} choices that disrupt trust."
         ]
+      },
+      "variation_groups": {
+        "clauses": {
+          "mode": "permutation",
+          "items": [
+            "Strong visionary energy supports your relationships connections.",
+            "Insight guides your relationships openings with bold clarity."
+          ]
+        },
+        "adjective": {
+          "mode": "choice",
+          "items": [
+            "warm",
+            "tender",
+            "open-hearted"
+          ],
+          "pick": 1
+        },
+        "optional_sentences": {
+          "mode": "subset",
+          "items": [
+            "Offer a {adjective} gesture that feels true.",
+            "Name one {adjective} boundary that supports connection.",
+            "Bring {adjective} attention to the way you listen."
+          ],
+          "minimum": 0,
+          "maximum": 2
+        }
       }
     },
     {
@@ -2736,6 +6040,34 @@
           "Hold back from {phrase} until strength returns.",
           "Delay {phrase} pushes that tax your system."
         ]
+      },
+      "variation_groups": {
+        "clauses": {
+          "mode": "permutation",
+          "items": [
+            "Strong visionary energy supports your wellness rhythms.",
+            "Insight guides your wellness care with bold clarity."
+          ]
+        },
+        "adjective": {
+          "mode": "choice",
+          "items": [
+            "restorative",
+            "energizing",
+            "gentle"
+          ],
+          "pick": 1
+        },
+        "optional_sentences": {
+          "mode": "subset",
+          "items": [
+            "Choose a {adjective} ritual that anchors you.",
+            "Track one {adjective} shift in your body.",
+            "Move with a {adjective} rhythm that respects your energy."
+          ],
+          "minimum": 0,
+          "maximum": 2
+        }
       }
     },
     {
@@ -2759,6 +6091,34 @@
           "Hold back from {phrase} until numbers align.",
           "Delay {phrase} commitments that add risk."
         ]
+      },
+      "variation_groups": {
+        "clauses": {
+          "mode": "permutation",
+          "items": [
+            "Strong visionary energy supports your finances decisions.",
+            "Insight guides your finances planning with bold clarity."
+          ]
+        },
+        "adjective": {
+          "mode": "choice",
+          "items": [
+            "savvy",
+            "practical",
+            "resourceful"
+          ],
+          "pick": 1
+        },
+        "optional_sentences": {
+          "mode": "subset",
+          "items": [
+            "Outline a {adjective} move for your resources.",
+            "Review a {adjective} detail before you commit.",
+            "Celebrate a {adjective} decision that reinforced stability."
+          ],
+          "minimum": 0,
+          "maximum": 2
+        }
       }
     },
     {
@@ -2782,6 +6142,34 @@
           "Hold back from {phrase} until timing improves.",
           "Delay {phrase} choices that feel rushed."
         ]
+      },
+      "variation_groups": {
+        "clauses": {
+          "mode": "permutation",
+          "items": [
+            "Peak visionary energy supports your day flow.",
+            "Insight guides your day choices with urgent clarity."
+          ]
+        },
+        "adjective": {
+          "mode": "choice",
+          "items": [
+            "steady",
+            "radiant",
+            "grounded"
+          ],
+          "pick": 1
+        },
+        "optional_sentences": {
+          "mode": "subset",
+          "items": [
+            "Keep a {adjective} pace as you move through today.",
+            "Share a {adjective} insight with someone you trust.",
+            "Note one {adjective} choice that feels aligned."
+          ],
+          "minimum": 0,
+          "maximum": 2
+        }
       }
     },
     {
@@ -2805,6 +6193,34 @@
           "Hold back from {phrase} until the plan is solid.",
           "Delay {phrase} moves that stretch resources too thin."
         ]
+      },
+      "variation_groups": {
+        "clauses": {
+          "mode": "permutation",
+          "items": [
+            "Peak visionary energy supports your career progress.",
+            "Insight guides your career moves with urgent clarity."
+          ]
+        },
+        "adjective": {
+          "mode": "choice",
+          "items": [
+            "strategic",
+            "confident",
+            "steady"
+          ],
+          "pick": 1
+        },
+        "optional_sentences": {
+          "mode": "subset",
+          "items": [
+            "Let your {adjective} focus highlight the wins at work.",
+            "Organize your plans around one {adjective} priority.",
+            "Share a {adjective} update with your collaborators."
+          ],
+          "minimum": 0,
+          "maximum": 2
+        }
       }
     },
     {
@@ -2828,6 +6244,34 @@
           "Hold back from {phrase} until emotions settle.",
           "Delay {phrase} choices that disrupt trust."
         ]
+      },
+      "variation_groups": {
+        "clauses": {
+          "mode": "permutation",
+          "items": [
+            "Peak visionary energy supports your relationships connections.",
+            "Insight guides your relationships openings with urgent clarity."
+          ]
+        },
+        "adjective": {
+          "mode": "choice",
+          "items": [
+            "warm",
+            "tender",
+            "open-hearted"
+          ],
+          "pick": 1
+        },
+        "optional_sentences": {
+          "mode": "subset",
+          "items": [
+            "Offer a {adjective} gesture that feels true.",
+            "Name one {adjective} boundary that supports connection.",
+            "Bring {adjective} attention to the way you listen."
+          ],
+          "minimum": 0,
+          "maximum": 2
+        }
       }
     },
     {
@@ -2851,6 +6295,34 @@
           "Hold back from {phrase} until strength returns.",
           "Delay {phrase} pushes that tax your system."
         ]
+      },
+      "variation_groups": {
+        "clauses": {
+          "mode": "permutation",
+          "items": [
+            "Peak visionary energy supports your wellness rhythms.",
+            "Insight guides your wellness care with urgent clarity."
+          ]
+        },
+        "adjective": {
+          "mode": "choice",
+          "items": [
+            "restorative",
+            "energizing",
+            "gentle"
+          ],
+          "pick": 1
+        },
+        "optional_sentences": {
+          "mode": "subset",
+          "items": [
+            "Choose a {adjective} ritual that anchors you.",
+            "Track one {adjective} shift in your body.",
+            "Move with a {adjective} rhythm that respects your energy."
+          ],
+          "minimum": 0,
+          "maximum": 2
+        }
       }
     },
     {
@@ -2874,6 +6346,34 @@
           "Hold back from {phrase} until numbers align.",
           "Delay {phrase} commitments that add risk."
         ]
+      },
+      "variation_groups": {
+        "clauses": {
+          "mode": "permutation",
+          "items": [
+            "Peak visionary energy supports your finances decisions.",
+            "Insight guides your finances planning with urgent clarity."
+          ]
+        },
+        "adjective": {
+          "mode": "choice",
+          "items": [
+            "savvy",
+            "practical",
+            "resourceful"
+          ],
+          "pick": 1
+        },
+        "optional_sentences": {
+          "mode": "subset",
+          "items": [
+            "Outline a {adjective} move for your resources.",
+            "Review a {adjective} detail before you commit.",
+            "Celebrate a {adjective} decision that reinforced stability."
+          ],
+          "minimum": 0,
+          "maximum": 2
+        }
       }
     },
     {
@@ -2897,6 +6397,34 @@
           "Hold back from {phrase} until timing improves.",
           "Delay {phrase} choices that feel rushed."
         ]
+      },
+      "variation_groups": {
+        "clauses": {
+          "mode": "permutation",
+          "items": [
+            "Subtle transformative energy supports your day flow.",
+            "Renewal guides your day choices with quiet clarity."
+          ]
+        },
+        "adjective": {
+          "mode": "choice",
+          "items": [
+            "steady",
+            "radiant",
+            "grounded"
+          ],
+          "pick": 1
+        },
+        "optional_sentences": {
+          "mode": "subset",
+          "items": [
+            "Keep a {adjective} pace as you move through today.",
+            "Share a {adjective} insight with someone you trust.",
+            "Note one {adjective} choice that feels aligned."
+          ],
+          "minimum": 0,
+          "maximum": 2
+        }
       }
     },
     {
@@ -2920,6 +6448,34 @@
           "Hold back from {phrase} until the plan is solid.",
           "Delay {phrase} moves that stretch resources too thin."
         ]
+      },
+      "variation_groups": {
+        "clauses": {
+          "mode": "permutation",
+          "items": [
+            "Subtle transformative energy supports your career progress.",
+            "Renewal guides your career moves with quiet clarity."
+          ]
+        },
+        "adjective": {
+          "mode": "choice",
+          "items": [
+            "strategic",
+            "confident",
+            "steady"
+          ],
+          "pick": 1
+        },
+        "optional_sentences": {
+          "mode": "subset",
+          "items": [
+            "Let your {adjective} focus highlight the wins at work.",
+            "Organize your plans around one {adjective} priority.",
+            "Share a {adjective} update with your collaborators."
+          ],
+          "minimum": 0,
+          "maximum": 2
+        }
       }
     },
     {
@@ -2943,6 +6499,34 @@
           "Hold back from {phrase} until emotions settle.",
           "Delay {phrase} choices that disrupt trust."
         ]
+      },
+      "variation_groups": {
+        "clauses": {
+          "mode": "permutation",
+          "items": [
+            "Subtle transformative energy supports your relationships connections.",
+            "Renewal guides your relationships openings with quiet clarity."
+          ]
+        },
+        "adjective": {
+          "mode": "choice",
+          "items": [
+            "warm",
+            "tender",
+            "open-hearted"
+          ],
+          "pick": 1
+        },
+        "optional_sentences": {
+          "mode": "subset",
+          "items": [
+            "Offer a {adjective} gesture that feels true.",
+            "Name one {adjective} boundary that supports connection.",
+            "Bring {adjective} attention to the way you listen."
+          ],
+          "minimum": 0,
+          "maximum": 2
+        }
       }
     },
     {
@@ -2966,6 +6550,34 @@
           "Hold back from {phrase} until strength returns.",
           "Delay {phrase} pushes that tax your system."
         ]
+      },
+      "variation_groups": {
+        "clauses": {
+          "mode": "permutation",
+          "items": [
+            "Subtle transformative energy supports your wellness rhythms.",
+            "Renewal guides your wellness care with quiet clarity."
+          ]
+        },
+        "adjective": {
+          "mode": "choice",
+          "items": [
+            "restorative",
+            "energizing",
+            "gentle"
+          ],
+          "pick": 1
+        },
+        "optional_sentences": {
+          "mode": "subset",
+          "items": [
+            "Choose a {adjective} ritual that anchors you.",
+            "Track one {adjective} shift in your body.",
+            "Move with a {adjective} rhythm that respects your energy."
+          ],
+          "minimum": 0,
+          "maximum": 2
+        }
       }
     },
     {
@@ -2989,6 +6601,34 @@
           "Hold back from {phrase} until numbers align.",
           "Delay {phrase} commitments that add risk."
         ]
+      },
+      "variation_groups": {
+        "clauses": {
+          "mode": "permutation",
+          "items": [
+            "Subtle transformative energy supports your finances decisions.",
+            "Renewal guides your finances planning with quiet clarity."
+          ]
+        },
+        "adjective": {
+          "mode": "choice",
+          "items": [
+            "savvy",
+            "practical",
+            "resourceful"
+          ],
+          "pick": 1
+        },
+        "optional_sentences": {
+          "mode": "subset",
+          "items": [
+            "Outline a {adjective} move for your resources.",
+            "Review a {adjective} detail before you commit.",
+            "Celebrate a {adjective} decision that reinforced stability."
+          ],
+          "minimum": 0,
+          "maximum": 2
+        }
       }
     },
     {
@@ -3012,6 +6652,34 @@
           "Hold back from {phrase} until timing improves.",
           "Delay {phrase} choices that feel rushed."
         ]
+      },
+      "variation_groups": {
+        "clauses": {
+          "mode": "permutation",
+          "items": [
+            "Gentle transformative energy supports your day flow.",
+            "Renewal guides your day choices with measured clarity."
+          ]
+        },
+        "adjective": {
+          "mode": "choice",
+          "items": [
+            "steady",
+            "radiant",
+            "grounded"
+          ],
+          "pick": 1
+        },
+        "optional_sentences": {
+          "mode": "subset",
+          "items": [
+            "Keep a {adjective} pace as you move through today.",
+            "Share a {adjective} insight with someone you trust.",
+            "Note one {adjective} choice that feels aligned."
+          ],
+          "minimum": 0,
+          "maximum": 2
+        }
       }
     },
     {
@@ -3035,6 +6703,34 @@
           "Hold back from {phrase} until the plan is solid.",
           "Delay {phrase} moves that stretch resources too thin."
         ]
+      },
+      "variation_groups": {
+        "clauses": {
+          "mode": "permutation",
+          "items": [
+            "Gentle transformative energy supports your career progress.",
+            "Renewal guides your career moves with measured clarity."
+          ]
+        },
+        "adjective": {
+          "mode": "choice",
+          "items": [
+            "strategic",
+            "confident",
+            "steady"
+          ],
+          "pick": 1
+        },
+        "optional_sentences": {
+          "mode": "subset",
+          "items": [
+            "Let your {adjective} focus highlight the wins at work.",
+            "Organize your plans around one {adjective} priority.",
+            "Share a {adjective} update with your collaborators."
+          ],
+          "minimum": 0,
+          "maximum": 2
+        }
       }
     },
     {
@@ -3058,6 +6754,34 @@
           "Hold back from {phrase} until emotions settle.",
           "Delay {phrase} choices that disrupt trust."
         ]
+      },
+      "variation_groups": {
+        "clauses": {
+          "mode": "permutation",
+          "items": [
+            "Gentle transformative energy supports your relationships connections.",
+            "Renewal guides your relationships openings with measured clarity."
+          ]
+        },
+        "adjective": {
+          "mode": "choice",
+          "items": [
+            "warm",
+            "tender",
+            "open-hearted"
+          ],
+          "pick": 1
+        },
+        "optional_sentences": {
+          "mode": "subset",
+          "items": [
+            "Offer a {adjective} gesture that feels true.",
+            "Name one {adjective} boundary that supports connection.",
+            "Bring {adjective} attention to the way you listen."
+          ],
+          "minimum": 0,
+          "maximum": 2
+        }
       }
     },
     {
@@ -3081,6 +6805,34 @@
           "Hold back from {phrase} until strength returns.",
           "Delay {phrase} pushes that tax your system."
         ]
+      },
+      "variation_groups": {
+        "clauses": {
+          "mode": "permutation",
+          "items": [
+            "Gentle transformative energy supports your wellness rhythms.",
+            "Renewal guides your wellness care with measured clarity."
+          ]
+        },
+        "adjective": {
+          "mode": "choice",
+          "items": [
+            "restorative",
+            "energizing",
+            "gentle"
+          ],
+          "pick": 1
+        },
+        "optional_sentences": {
+          "mode": "subset",
+          "items": [
+            "Choose a {adjective} ritual that anchors you.",
+            "Track one {adjective} shift in your body.",
+            "Move with a {adjective} rhythm that respects your energy."
+          ],
+          "minimum": 0,
+          "maximum": 2
+        }
       }
     },
     {
@@ -3104,6 +6856,34 @@
           "Hold back from {phrase} until numbers align.",
           "Delay {phrase} commitments that add risk."
         ]
+      },
+      "variation_groups": {
+        "clauses": {
+          "mode": "permutation",
+          "items": [
+            "Gentle transformative energy supports your finances decisions.",
+            "Renewal guides your finances planning with measured clarity."
+          ]
+        },
+        "adjective": {
+          "mode": "choice",
+          "items": [
+            "savvy",
+            "practical",
+            "resourceful"
+          ],
+          "pick": 1
+        },
+        "optional_sentences": {
+          "mode": "subset",
+          "items": [
+            "Outline a {adjective} move for your resources.",
+            "Review a {adjective} detail before you commit.",
+            "Celebrate a {adjective} decision that reinforced stability."
+          ],
+          "minimum": 0,
+          "maximum": 2
+        }
       }
     },
     {
@@ -3127,6 +6907,34 @@
           "Hold back from {phrase} until timing improves.",
           "Delay {phrase} choices that feel rushed."
         ]
+      },
+      "variation_groups": {
+        "clauses": {
+          "mode": "permutation",
+          "items": [
+            "Steady transformative energy supports your day flow.",
+            "Renewal guides your day choices with reliable clarity."
+          ]
+        },
+        "adjective": {
+          "mode": "choice",
+          "items": [
+            "steady",
+            "radiant",
+            "grounded"
+          ],
+          "pick": 1
+        },
+        "optional_sentences": {
+          "mode": "subset",
+          "items": [
+            "Keep a {adjective} pace as you move through today.",
+            "Share a {adjective} insight with someone you trust.",
+            "Note one {adjective} choice that feels aligned."
+          ],
+          "minimum": 0,
+          "maximum": 2
+        }
       }
     },
     {
@@ -3150,6 +6958,34 @@
           "Hold back from {phrase} until the plan is solid.",
           "Delay {phrase} moves that stretch resources too thin."
         ]
+      },
+      "variation_groups": {
+        "clauses": {
+          "mode": "permutation",
+          "items": [
+            "Steady transformative energy supports your career progress.",
+            "Renewal guides your career moves with reliable clarity."
+          ]
+        },
+        "adjective": {
+          "mode": "choice",
+          "items": [
+            "strategic",
+            "confident",
+            "steady"
+          ],
+          "pick": 1
+        },
+        "optional_sentences": {
+          "mode": "subset",
+          "items": [
+            "Let your {adjective} focus highlight the wins at work.",
+            "Organize your plans around one {adjective} priority.",
+            "Share a {adjective} update with your collaborators."
+          ],
+          "minimum": 0,
+          "maximum": 2
+        }
       }
     },
     {
@@ -3173,6 +7009,34 @@
           "Hold back from {phrase} until emotions settle.",
           "Delay {phrase} choices that disrupt trust."
         ]
+      },
+      "variation_groups": {
+        "clauses": {
+          "mode": "permutation",
+          "items": [
+            "Steady transformative energy supports your relationships connections.",
+            "Renewal guides your relationships openings with reliable clarity."
+          ]
+        },
+        "adjective": {
+          "mode": "choice",
+          "items": [
+            "warm",
+            "tender",
+            "open-hearted"
+          ],
+          "pick": 1
+        },
+        "optional_sentences": {
+          "mode": "subset",
+          "items": [
+            "Offer a {adjective} gesture that feels true.",
+            "Name one {adjective} boundary that supports connection.",
+            "Bring {adjective} attention to the way you listen."
+          ],
+          "minimum": 0,
+          "maximum": 2
+        }
       }
     },
     {
@@ -3196,6 +7060,34 @@
           "Hold back from {phrase} until strength returns.",
           "Delay {phrase} pushes that tax your system."
         ]
+      },
+      "variation_groups": {
+        "clauses": {
+          "mode": "permutation",
+          "items": [
+            "Steady transformative energy supports your wellness rhythms.",
+            "Renewal guides your wellness care with reliable clarity."
+          ]
+        },
+        "adjective": {
+          "mode": "choice",
+          "items": [
+            "restorative",
+            "energizing",
+            "gentle"
+          ],
+          "pick": 1
+        },
+        "optional_sentences": {
+          "mode": "subset",
+          "items": [
+            "Choose a {adjective} ritual that anchors you.",
+            "Track one {adjective} shift in your body.",
+            "Move with a {adjective} rhythm that respects your energy."
+          ],
+          "minimum": 0,
+          "maximum": 2
+        }
       }
     },
     {
@@ -3219,6 +7111,34 @@
           "Hold back from {phrase} until numbers align.",
           "Delay {phrase} commitments that add risk."
         ]
+      },
+      "variation_groups": {
+        "clauses": {
+          "mode": "permutation",
+          "items": [
+            "Steady transformative energy supports your finances decisions.",
+            "Renewal guides your finances planning with reliable clarity."
+          ]
+        },
+        "adjective": {
+          "mode": "choice",
+          "items": [
+            "savvy",
+            "practical",
+            "resourceful"
+          ],
+          "pick": 1
+        },
+        "optional_sentences": {
+          "mode": "subset",
+          "items": [
+            "Outline a {adjective} move for your resources.",
+            "Review a {adjective} detail before you commit.",
+            "Celebrate a {adjective} decision that reinforced stability."
+          ],
+          "minimum": 0,
+          "maximum": 2
+        }
       }
     },
     {
@@ -3242,6 +7162,34 @@
           "Hold back from {phrase} until timing improves.",
           "Delay {phrase} choices that feel rushed."
         ]
+      },
+      "variation_groups": {
+        "clauses": {
+          "mode": "permutation",
+          "items": [
+            "Strong transformative energy supports your day flow.",
+            "Renewal guides your day choices with bold clarity."
+          ]
+        },
+        "adjective": {
+          "mode": "choice",
+          "items": [
+            "steady",
+            "radiant",
+            "grounded"
+          ],
+          "pick": 1
+        },
+        "optional_sentences": {
+          "mode": "subset",
+          "items": [
+            "Keep a {adjective} pace as you move through today.",
+            "Share a {adjective} insight with someone you trust.",
+            "Note one {adjective} choice that feels aligned."
+          ],
+          "minimum": 0,
+          "maximum": 2
+        }
       }
     },
     {
@@ -3265,6 +7213,34 @@
           "Hold back from {phrase} until the plan is solid.",
           "Delay {phrase} moves that stretch resources too thin."
         ]
+      },
+      "variation_groups": {
+        "clauses": {
+          "mode": "permutation",
+          "items": [
+            "Strong transformative energy supports your career progress.",
+            "Renewal guides your career moves with bold clarity."
+          ]
+        },
+        "adjective": {
+          "mode": "choice",
+          "items": [
+            "strategic",
+            "confident",
+            "steady"
+          ],
+          "pick": 1
+        },
+        "optional_sentences": {
+          "mode": "subset",
+          "items": [
+            "Let your {adjective} focus highlight the wins at work.",
+            "Organize your plans around one {adjective} priority.",
+            "Share a {adjective} update with your collaborators."
+          ],
+          "minimum": 0,
+          "maximum": 2
+        }
       }
     },
     {
@@ -3288,6 +7264,34 @@
           "Hold back from {phrase} until emotions settle.",
           "Delay {phrase} choices that disrupt trust."
         ]
+      },
+      "variation_groups": {
+        "clauses": {
+          "mode": "permutation",
+          "items": [
+            "Strong transformative energy supports your relationships connections.",
+            "Renewal guides your relationships openings with bold clarity."
+          ]
+        },
+        "adjective": {
+          "mode": "choice",
+          "items": [
+            "warm",
+            "tender",
+            "open-hearted"
+          ],
+          "pick": 1
+        },
+        "optional_sentences": {
+          "mode": "subset",
+          "items": [
+            "Offer a {adjective} gesture that feels true.",
+            "Name one {adjective} boundary that supports connection.",
+            "Bring {adjective} attention to the way you listen."
+          ],
+          "minimum": 0,
+          "maximum": 2
+        }
       }
     },
     {
@@ -3311,6 +7315,34 @@
           "Hold back from {phrase} until strength returns.",
           "Delay {phrase} pushes that tax your system."
         ]
+      },
+      "variation_groups": {
+        "clauses": {
+          "mode": "permutation",
+          "items": [
+            "Strong transformative energy supports your wellness rhythms.",
+            "Renewal guides your wellness care with bold clarity."
+          ]
+        },
+        "adjective": {
+          "mode": "choice",
+          "items": [
+            "restorative",
+            "energizing",
+            "gentle"
+          ],
+          "pick": 1
+        },
+        "optional_sentences": {
+          "mode": "subset",
+          "items": [
+            "Choose a {adjective} ritual that anchors you.",
+            "Track one {adjective} shift in your body.",
+            "Move with a {adjective} rhythm that respects your energy."
+          ],
+          "minimum": 0,
+          "maximum": 2
+        }
       }
     },
     {
@@ -3334,6 +7366,34 @@
           "Hold back from {phrase} until numbers align.",
           "Delay {phrase} commitments that add risk."
         ]
+      },
+      "variation_groups": {
+        "clauses": {
+          "mode": "permutation",
+          "items": [
+            "Strong transformative energy supports your finances decisions.",
+            "Renewal guides your finances planning with bold clarity."
+          ]
+        },
+        "adjective": {
+          "mode": "choice",
+          "items": [
+            "savvy",
+            "practical",
+            "resourceful"
+          ],
+          "pick": 1
+        },
+        "optional_sentences": {
+          "mode": "subset",
+          "items": [
+            "Outline a {adjective} move for your resources.",
+            "Review a {adjective} detail before you commit.",
+            "Celebrate a {adjective} decision that reinforced stability."
+          ],
+          "minimum": 0,
+          "maximum": 2
+        }
       }
     },
     {
@@ -3357,6 +7417,34 @@
           "Hold back from {phrase} until timing improves.",
           "Delay {phrase} choices that feel rushed."
         ]
+      },
+      "variation_groups": {
+        "clauses": {
+          "mode": "permutation",
+          "items": [
+            "Peak transformative energy supports your day flow.",
+            "Renewal guides your day choices with urgent clarity."
+          ]
+        },
+        "adjective": {
+          "mode": "choice",
+          "items": [
+            "steady",
+            "radiant",
+            "grounded"
+          ],
+          "pick": 1
+        },
+        "optional_sentences": {
+          "mode": "subset",
+          "items": [
+            "Keep a {adjective} pace as you move through today.",
+            "Share a {adjective} insight with someone you trust.",
+            "Note one {adjective} choice that feels aligned."
+          ],
+          "minimum": 0,
+          "maximum": 2
+        }
       }
     },
     {
@@ -3380,6 +7468,34 @@
           "Hold back from {phrase} until the plan is solid.",
           "Delay {phrase} moves that stretch resources too thin."
         ]
+      },
+      "variation_groups": {
+        "clauses": {
+          "mode": "permutation",
+          "items": [
+            "Peak transformative energy supports your career progress.",
+            "Renewal guides your career moves with urgent clarity."
+          ]
+        },
+        "adjective": {
+          "mode": "choice",
+          "items": [
+            "strategic",
+            "confident",
+            "steady"
+          ],
+          "pick": 1
+        },
+        "optional_sentences": {
+          "mode": "subset",
+          "items": [
+            "Let your {adjective} focus highlight the wins at work.",
+            "Organize your plans around one {adjective} priority.",
+            "Share a {adjective} update with your collaborators."
+          ],
+          "minimum": 0,
+          "maximum": 2
+        }
       }
     },
     {
@@ -3403,6 +7519,34 @@
           "Hold back from {phrase} until emotions settle.",
           "Delay {phrase} choices that disrupt trust."
         ]
+      },
+      "variation_groups": {
+        "clauses": {
+          "mode": "permutation",
+          "items": [
+            "Peak transformative energy supports your relationships connections.",
+            "Renewal guides your relationships openings with urgent clarity."
+          ]
+        },
+        "adjective": {
+          "mode": "choice",
+          "items": [
+            "warm",
+            "tender",
+            "open-hearted"
+          ],
+          "pick": 1
+        },
+        "optional_sentences": {
+          "mode": "subset",
+          "items": [
+            "Offer a {adjective} gesture that feels true.",
+            "Name one {adjective} boundary that supports connection.",
+            "Bring {adjective} attention to the way you listen."
+          ],
+          "minimum": 0,
+          "maximum": 2
+        }
       }
     },
     {
@@ -3426,6 +7570,34 @@
           "Hold back from {phrase} until strength returns.",
           "Delay {phrase} pushes that tax your system."
         ]
+      },
+      "variation_groups": {
+        "clauses": {
+          "mode": "permutation",
+          "items": [
+            "Peak transformative energy supports your wellness rhythms.",
+            "Renewal guides your wellness care with urgent clarity."
+          ]
+        },
+        "adjective": {
+          "mode": "choice",
+          "items": [
+            "restorative",
+            "energizing",
+            "gentle"
+          ],
+          "pick": 1
+        },
+        "optional_sentences": {
+          "mode": "subset",
+          "items": [
+            "Choose a {adjective} ritual that anchors you.",
+            "Track one {adjective} shift in your body.",
+            "Move with a {adjective} rhythm that respects your energy."
+          ],
+          "minimum": 0,
+          "maximum": 2
+        }
       }
     },
     {
@@ -3449,6 +7621,34 @@
           "Hold back from {phrase} until numbers align.",
           "Delay {phrase} commitments that add risk."
         ]
+      },
+      "variation_groups": {
+        "clauses": {
+          "mode": "permutation",
+          "items": [
+            "Peak transformative energy supports your finances decisions.",
+            "Renewal guides your finances planning with urgent clarity."
+          ]
+        },
+        "adjective": {
+          "mode": "choice",
+          "items": [
+            "savvy",
+            "practical",
+            "resourceful"
+          ],
+          "pick": 1
+        },
+        "optional_sentences": {
+          "mode": "subset",
+          "items": [
+            "Outline a {adjective} move for your resources.",
+            "Review a {adjective} detail before you commit.",
+            "Celebrate a {adjective} decision that reinforced stability."
+          ],
+          "minimum": 0,
+          "maximum": 2
+        }
       }
     },
     {
@@ -3472,6 +7672,34 @@
           "Hold back from {phrase} until timing improves.",
           "Delay {phrase} choices that feel rushed."
         ]
+      },
+      "variation_groups": {
+        "clauses": {
+          "mode": "permutation",
+          "items": [
+            "Subtle steady energy supports your day flow.",
+            "Balance guides your day choices with quiet clarity."
+          ]
+        },
+        "adjective": {
+          "mode": "choice",
+          "items": [
+            "steady",
+            "radiant",
+            "grounded"
+          ],
+          "pick": 1
+        },
+        "optional_sentences": {
+          "mode": "subset",
+          "items": [
+            "Keep a {adjective} pace as you move through today.",
+            "Share a {adjective} insight with someone you trust.",
+            "Note one {adjective} choice that feels aligned."
+          ],
+          "minimum": 0,
+          "maximum": 2
+        }
       }
     },
     {
@@ -3495,6 +7723,34 @@
           "Hold back from {phrase} until the plan is solid.",
           "Delay {phrase} moves that stretch resources too thin."
         ]
+      },
+      "variation_groups": {
+        "clauses": {
+          "mode": "permutation",
+          "items": [
+            "Subtle steady energy supports your career progress.",
+            "Balance guides your career moves with quiet clarity."
+          ]
+        },
+        "adjective": {
+          "mode": "choice",
+          "items": [
+            "strategic",
+            "confident",
+            "steady"
+          ],
+          "pick": 1
+        },
+        "optional_sentences": {
+          "mode": "subset",
+          "items": [
+            "Let your {adjective} focus highlight the wins at work.",
+            "Organize your plans around one {adjective} priority.",
+            "Share a {adjective} update with your collaborators."
+          ],
+          "minimum": 0,
+          "maximum": 2
+        }
       }
     },
     {
@@ -3518,6 +7774,34 @@
           "Hold back from {phrase} until emotions settle.",
           "Delay {phrase} choices that disrupt trust."
         ]
+      },
+      "variation_groups": {
+        "clauses": {
+          "mode": "permutation",
+          "items": [
+            "Subtle steady energy supports your relationships connections.",
+            "Balance guides your relationships openings with quiet clarity."
+          ]
+        },
+        "adjective": {
+          "mode": "choice",
+          "items": [
+            "warm",
+            "tender",
+            "open-hearted"
+          ],
+          "pick": 1
+        },
+        "optional_sentences": {
+          "mode": "subset",
+          "items": [
+            "Offer a {adjective} gesture that feels true.",
+            "Name one {adjective} boundary that supports connection.",
+            "Bring {adjective} attention to the way you listen."
+          ],
+          "minimum": 0,
+          "maximum": 2
+        }
       }
     },
     {
@@ -3541,6 +7825,34 @@
           "Hold back from {phrase} until strength returns.",
           "Delay {phrase} pushes that tax your system."
         ]
+      },
+      "variation_groups": {
+        "clauses": {
+          "mode": "permutation",
+          "items": [
+            "Subtle steady energy supports your wellness rhythms.",
+            "Balance guides your wellness care with quiet clarity."
+          ]
+        },
+        "adjective": {
+          "mode": "choice",
+          "items": [
+            "restorative",
+            "energizing",
+            "gentle"
+          ],
+          "pick": 1
+        },
+        "optional_sentences": {
+          "mode": "subset",
+          "items": [
+            "Choose a {adjective} ritual that anchors you.",
+            "Track one {adjective} shift in your body.",
+            "Move with a {adjective} rhythm that respects your energy."
+          ],
+          "minimum": 0,
+          "maximum": 2
+        }
       }
     },
     {
@@ -3564,6 +7876,34 @@
           "Hold back from {phrase} until numbers align.",
           "Delay {phrase} commitments that add risk."
         ]
+      },
+      "variation_groups": {
+        "clauses": {
+          "mode": "permutation",
+          "items": [
+            "Subtle steady energy supports your finances decisions.",
+            "Balance guides your finances planning with quiet clarity."
+          ]
+        },
+        "adjective": {
+          "mode": "choice",
+          "items": [
+            "savvy",
+            "practical",
+            "resourceful"
+          ],
+          "pick": 1
+        },
+        "optional_sentences": {
+          "mode": "subset",
+          "items": [
+            "Outline a {adjective} move for your resources.",
+            "Review a {adjective} detail before you commit.",
+            "Celebrate a {adjective} decision that reinforced stability."
+          ],
+          "minimum": 0,
+          "maximum": 2
+        }
       }
     },
     {
@@ -3587,6 +7927,34 @@
           "Hold back from {phrase} until timing improves.",
           "Delay {phrase} choices that feel rushed."
         ]
+      },
+      "variation_groups": {
+        "clauses": {
+          "mode": "permutation",
+          "items": [
+            "Gentle steady energy supports your day flow.",
+            "Balance guides your day choices with measured clarity."
+          ]
+        },
+        "adjective": {
+          "mode": "choice",
+          "items": [
+            "steady",
+            "radiant",
+            "grounded"
+          ],
+          "pick": 1
+        },
+        "optional_sentences": {
+          "mode": "subset",
+          "items": [
+            "Keep a {adjective} pace as you move through today.",
+            "Share a {adjective} insight with someone you trust.",
+            "Note one {adjective} choice that feels aligned."
+          ],
+          "minimum": 0,
+          "maximum": 2
+        }
       }
     },
     {
@@ -3610,6 +7978,34 @@
           "Hold back from {phrase} until the plan is solid.",
           "Delay {phrase} moves that stretch resources too thin."
         ]
+      },
+      "variation_groups": {
+        "clauses": {
+          "mode": "permutation",
+          "items": [
+            "Gentle steady energy supports your career progress.",
+            "Balance guides your career moves with measured clarity."
+          ]
+        },
+        "adjective": {
+          "mode": "choice",
+          "items": [
+            "strategic",
+            "confident",
+            "steady"
+          ],
+          "pick": 1
+        },
+        "optional_sentences": {
+          "mode": "subset",
+          "items": [
+            "Let your {adjective} focus highlight the wins at work.",
+            "Organize your plans around one {adjective} priority.",
+            "Share a {adjective} update with your collaborators."
+          ],
+          "minimum": 0,
+          "maximum": 2
+        }
       }
     },
     {
@@ -3633,6 +8029,34 @@
           "Hold back from {phrase} until emotions settle.",
           "Delay {phrase} choices that disrupt trust."
         ]
+      },
+      "variation_groups": {
+        "clauses": {
+          "mode": "permutation",
+          "items": [
+            "Gentle steady energy supports your relationships connections.",
+            "Balance guides your relationships openings with measured clarity."
+          ]
+        },
+        "adjective": {
+          "mode": "choice",
+          "items": [
+            "warm",
+            "tender",
+            "open-hearted"
+          ],
+          "pick": 1
+        },
+        "optional_sentences": {
+          "mode": "subset",
+          "items": [
+            "Offer a {adjective} gesture that feels true.",
+            "Name one {adjective} boundary that supports connection.",
+            "Bring {adjective} attention to the way you listen."
+          ],
+          "minimum": 0,
+          "maximum": 2
+        }
       }
     },
     {
@@ -3656,6 +8080,34 @@
           "Hold back from {phrase} until strength returns.",
           "Delay {phrase} pushes that tax your system."
         ]
+      },
+      "variation_groups": {
+        "clauses": {
+          "mode": "permutation",
+          "items": [
+            "Gentle steady energy supports your wellness rhythms.",
+            "Balance guides your wellness care with measured clarity."
+          ]
+        },
+        "adjective": {
+          "mode": "choice",
+          "items": [
+            "restorative",
+            "energizing",
+            "gentle"
+          ],
+          "pick": 1
+        },
+        "optional_sentences": {
+          "mode": "subset",
+          "items": [
+            "Choose a {adjective} ritual that anchors you.",
+            "Track one {adjective} shift in your body.",
+            "Move with a {adjective} rhythm that respects your energy."
+          ],
+          "minimum": 0,
+          "maximum": 2
+        }
       }
     },
     {
@@ -3679,6 +8131,34 @@
           "Hold back from {phrase} until numbers align.",
           "Delay {phrase} commitments that add risk."
         ]
+      },
+      "variation_groups": {
+        "clauses": {
+          "mode": "permutation",
+          "items": [
+            "Gentle steady energy supports your finances decisions.",
+            "Balance guides your finances planning with measured clarity."
+          ]
+        },
+        "adjective": {
+          "mode": "choice",
+          "items": [
+            "savvy",
+            "practical",
+            "resourceful"
+          ],
+          "pick": 1
+        },
+        "optional_sentences": {
+          "mode": "subset",
+          "items": [
+            "Outline a {adjective} move for your resources.",
+            "Review a {adjective} detail before you commit.",
+            "Celebrate a {adjective} decision that reinforced stability."
+          ],
+          "minimum": 0,
+          "maximum": 2
+        }
       }
     },
     {
@@ -3702,6 +8182,34 @@
           "Hold back from {phrase} until timing improves.",
           "Delay {phrase} choices that feel rushed."
         ]
+      },
+      "variation_groups": {
+        "clauses": {
+          "mode": "permutation",
+          "items": [
+            "Steady steady energy supports your day flow.",
+            "Balance guides your day choices with reliable clarity."
+          ]
+        },
+        "adjective": {
+          "mode": "choice",
+          "items": [
+            "steady",
+            "radiant",
+            "grounded"
+          ],
+          "pick": 1
+        },
+        "optional_sentences": {
+          "mode": "subset",
+          "items": [
+            "Keep a {adjective} pace as you move through today.",
+            "Share a {adjective} insight with someone you trust.",
+            "Note one {adjective} choice that feels aligned."
+          ],
+          "minimum": 0,
+          "maximum": 2
+        }
       }
     },
     {
@@ -3725,6 +8233,34 @@
           "Hold back from {phrase} until the plan is solid.",
           "Delay {phrase} moves that stretch resources too thin."
         ]
+      },
+      "variation_groups": {
+        "clauses": {
+          "mode": "permutation",
+          "items": [
+            "Steady steady energy supports your career progress.",
+            "Balance guides your career moves with reliable clarity."
+          ]
+        },
+        "adjective": {
+          "mode": "choice",
+          "items": [
+            "strategic",
+            "confident",
+            "steady"
+          ],
+          "pick": 1
+        },
+        "optional_sentences": {
+          "mode": "subset",
+          "items": [
+            "Let your {adjective} focus highlight the wins at work.",
+            "Organize your plans around one {adjective} priority.",
+            "Share a {adjective} update with your collaborators."
+          ],
+          "minimum": 0,
+          "maximum": 2
+        }
       }
     },
     {
@@ -3748,6 +8284,34 @@
           "Hold back from {phrase} until emotions settle.",
           "Delay {phrase} choices that disrupt trust."
         ]
+      },
+      "variation_groups": {
+        "clauses": {
+          "mode": "permutation",
+          "items": [
+            "Steady steady energy supports your relationships connections.",
+            "Balance guides your relationships openings with reliable clarity."
+          ]
+        },
+        "adjective": {
+          "mode": "choice",
+          "items": [
+            "warm",
+            "tender",
+            "open-hearted"
+          ],
+          "pick": 1
+        },
+        "optional_sentences": {
+          "mode": "subset",
+          "items": [
+            "Offer a {adjective} gesture that feels true.",
+            "Name one {adjective} boundary that supports connection.",
+            "Bring {adjective} attention to the way you listen."
+          ],
+          "minimum": 0,
+          "maximum": 2
+        }
       }
     },
     {
@@ -3771,6 +8335,34 @@
           "Hold back from {phrase} until strength returns.",
           "Delay {phrase} pushes that tax your system."
         ]
+      },
+      "variation_groups": {
+        "clauses": {
+          "mode": "permutation",
+          "items": [
+            "Steady steady energy supports your wellness rhythms.",
+            "Balance guides your wellness care with reliable clarity."
+          ]
+        },
+        "adjective": {
+          "mode": "choice",
+          "items": [
+            "restorative",
+            "energizing",
+            "gentle"
+          ],
+          "pick": 1
+        },
+        "optional_sentences": {
+          "mode": "subset",
+          "items": [
+            "Choose a {adjective} ritual that anchors you.",
+            "Track one {adjective} shift in your body.",
+            "Move with a {adjective} rhythm that respects your energy."
+          ],
+          "minimum": 0,
+          "maximum": 2
+        }
       }
     },
     {
@@ -3794,6 +8386,34 @@
           "Hold back from {phrase} until numbers align.",
           "Delay {phrase} commitments that add risk."
         ]
+      },
+      "variation_groups": {
+        "clauses": {
+          "mode": "permutation",
+          "items": [
+            "Steady steady energy supports your finances decisions.",
+            "Balance guides your finances planning with reliable clarity."
+          ]
+        },
+        "adjective": {
+          "mode": "choice",
+          "items": [
+            "savvy",
+            "practical",
+            "resourceful"
+          ],
+          "pick": 1
+        },
+        "optional_sentences": {
+          "mode": "subset",
+          "items": [
+            "Outline a {adjective} move for your resources.",
+            "Review a {adjective} detail before you commit.",
+            "Celebrate a {adjective} decision that reinforced stability."
+          ],
+          "minimum": 0,
+          "maximum": 2
+        }
       }
     },
     {
@@ -3817,6 +8437,34 @@
           "Hold back from {phrase} until timing improves.",
           "Delay {phrase} choices that feel rushed."
         ]
+      },
+      "variation_groups": {
+        "clauses": {
+          "mode": "permutation",
+          "items": [
+            "Strong steady energy supports your day flow.",
+            "Balance guides your day choices with bold clarity."
+          ]
+        },
+        "adjective": {
+          "mode": "choice",
+          "items": [
+            "steady",
+            "radiant",
+            "grounded"
+          ],
+          "pick": 1
+        },
+        "optional_sentences": {
+          "mode": "subset",
+          "items": [
+            "Keep a {adjective} pace as you move through today.",
+            "Share a {adjective} insight with someone you trust.",
+            "Note one {adjective} choice that feels aligned."
+          ],
+          "minimum": 0,
+          "maximum": 2
+        }
       }
     },
     {
@@ -3840,6 +8488,34 @@
           "Hold back from {phrase} until the plan is solid.",
           "Delay {phrase} moves that stretch resources too thin."
         ]
+      },
+      "variation_groups": {
+        "clauses": {
+          "mode": "permutation",
+          "items": [
+            "Strong steady energy supports your career progress.",
+            "Balance guides your career moves with bold clarity."
+          ]
+        },
+        "adjective": {
+          "mode": "choice",
+          "items": [
+            "strategic",
+            "confident",
+            "steady"
+          ],
+          "pick": 1
+        },
+        "optional_sentences": {
+          "mode": "subset",
+          "items": [
+            "Let your {adjective} focus highlight the wins at work.",
+            "Organize your plans around one {adjective} priority.",
+            "Share a {adjective} update with your collaborators."
+          ],
+          "minimum": 0,
+          "maximum": 2
+        }
       }
     },
     {
@@ -3863,6 +8539,34 @@
           "Hold back from {phrase} until emotions settle.",
           "Delay {phrase} choices that disrupt trust."
         ]
+      },
+      "variation_groups": {
+        "clauses": {
+          "mode": "permutation",
+          "items": [
+            "Strong steady energy supports your relationships connections.",
+            "Balance guides your relationships openings with bold clarity."
+          ]
+        },
+        "adjective": {
+          "mode": "choice",
+          "items": [
+            "warm",
+            "tender",
+            "open-hearted"
+          ],
+          "pick": 1
+        },
+        "optional_sentences": {
+          "mode": "subset",
+          "items": [
+            "Offer a {adjective} gesture that feels true.",
+            "Name one {adjective} boundary that supports connection.",
+            "Bring {adjective} attention to the way you listen."
+          ],
+          "minimum": 0,
+          "maximum": 2
+        }
       }
     },
     {
@@ -3886,6 +8590,34 @@
           "Hold back from {phrase} until strength returns.",
           "Delay {phrase} pushes that tax your system."
         ]
+      },
+      "variation_groups": {
+        "clauses": {
+          "mode": "permutation",
+          "items": [
+            "Strong steady energy supports your wellness rhythms.",
+            "Balance guides your wellness care with bold clarity."
+          ]
+        },
+        "adjective": {
+          "mode": "choice",
+          "items": [
+            "restorative",
+            "energizing",
+            "gentle"
+          ],
+          "pick": 1
+        },
+        "optional_sentences": {
+          "mode": "subset",
+          "items": [
+            "Choose a {adjective} ritual that anchors you.",
+            "Track one {adjective} shift in your body.",
+            "Move with a {adjective} rhythm that respects your energy."
+          ],
+          "minimum": 0,
+          "maximum": 2
+        }
       }
     },
     {
@@ -3909,6 +8641,34 @@
           "Hold back from {phrase} until numbers align.",
           "Delay {phrase} commitments that add risk."
         ]
+      },
+      "variation_groups": {
+        "clauses": {
+          "mode": "permutation",
+          "items": [
+            "Strong steady energy supports your finances decisions.",
+            "Balance guides your finances planning with bold clarity."
+          ]
+        },
+        "adjective": {
+          "mode": "choice",
+          "items": [
+            "savvy",
+            "practical",
+            "resourceful"
+          ],
+          "pick": 1
+        },
+        "optional_sentences": {
+          "mode": "subset",
+          "items": [
+            "Outline a {adjective} move for your resources.",
+            "Review a {adjective} detail before you commit.",
+            "Celebrate a {adjective} decision that reinforced stability."
+          ],
+          "minimum": 0,
+          "maximum": 2
+        }
       }
     },
     {
@@ -3932,6 +8692,34 @@
           "Hold back from {phrase} until timing improves.",
           "Delay {phrase} choices that feel rushed."
         ]
+      },
+      "variation_groups": {
+        "clauses": {
+          "mode": "permutation",
+          "items": [
+            "Peak steady energy supports your day flow.",
+            "Balance guides your day choices with urgent clarity."
+          ]
+        },
+        "adjective": {
+          "mode": "choice",
+          "items": [
+            "steady",
+            "radiant",
+            "grounded"
+          ],
+          "pick": 1
+        },
+        "optional_sentences": {
+          "mode": "subset",
+          "items": [
+            "Keep a {adjective} pace as you move through today.",
+            "Share a {adjective} insight with someone you trust.",
+            "Note one {adjective} choice that feels aligned."
+          ],
+          "minimum": 0,
+          "maximum": 2
+        }
       }
     },
     {
@@ -3955,6 +8743,34 @@
           "Hold back from {phrase} until the plan is solid.",
           "Delay {phrase} moves that stretch resources too thin."
         ]
+      },
+      "variation_groups": {
+        "clauses": {
+          "mode": "permutation",
+          "items": [
+            "Peak steady energy supports your career progress.",
+            "Balance guides your career moves with urgent clarity."
+          ]
+        },
+        "adjective": {
+          "mode": "choice",
+          "items": [
+            "strategic",
+            "confident",
+            "steady"
+          ],
+          "pick": 1
+        },
+        "optional_sentences": {
+          "mode": "subset",
+          "items": [
+            "Let your {adjective} focus highlight the wins at work.",
+            "Organize your plans around one {adjective} priority.",
+            "Share a {adjective} update with your collaborators."
+          ],
+          "minimum": 0,
+          "maximum": 2
+        }
       }
     },
     {
@@ -3978,6 +8794,34 @@
           "Hold back from {phrase} until emotions settle.",
           "Delay {phrase} choices that disrupt trust."
         ]
+      },
+      "variation_groups": {
+        "clauses": {
+          "mode": "permutation",
+          "items": [
+            "Peak steady energy supports your relationships connections.",
+            "Balance guides your relationships openings with urgent clarity."
+          ]
+        },
+        "adjective": {
+          "mode": "choice",
+          "items": [
+            "warm",
+            "tender",
+            "open-hearted"
+          ],
+          "pick": 1
+        },
+        "optional_sentences": {
+          "mode": "subset",
+          "items": [
+            "Offer a {adjective} gesture that feels true.",
+            "Name one {adjective} boundary that supports connection.",
+            "Bring {adjective} attention to the way you listen."
+          ],
+          "minimum": 0,
+          "maximum": 2
+        }
       }
     },
     {
@@ -4001,6 +8845,34 @@
           "Hold back from {phrase} until strength returns.",
           "Delay {phrase} pushes that tax your system."
         ]
+      },
+      "variation_groups": {
+        "clauses": {
+          "mode": "permutation",
+          "items": [
+            "Peak steady energy supports your wellness rhythms.",
+            "Balance guides your wellness care with urgent clarity."
+          ]
+        },
+        "adjective": {
+          "mode": "choice",
+          "items": [
+            "restorative",
+            "energizing",
+            "gentle"
+          ],
+          "pick": 1
+        },
+        "optional_sentences": {
+          "mode": "subset",
+          "items": [
+            "Choose a {adjective} ritual that anchors you.",
+            "Track one {adjective} shift in your body.",
+            "Move with a {adjective} rhythm that respects your energy."
+          ],
+          "minimum": 0,
+          "maximum": 2
+        }
       }
     },
     {
@@ -4024,6 +8896,34 @@
           "Hold back from {phrase} until numbers align.",
           "Delay {phrase} commitments that add risk."
         ]
+      },
+      "variation_groups": {
+        "clauses": {
+          "mode": "permutation",
+          "items": [
+            "Peak steady energy supports your finances decisions.",
+            "Balance guides your finances planning with urgent clarity."
+          ]
+        },
+        "adjective": {
+          "mode": "choice",
+          "items": [
+            "savvy",
+            "practical",
+            "resourceful"
+          ],
+          "pick": 1
+        },
+        "optional_sentences": {
+          "mode": "subset",
+          "items": [
+            "Outline a {adjective} move for your resources.",
+            "Review a {adjective} detail before you commit.",
+            "Celebrate a {adjective} decision that reinforced stability."
+          ],
+          "minimum": 0,
+          "maximum": 2
+        }
       }
     }
   ]

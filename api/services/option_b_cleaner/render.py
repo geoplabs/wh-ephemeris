@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import re
 from pathlib import Path
-from typing import Any, Iterable
+from typing import Any, Iterable, Mapping, Sequence
 
 from jinja2 import Environment, FileSystemLoader, select_autoescape
 
@@ -26,6 +26,7 @@ from src.content.phrasebank import (
     seed_from_event,
     select_clause,
 )
+from src.content.variation import VariationEngine
 
 
 TEMPLATES_DIR = Path(__file__).resolve().parent
@@ -91,9 +92,13 @@ def normalize_bullets(
     *,
     area: str,
     asset: PhraseAsset | None = None,
+    engine: VariationEngine | None = None,
 ) -> list[str]:
+    ordered: Sequence[str] = bullets or []
+    if engine and ordered:
+        ordered = engine.permutation(f"{area}.bullets", ordered)
     out: list[str] = []
-    for idx, raw in enumerate(bullets or []):
+    for idx, raw in enumerate(ordered):
         cleaned = to_you_pov(raw or "", profile_name)
         bullet = imperative_bullet(cleaned, idx, area=area, asset=asset)
         if bullet and bullet not in out:
@@ -107,9 +112,13 @@ def normalize_avoid(
     *,
     area: str,
     asset: PhraseAsset | None = None,
+    engine: VariationEngine | None = None,
 ) -> list[str]:
+    ordered: Sequence[str] = bullets or []
+    if engine and ordered:
+        ordered = engine.permutation(f"{area}.avoid", ordered)
     out: list[str] = []
-    for idx, raw in enumerate(bullets or []):
+    for idx, raw in enumerate(ordered):
         cleaned = to_you_pov(raw or "", profile_name)
         bullet = imperative_bullet(cleaned, idx, mode="avoid", area=area, asset=asset)
         if bullet and bullet not in out:
@@ -154,6 +163,36 @@ def _section_tone(enriched: list[dict[str, Any]], section: str) -> str:
     return "neutral"
 
 
+class _TokenDict(dict[str, str]):
+    def __missing__(self, key: str) -> str:  # pragma: no cover - defensive
+        return ""
+
+
+def _format_variation_sentences(sentences: Sequence[str], tokens: Mapping[str, str]) -> tuple[str, ...]:
+    formatted: list[str] = []
+    mapper = _TokenDict(tokens)
+    for sentence in sentences:
+        text = (sentence or "").format_map(mapper).strip()
+        if not text:
+            continue
+        if text[-1] not in ".!?":
+            text = f"{text}."
+        formatted.append(text)
+    return tuple(formatted)
+
+
+def _append_variation_sentences(base: str, extras: Sequence[str]) -> str:
+    extra_list = [text.strip() for text in extras if text and text.strip()]
+    if not extra_list:
+        return base
+    base_clean = (base or "").strip()
+    if base_clean and base_clean[-1] not in ".!?":
+        base_clean = f"{base_clean}."
+    if base_clean:
+        return " ".join([base_clean, *extra_list]).strip()
+    return " ".join(extra_list).strip()
+
+
 def build_context(option_b_json: dict[str, Any]) -> dict[str, Any]:
     meta = option_b_json.get("meta", {})
     profile_name = option_b_json.get("profile_name") or meta.get("profile_name") or "User"
@@ -178,11 +217,26 @@ def build_context(option_b_json: dict[str, Any]) -> dict[str, Any]:
     general_event = enriched_events[0]["event"] if enriched_events else None
     general_asset = get_asset(general_archetype, general_intensity, "general")
     general_seed = seed_from_event("general", general_event, salt=date or "")
-    general_clause = select_clause(
-        general_archetype,
-        general_intensity,
-        "general",
-        seed=general_seed,
+    general_engine = VariationEngine(general_seed)
+    general_variations = general_asset.variations(general_seed)
+    general_tokens = general_variations.tokens()
+    general_tokens.setdefault("area", "general")
+    clause_template = (
+        general_variations.first("clauses", general_asset.clause_cycle()[0])
+        if "clauses" in general_variations
+        else None
+    )
+    if clause_template:
+        general_clause = clause_template.format_map(_TokenDict(general_tokens))
+    else:
+        general_clause = select_clause(
+            general_archetype,
+            general_intensity,
+            "general",
+            seed=general_seed,
+        )
+    general_optional = _format_variation_sentences(
+        general_variations.selections("optional_sentences"), general_tokens
     )
 
     phrase_context: dict[str, dict[str, Any]] = {}
@@ -197,13 +251,32 @@ def build_context(option_b_json: dict[str, Any]) -> dict[str, Any]:
         intensity = classification.get("intensity", "steady")
         asset = get_asset(archetype, intensity, area)
         seed = seed_from_event(area, event, salt=date or "")
-        clause = select_clause(archetype, intensity, area, seed=seed)
+        engine = VariationEngine(seed)
+        variations = asset.variations(seed)
+        tokens = variations.tokens()
+        tokens.setdefault("area", area)
+        clause_template = (
+            variations.first("clauses", asset.clause_cycle()[0])
+            if "clauses" in variations
+            else None
+        )
+        if clause_template:
+            clause = clause_template.format_map(_TokenDict(tokens))
+        else:
+            clause = select_clause(archetype, intensity, area, seed=seed)
+        optional_sentences = _format_variation_sentences(
+            variations.selections("optional_sentences"), tokens
+        )
         phrase_context[area] = {
             "asset": asset,
             "clause": clause,
             "archetype": archetype,
             "intensity": intensity,
             "seed": seed,
+            "engine": engine,
+            "tokens": tokens,
+            "optional_sentences": optional_sentences,
+            "variations": variations,
         }
 
     morning = option_b_json.get("morning_mindset", {})
@@ -229,11 +302,14 @@ def build_context(option_b_json: dict[str, Any]) -> dict[str, Any]:
             profile_name=profile_name,
             clause=general_clause,
         ),
-        "morning_paragraph": build_morning_paragraph(
-            morning.get("paragraph", ""),
-            profile_name,
-            option_b_json.get("theme", ""),
-            event=general_event,
+        "morning_paragraph": _append_variation_sentences(
+            build_morning_paragraph(
+                morning.get("paragraph", ""),
+                profile_name,
+                option_b_json.get("theme", ""),
+                event=general_event,
+            ),
+            general_optional,
         ),
         "mantra": (morning.get("mantra") or "I choose what strengthens me.").strip(),
         "career_paragraph": build_career_paragraph(
@@ -248,6 +324,7 @@ def build_context(option_b_json: dict[str, Any]) -> dict[str, Any]:
             profile_name,
             area="career",
             asset=phrase_context.get("career", {}).get("asset"),
+            engine=phrase_context.get("career", {}).get("engine"),
         ),
         "love_paragraph": build_love_paragraph(
             love.get("paragraph", ""),
@@ -275,6 +352,7 @@ def build_context(option_b_json: dict[str, Any]) -> dict[str, Any]:
             profile_name,
             area="health",
             asset=phrase_context.get("health", {}).get("asset"),
+            engine=phrase_context.get("health", {}).get("engine"),
         ),
         "finance_paragraph": build_finance_paragraph(
             finance.get("paragraph", ""),
@@ -289,18 +367,21 @@ def build_context(option_b_json: dict[str, Any]) -> dict[str, Any]:
             profile_name,
             area="finance",
             asset=phrase_context.get("finance", {}).get("asset"),
+            engine=phrase_context.get("finance", {}).get("engine"),
         ),
         "do_today": normalize_bullets(
             option_b_json.get("do_today", []),
             profile_name,
             area="general",
             asset=general_asset,
+            engine=general_engine,
         ),
         "avoid_today": normalize_avoid(
             option_b_json.get("avoid_today", []),
             profile_name,
             area="general",
             asset=general_asset,
+            engine=general_engine,
         ),
         "lucky": lucky,
         "one_line_summary": build_one_line_summary(
@@ -310,6 +391,12 @@ def build_context(option_b_json: dict[str, Any]) -> dict[str, Any]:
     }
     for area in SECTION_TAGS:
         ctx[f"{area}_event"] = area_events.get(area)
+
+    for area in ("career", "love", "health", "finance"):
+        extras = phrase_context.get(area, {}).get("optional_sentences", ())
+        if extras:
+            key = f"{area}_paragraph"
+            ctx[key] = _append_variation_sentences(ctx.get(key, ""), extras)
 
     ctx["tech_notes"] = {
         "dominant": {"planet": dom_planet, "sign": dom_sign},
