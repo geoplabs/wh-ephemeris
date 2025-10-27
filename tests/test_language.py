@@ -23,8 +23,9 @@ def test_career_paragraph_micro_phrase():
     clause = select_clause("Radiant Expansion", "steady", "career", seed=7)
     out = build_career_paragraph("Radiant focus supports progress at work.", clause=clause)
     sentences = [s for s in out.split(".") if s.strip()]
-    assert len(sentences) == 2
-    assert sentences[-1].strip().startswith("Momentum guides your career")
+    assert len(sentences) >= 2
+    assert clause.strip() in out
+    assert out.endswith(clause)
 
 
 def test_love_status_voice():

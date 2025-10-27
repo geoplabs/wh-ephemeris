@@ -208,9 +208,18 @@ def build_context(option_b_json: dict[str, Any]) -> dict[str, Any]:
     tone_hints = {section: _section_tone(enriched_events, section) for section in SECTION_TAGS}
     top_classification = enriched_events[0]["classification"] if enriched_events else None
     area_summary = summarize_rankings(area_rankings)
-    selected_area_events = {
-        area: summary.get("selected") for area, summary in area_summary.items()
-    }
+    selected_area_events: dict[str, dict[str, Any] | None] = {}
+    for area, summary in area_summary.items():
+        primary = summary.get("selected") if summary else None
+        supporting = summary.get("supporting") if summary else None
+        selected_area_events[area] = {
+            "selected": primary,
+            "primary": primary,
+            "supporting": supporting,
+            "event": (primary or {}).get("event") if isinstance(primary, Mapping) else None,
+            "supporting_event": (supporting or {}).get("event") if isinstance(supporting, Mapping) else None,
+            "ranking": summary.get("ranking") if summary else None,
+        }
 
     general_archetype = (top_classification or {}).get("archetype", "Steady Integration")
     general_intensity = (top_classification or {}).get("intensity", "steady")
@@ -285,10 +294,13 @@ def build_context(option_b_json: dict[str, Any]) -> dict[str, Any]:
     health = option_b_json.get("health", {})
     finance = option_b_json.get("finance", {})
 
-    area_events: dict[str, Any | None] = {}
+    area_events: dict[str, dict[str, Any | None]] = {}
     for area in SECTION_TAGS:
-        selected = selected_area_events.get(area)
-        area_events[area] = selected.get("event") if selected else None
+        selected = selected_area_events.get(area) or {}
+        area_events[area] = {
+            "primary": selected.get("event"),
+            "supporting": selected.get("supporting_event"),
+        }
 
     ctx: dict[str, Any] = {
         "profile_name": profile_name,
@@ -317,7 +329,8 @@ def build_context(option_b_json: dict[str, Any]) -> dict[str, Any]:
             profile_name=profile_name,
             tone_hint=tone_hints["career"],
             clause=phrase_context.get("career", {}).get("clause"),
-            event=area_events.get("career"),
+            event=area_events.get("career", {}).get("primary"),
+            supporting_event=area_events.get("career", {}).get("supporting"),
         ),
         "career_bullets": normalize_bullets(
             career.get("bullets", []),
@@ -331,7 +344,8 @@ def build_context(option_b_json: dict[str, Any]) -> dict[str, Any]:
             profile_name=profile_name,
             tone_hint=tone_hints["love"],
             clause=phrase_context.get("love", {}).get("clause"),
-            event=area_events.get("love"),
+            event=area_events.get("love", {}).get("primary"),
+            supporting_event=area_events.get("love", {}).get("supporting"),
         ),
         "love_attached": build_love_status(
             love.get("attached", ""), "attached", profile_name=profile_name, tone_hint=tone_hints["love"]
@@ -345,7 +359,8 @@ def build_context(option_b_json: dict[str, Any]) -> dict[str, Any]:
             profile_name=profile_name,
             tone_hint=tone_hints["health"],
             clause=phrase_context.get("health", {}).get("clause"),
-            event=area_events.get("health"),
+            event=area_events.get("health", {}).get("primary"),
+            supporting_event=area_events.get("health", {}).get("supporting"),
         ),
         "health_opts": normalize_bullets(
             health.get("good_options", []),
@@ -360,7 +375,8 @@ def build_context(option_b_json: dict[str, Any]) -> dict[str, Any]:
             profile_name=profile_name,
             tone_hint=tone_hints["finance"],
             clause=phrase_context.get("finance", {}).get("clause"),
-            event=area_events.get("finance"),
+            event=area_events.get("finance", {}).get("primary"),
+            supporting_event=area_events.get("finance", {}).get("supporting"),
         ),
         "finance_bullets": normalize_bullets(
             finance.get("bullets", []),
@@ -390,7 +406,8 @@ def build_context(option_b_json: dict[str, Any]) -> dict[str, Any]:
         "area_events": selected_area_events,
     }
     for area in SECTION_TAGS:
-        ctx[f"{area}_event"] = area_events.get(area)
+        ctx[f"{area}_event"] = area_events.get(area, {}).get("primary")
+        ctx[f"{area}_supporting_event"] = area_events.get(area, {}).get("supporting")
 
     for area in ("career", "love", "health", "finance"):
         extras = phrase_context.get(area, {}).get("optional_sentences", ())

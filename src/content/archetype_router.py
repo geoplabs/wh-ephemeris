@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Any, Dict, Iterable, Mapping, MutableSequence, Sequence
+from typing import Any, Dict, Iterable, Mapping, MutableSequence, Sequence, Tuple
 
 SUPPORTIVE_ASPECTS = {"trine", "sextile"}
 CHALLENGING_ASPECTS = {"square", "opposition"}
@@ -45,14 +45,19 @@ HOUSE_TAGS = {
 }
 
 
+INTENSITY_ORDER: Tuple[str, ...] = ("background", "gentle", "steady", "strong", "surge")
+
+
 @dataclass(frozen=True)
 class Rule:
     """Declarative archetype rule."""
 
-    archetype: str
+    archetype: str | None
     when: Mapping[str, Any]
     extra_tags: Sequence[str]
     tone_override: str | None = None
+    weight: float = 1.0
+    intensity_bias: int = 0
 
     def matches(self, metadata: Mapping[str, Any]) -> bool:
         tag_set = metadata["tag_set"]
@@ -66,6 +71,18 @@ class Rule:
             elif key == "house_in":
                 house = metadata.get("natal_house")
                 if house is None or house not in expected:
+                    return False
+            elif key == "house_family":
+                if metadata.get("house_family") not in expected:
+                    return False
+            elif key == "aspect_type":
+                if metadata.get("aspect_type") not in expected:
+                    return False
+            elif key == "score_bucket":
+                if metadata.get("score_bucket") not in expected:
+                    return False
+            elif key == "focus_area":
+                if metadata.get("focus_area") not in expected:
                     return False
             elif key == "transit_body_in":
                 if metadata.get("transit_body") not in expected:
@@ -92,16 +109,37 @@ RULES: Sequence[Rule] = (
         when={"benefic": True, "score_sign": {"positive"}},
         extra_tags=("growth", "momentum"),
         tone_override="tone:support",
+        weight=2.4,
+    ),
+    Rule(
+        archetype="Radiant Expansion",
+        when={
+            "aspect_type": {"supportive"},
+            "house_family": {"angular"},
+            "score_bucket": {"elevated", "peak"},
+        },
+        extra_tags=("leadership", "visibility"),
+        tone_override="tone:support",
+        weight=1.8,
+        intensity_bias=1,
     ),
     Rule(
         archetype="Prosperity Build",
         when={
-            "aspect_type": {"supportive"},
+            "aspect_type": {"supportive", "transformational"},
             "any_tags": {"money", "career", "resources"},
-            "score_sign": {"positive"},
+            "score_sign": {"positive", "neutral"},
         },
         extra_tags=("strategy", "stability"),
         tone_override="tone:support",
+        weight=2.2,
+    ),
+    Rule(
+        archetype="Prosperity Build",
+        when={"focus_area": {"finance", "career"}},
+        extra_tags=("structure", "planning"),
+        tone_override=None,
+        weight=1.4,
     ),
     Rule(
         archetype="Heart-Centered Calibration",
@@ -111,12 +149,29 @@ RULES: Sequence[Rule] = (
         },
         extra_tags=("connection", "boundaries"),
         tone_override="tone:neutral",
+        weight=2.0,
+    ),
+    Rule(
+        archetype="Heart-Centered Calibration",
+        when={"house_in": {4, 5, 7}, "aspect_type": {"supportive", "transformational"}},
+        extra_tags=("intimacy", "empathy"),
+        tone_override=None,
+        weight=1.6,
     ),
     Rule(
         archetype="Disciplined Crossroads",
         when={"malefic": True, "score_sign": {"negative"}},
         extra_tags=("restructure", "courage"),
         tone_override="tone:challenge",
+        weight=2.5,
+        intensity_bias=1,
+    ),
+    Rule(
+        archetype="Disciplined Crossroads",
+        when={"house_family": {"angular"}, "aspect_type": {"challenging"}},
+        extra_tags=("commitment", "boundaries"),
+        tone_override="tone:challenge",
+        weight=1.7,
     ),
     Rule(
         archetype="Visionary Alignment",
@@ -126,16 +181,41 @@ RULES: Sequence[Rule] = (
         },
         extra_tags=("insight", "expansion"),
         tone_override="tone:support",
+        weight=2.1,
+    ),
+    Rule(
+        archetype="Visionary Alignment",
+        when={"focus_area": {"education", "spiritual"}},
+        extra_tags=("study", "pilgrimage"),
+        tone_override=None,
+        weight=1.5,
     ),
     Rule(
         archetype="Phoenix Reframe",
         when={
             "aspect_type": {"transformational", "challenging"},
             "any_tags": {"transform", "healing", "spiritual"},
-            "score_sign": {"negative"},
+            "score_sign": {"negative", "neutral"},
         },
         extra_tags=("release", "inner_work"),
         tone_override="tone:challenge",
+        weight=2.3,
+        intensity_bias=1,
+    ),
+    Rule(
+        archetype="Phoenix Reframe",
+        when={"natal_body_in": {"Pluto", "Chiron"}},
+        extra_tags=("shadow_work", "rebirth"),
+        tone_override="tone:challenge",
+        weight=1.4,
+    ),
+    Rule(
+        archetype=None,
+        when={"score_bucket": {"background"}},
+        extra_tags=("subtle", "integration"),
+        tone_override="tone:neutral",
+        weight=0.5,
+        intensity_bias=-1,
     ),
 )
 
@@ -144,6 +224,7 @@ DEFAULT_RULE = Rule(
     when={},
     extra_tags=("integration",),
     tone_override=None,
+    weight=1.0,
 )
 
 
@@ -164,6 +245,19 @@ def _score_sign(score: float) -> str:
     if score < -0.5:
         return "negative"
     return "neutral"
+
+
+def _score_bucket(score: float) -> str:
+    magnitude = abs(score)
+    if magnitude >= 90:
+        return "peak"
+    if magnitude >= 65:
+        return "elevated"
+    if magnitude >= 35:
+        return "moderate"
+    if magnitude >= 10:
+        return "gentle"
+    return "background"
 
 
 def _intensity_from_score(score: float) -> str:
@@ -234,10 +328,22 @@ def classify_event(event: Mapping[str, Any]) -> Dict[str, Any]:
     score = _coerce_float(event.get("score"))
     aspect_type = _aspect_type(str(event.get("aspect", "")))
     score_sign = _score_sign(score)
+    score_bucket = _score_bucket(score)
 
     transit_body = str(event.get("transit_body", "")) or ""
     natal_body = str(event.get("natal_body", "")) or ""
     natal_house = event.get("natal_house") if isinstance(event.get("natal_house"), int) else None
+    focus_area = event.get("focus_area") or event.get("dominant_focus") or event.get("primary_focus")
+    if isinstance(focus_area, str):
+        focus_area = focus_area.strip().lower() or None
+    house_family = None
+    if isinstance(natal_house, int):
+        if natal_house in {1, 4, 7, 10}:
+            house_family = "angular"
+        elif natal_house in {2, 5, 8, 11}:
+            house_family = "succedent"
+        elif natal_house in {3, 6, 9, 12}:
+            house_family = "cadent"
 
     is_benefic = _normalize_bool(
         event.get("is_benefic")
@@ -266,33 +372,58 @@ def classify_event(event: Mapping[str, Any]) -> Dict[str, Any]:
         "score": score,
         "aspect_type": aspect_type,
         "score_sign": score_sign,
+        "score_bucket": score_bucket,
         "is_benefic": is_benefic,
         "is_malefic": is_malefic,
         "transit_body": transit_body,
         "natal_body": natal_body,
         "natal_house": natal_house,
+        "house_family": house_family,
+        "focus_area": focus_area,
         "base_tags": base_tags,
         "tone_tag": _tone_tag(aspect_type, score_sign, is_malefic),
     }
     metadata["tag_set"] = set(base_tags)
 
-    for rule in RULES:
-        if rule.matches(metadata):
-            tone = rule.tone_override or metadata["tone_tag"]
-            base_without_tone = [t for t in base_tags if not t.startswith("tone:")]
-            tags = _merge_tags([tone], base_without_tone, rule.extra_tags)
-            return {
-                "archetype": rule.archetype,
-                "intensity": _intensity_from_score(score),
-                "tags": tags,
-            }
+    matched_rules: list[Rule] = [rule for rule in RULES if rule.matches(metadata)]
 
-    tone = metadata["tone_tag"]
+    base_intensity = _intensity_from_score(score)
+    tone_votes: dict[str, float] = {}
+    archetype_scores: dict[str, float] = {}
+    intensity_bias = 0
+    aggregated_tags: list[str] = []
+
+    def _register_tone(tag: str, weight: float) -> None:
+        tone_votes[tag] = tone_votes.get(tag, 0.0) + weight
+
+    for rule in matched_rules:
+        tone = rule.tone_override or metadata["tone_tag"]
+        _register_tone(tone, rule.weight)
+        aggregated_tags.extend(rule.extra_tags)
+        intensity_bias += rule.intensity_bias
+        if rule.archetype:
+            archetype_scores[rule.archetype] = archetype_scores.get(rule.archetype, 0.0) + rule.weight
+
+    selected_archetype = None
+    if archetype_scores:
+        selected_archetype = max(archetype_scores.items(), key=lambda item: item[1])[0]
+
+    if not selected_archetype:
+        selected_archetype = DEFAULT_RULE.archetype
+        _register_tone(metadata["tone_tag"], DEFAULT_RULE.weight)
+        aggregated_tags.extend(DEFAULT_RULE.extra_tags)
+
+    tone_choice = max(tone_votes.items(), key=lambda item: item[1])[0] if tone_votes else metadata["tone_tag"]
     base_without_tone = [t for t in base_tags if not t.startswith("tone:")]
-    tags = _merge_tags([tone], base_without_tone, DEFAULT_RULE.extra_tags)
+    tags = _merge_tags([tone_choice], base_without_tone, aggregated_tags)
+
+    base_index = INTENSITY_ORDER.index(base_intensity)
+    adjusted_index = min(max(base_index + intensity_bias, 0), len(INTENSITY_ORDER) - 1)
+    intensity = INTENSITY_ORDER[adjusted_index]
+
     return {
-        "archetype": DEFAULT_RULE.archetype,
-        "intensity": _intensity_from_score(score),
+        "archetype": selected_archetype,
+        "intensity": intensity,
         "tags": tags,
     }
 
