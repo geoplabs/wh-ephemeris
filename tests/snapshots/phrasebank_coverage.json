@@ -12,6 +12,11 @@
   [
     "Disciplined Crossroads",
     "background",
+    "general"
+  ],
+  [
+    "Disciplined Crossroads",
+    "background",
     "health"
   ],
   [
@@ -32,6 +37,11 @@
   [
     "Disciplined Crossroads",
     "gentle",
+    "general"
+  ],
+  [
+    "Disciplined Crossroads",
+    "gentle",
     "health"
   ],
   [
@@ -52,6 +62,11 @@
   [
     "Disciplined Crossroads",
     "steady",
+    "general"
+  ],
+  [
+    "Disciplined Crossroads",
+    "steady",
     "health"
   ],
   [
@@ -72,6 +87,11 @@
   [
     "Disciplined Crossroads",
     "strong",
+    "general"
+  ],
+  [
+    "Disciplined Crossroads",
+    "strong",
     "health"
   ],
   [
@@ -92,6 +112,11 @@
   [
     "Disciplined Crossroads",
     "surge",
+    "general"
+  ],
+  [
+    "Disciplined Crossroads",
+    "surge",
     "health"
   ],
   [
@@ -112,6 +137,11 @@
   [
     "Heart-Centered Calibration",
     "background",
+    "general"
+  ],
+  [
+    "Heart-Centered Calibration",
+    "background",
     "health"
   ],
   [
@@ -132,6 +162,11 @@
   [
     "Heart-Centered Calibration",
     "gentle",
+    "general"
+  ],
+  [
+    "Heart-Centered Calibration",
+    "gentle",
     "health"
   ],
   [
@@ -152,6 +187,11 @@
   [
     "Heart-Centered Calibration",
     "steady",
+    "general"
+  ],
+  [
+    "Heart-Centered Calibration",
+    "steady",
     "health"
   ],
   [
@@ -172,6 +212,11 @@
   [
     "Heart-Centered Calibration",
     "strong",
+    "general"
+  ],
+  [
+    "Heart-Centered Calibration",
+    "strong",
     "health"
   ],
   [
@@ -192,6 +237,11 @@
   [
     "Heart-Centered Calibration",
     "surge",
+    "general"
+  ],
+  [
+    "Heart-Centered Calibration",
+    "surge",
     "health"
   ],
   [
@@ -212,6 +262,11 @@
   [
     "Phoenix Reframe",
     "background",
+    "general"
+  ],
+  [
+    "Phoenix Reframe",
+    "background",
     "health"
   ],
   [
@@ -232,6 +287,11 @@
   [
     "Phoenix Reframe",
     "gentle",
+    "general"
+  ],
+  [
+    "Phoenix Reframe",
+    "gentle",
     "health"
   ],
   [
@@ -252,6 +312,11 @@
   [
     "Phoenix Reframe",
     "steady",
+    "general"
+  ],
+  [
+    "Phoenix Reframe",
+    "steady",
     "health"
   ],
   [
@@ -272,6 +337,11 @@
   [
     "Phoenix Reframe",
     "strong",
+    "general"
+  ],
+  [
+    "Phoenix Reframe",
+    "strong",
     "health"
   ],
   [
@@ -292,6 +362,11 @@
   [
     "Phoenix Reframe",
     "surge",
+    "general"
+  ],
+  [
+    "Phoenix Reframe",
+    "surge",
     "health"
   ],
   [
@@ -312,6 +387,11 @@
   [
     "Prosperity Build",
     "background",
+    "general"
+  ],
+  [
+    "Prosperity Build",
+    "background",
     "health"
   ],
   [
@@ -332,6 +412,11 @@
   [
     "Prosperity Build",
     "gentle",
+    "general"
+  ],
+  [
+    "Prosperity Build",
+    "gentle",
     "health"
   ],
   [
@@ -352,6 +437,11 @@
   [
     "Prosperity Build",
     "steady",
+    "general"
+  ],
+  [
+    "Prosperity Build",
+    "steady",
     "health"
   ],
   [
@@ -372,6 +462,11 @@
   [
     "Prosperity Build",
     "strong",
+    "general"
+  ],
+  [
+    "Prosperity Build",
+    "strong",
     "health"
   ],
   [
@@ -388,6 +483,11 @@
     "Prosperity Build",
     "surge",
     "finance"
+  ],
+  [
+    "Prosperity Build",
+    "surge",
+    "general"
   ],
   [
     "Prosperity Build",
@@ -412,6 +512,11 @@
   [
     "Radiant Expansion",
     "background",
+    "general"
+  ],
+  [
+    "Radiant Expansion",
+    "background",
     "health"
   ],
   [
@@ -432,6 +537,11 @@
   [
     "Radiant Expansion",
     "gentle",
+    "general"
+  ],
+  [
+    "Radiant Expansion",
+    "gentle",
     "health"
   ],
   [
@@ -452,6 +562,11 @@
   [
     "Radiant Expansion",
     "steady",
+    "general"
+  ],
+  [
+    "Radiant Expansion",
+    "steady",
     "health"
   ],
   [
@@ -472,6 +587,11 @@
   [
     "Radiant Expansion",
     "strong",
+    "general"
+  ],
+  [
+    "Radiant Expansion",
+    "strong",
     "health"
   ],
   [
@@ -488,6 +608,11 @@
     "Radiant Expansion",
     "surge",
     "finance"
+  ],
+  [
+    "Radiant Expansion",
+    "surge",
+    "general"
   ],
   [
     "Radiant Expansion",
@@ -512,6 +637,11 @@
   [
     "Steady Integration",
     "background",
+    "general"
+  ],
+  [
+    "Steady Integration",
+    "background",
     "health"
   ],
   [
@@ -532,6 +662,11 @@
   [
     "Steady Integration",
     "gentle",
+    "general"
+  ],
+  [
+    "Steady Integration",
+    "gentle",
     "health"
   ],
   [
@@ -552,6 +687,11 @@
   [
     "Steady Integration",
     "steady",
+    "general"
+  ],
+  [
+    "Steady Integration",
+    "steady",
     "health"
   ],
   [
@@ -572,6 +712,11 @@
   [
     "Steady Integration",
     "strong",
+    "general"
+  ],
+  [
+    "Steady Integration",
+    "strong",
     "health"
   ],
   [
@@ -588,6 +733,11 @@
     "Steady Integration",
     "surge",
     "finance"
+  ],
+  [
+    "Steady Integration",
+    "surge",
+    "general"
   ],
   [
     "Steady Integration",
@@ -612,6 +762,11 @@
   [
     "Visionary Alignment",
     "background",
+    "general"
+  ],
+  [
+    "Visionary Alignment",
+    "background",
     "health"
   ],
   [
@@ -632,6 +787,11 @@
   [
     "Visionary Alignment",
     "gentle",
+    "general"
+  ],
+  [
+    "Visionary Alignment",
+    "gentle",
     "health"
   ],
   [
@@ -652,6 +812,11 @@
   [
     "Visionary Alignment",
     "steady",
+    "general"
+  ],
+  [
+    "Visionary Alignment",
+    "steady",
     "health"
   ],
   [
@@ -672,6 +837,11 @@
   [
     "Visionary Alignment",
     "strong",
+    "general"
+  ],
+  [
+    "Visionary Alignment",
+    "strong",
     "health"
   ],
   [
@@ -688,6 +858,11 @@
     "Visionary Alignment",
     "surge",
     "finance"
+  ],
+  [
+    "Visionary Alignment",
+    "surge",
+    "general"
   ],
   [
     "Visionary Alignment",
