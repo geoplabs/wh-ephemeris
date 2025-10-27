@@ -414,7 +414,26 @@ def _normalize_tone_label(value: str | None) -> str:
 def _article(word: str) -> str:
     if not word:
         return "a"
-    return "an" if word[0].lower() in "aeiou" else "a"
+    lowered = word.lower()
+    if any(lowered.startswith(prefix) for prefix in _SOFT_H_PREFIXES):
+        return "an"
+    if lowered[0] in "aeiou":
+        if any(lowered.startswith(prefix) for prefix in _HARD_VOWEL_PREFIXES):
+            return "a"
+        return "an"
+    return "a"
+
+
+def fix_indefinite_articles(text: str) -> str:
+    def repl(match: re.Match[str]) -> str:
+        article, word = match.group(1), match.group(2)
+        desired = _article(word)
+        if desired == article.lower():
+            return match.group(0)
+        replacement = desired.capitalize() if article[0].isupper() else desired
+        return f"{replacement} {word}"
+
+    return _ARTICLE_PATTERN.sub(repl, text)
 
 
 def _ensure_sentence(text: str) -> str:
@@ -433,15 +452,15 @@ def _compose_paragraph(
 ) -> str:
     parts: list[str] = []
     if lead:
-        normalized = _ensure_sentence(lead)
+        normalized = fix_indefinite_articles(_ensure_sentence(lead))
         if normalized:
             parts.append(normalized)
     for sentence in evidence or ():
-        normalized = _ensure_sentence(sentence)
+        normalized = fix_indefinite_articles(_ensure_sentence(sentence))
         if normalized and normalized not in parts:
             parts.append(normalized)
     if closing:
-        normalized = _ensure_sentence(closing)
+        normalized = fix_indefinite_articles(_ensure_sentence(closing))
         if normalized:
             parts.append(normalized)
     return " ".join(parts).strip()
