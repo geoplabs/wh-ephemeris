@@ -1,12 +1,13 @@
 from __future__ import annotations
 
 import json
-import random
 from dataclasses import dataclass
 from functools import lru_cache
 from hashlib import blake2b
 from pathlib import Path
 from typing import Iterable, Mapping
+
+from .variation import VariationContext, VariationEngine, VariationGroup
 
 
 DATA_ROOT = Path(__file__).resolve().parents[2] / "data" / "phrasebank"
@@ -33,6 +34,7 @@ class PhraseAsset:
     area: str
     clause_variants: tuple[str, ...]
     bullet_templates: Mapping[str, tuple[str, ...]]
+    variation_groups: Mapping[str, VariationGroup]
 
     def clause_cycle(self) -> tuple[str, ...]:
         return tuple(c.strip() for c in self.clause_variants if c and c.strip())
@@ -40,6 +42,12 @@ class PhraseAsset:
     def templates_for(self, mode: str) -> tuple[str, ...]:
         templates = self.bullet_templates.get(mode, ())
         return tuple(t.strip() for t in templates if t and t.strip())
+
+    def variations(self, seed: int | None) -> VariationContext:
+        if seed is None:
+            return VariationContext()
+        engine = VariationEngine(seed)
+        return engine.evaluate(self.variation_groups)
 
 
 def _load_raw() -> Mapping[str, object]:
@@ -61,12 +69,28 @@ def _asset_map() -> Mapping[tuple[str, str, str], PhraseAsset]:
             str(mode): tuple(values)
             for mode, values in (entry.get("bullet_templates") or {}).items()
         }
+        variation_groups = {}
+        for name, config in (entry.get("variation_groups") or {}).items():
+            items = tuple(
+                str(item).strip()
+                for item in (config.get("items") or [])
+                if str(item or "").strip()
+            )
+            variation_groups[str(name)] = VariationGroup(
+                name=str(name),
+                mode=str(config.get("mode", "choice")),
+                items=items,
+                pick=(config.get("pick") if config.get("pick") is not None else None),
+                minimum=(config.get("minimum") if config.get("minimum") is not None else None),
+                maximum=(config.get("maximum") if config.get("maximum") is not None else None),
+            )
         asset = PhraseAsset(
             archetype=archetype,
             intensity=intensity,
             area=area,
             clause_variants=clause_variants,
             bullet_templates=bullet_templates,
+            variation_groups=variation_groups,
         )
         assets[(archetype, intensity, area)] = asset
     return assets
@@ -103,8 +127,20 @@ def select_clause(archetype: str, intensity: str, area: str, *, seed: int | None
         return ""
     if seed is None:
         return clauses[0]
-    rng = random.Random(seed)
-    return clauses[rng.randrange(len(clauses))]
+    context = asset.variations(seed)
+    tokens = context.tokens()
+    tokens.setdefault("area", area)
+    clause_template = context.first("clauses", clauses[0]) if "clauses" in context else None
+    if clause_template:
+        return clause_template.format_map(_FormatTokens(tokens))
+    engine = VariationEngine(seed)
+    selection = engine.choice("clauses", clauses, pick=1)
+    return selection[0] if selection else ""
+
+
+class _FormatTokens(dict[str, str]):
+    def __missing__(self, key: str) -> str:  # pragma: no cover - defensive
+        return ""
 
 
 def bullet_templates_for(area: str, mode: str, *, archetype: str | None = None, intensity: str | None = None) -> tuple[str, ...]:
