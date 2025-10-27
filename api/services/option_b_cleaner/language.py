@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import re
-from typing import Iterable, Mapping, Sequence
+from typing import Any, Iterable, Mapping, Sequence
 
 from .clean import de_jargon, to_you_pov
 from .event_tokens import MiniTemplate, event_phrase, render_mini_template
@@ -170,6 +170,51 @@ def _article(word: str) -> str:
     return "an" if word[0].lower() in "aeiou" else "a"
 
 
+def _ensure_sentence(text: str) -> str:
+    cleaned = (text or "").strip()
+    if not cleaned:
+        return ""
+    if cleaned[-1] not in ".!?":
+        cleaned = f"{cleaned}."
+    return cleaned
+
+
+def _compose_paragraph(
+    lead: str,
+    evidence: Sequence[str] | None,
+    closing: str | None,
+) -> str:
+    parts: list[str] = []
+    if lead:
+        normalized = _ensure_sentence(lead)
+        if normalized:
+            parts.append(normalized)
+    for sentence in evidence or ():
+        normalized = _ensure_sentence(sentence)
+        if normalized and normalized not in parts:
+            parts.append(normalized)
+    if closing:
+        normalized = _ensure_sentence(closing)
+        if normalized:
+            parts.append(normalized)
+    return " ".join(parts).strip()
+
+
+def _event_evidence_sentences(
+    event: Mapping[str, Any] | None,
+    supporting_event: Mapping[str, Any] | None = None,
+) -> tuple[str, ...]:
+    sentences: list[str] = []
+    primary = event_phrase(event)
+    supporting = event_phrase(supporting_event)
+    if primary:
+        sentences.append(primary)
+    if supporting and supporting != primary:
+        connector = f"Meanwhile, {supporting}"
+        sentences.append(connector)
+    return tuple(sentences)
+
+
 def element_modality_line(sign_a: str, sign_b: str) -> str:
     info_a = SIGN_DETAILS.get(sign_a, ("Cardinal", "Air"))
     info_b = SIGN_DETAILS.get(sign_b or sign_a, info_a)
@@ -238,6 +283,7 @@ def build_career_paragraph(
     tone_hint: str | None = None,
     clause: str | None = None,
     event: Mapping[str, Any] | None = None,
+    supporting_event: Mapping[str, Any] | None = None,
 ) -> str:
     descriptor = descriptor_from_text(raw, default="steady", profile_name=profile_name)
     tone = tone_hint or tone_from_text(raw)
@@ -273,10 +319,9 @@ def build_career_paragraph(
         )
     if not first:
         first = "You turn steady work into deliberate progress at work."
-    second = clause.strip() if clause else "Let this focused drive move your intentions into form."
-    if second and not second.endswith("."):
-        second = f"{second}."
-    return f"{first} {second}".strip()
+    closing = clause.strip() if clause else "Let this focused drive move your intentions into form."
+    evidence = _event_evidence_sentences(event, supporting_event)
+    return _compose_paragraph(first, evidence, closing)
 
 
 def build_love_paragraph(
@@ -285,6 +330,7 @@ def build_love_paragraph(
     tone_hint: str | None = None,
     clause: str | None = None,
     event: Mapping[str, Any] | None = None,
+    supporting_event: Mapping[str, Any] | None = None,
 ) -> str:
     descriptor = descriptor_from_text(raw, default="tender", profile_name=profile_name)
     tone = tone_hint or tone_from_text(raw)
@@ -320,10 +366,9 @@ def build_love_paragraph(
         )
     if not base:
         base = "You nurture heart connections by sharing tender honesty."
-    extra = clause.strip() if clause else ""
-    if extra and not extra.endswith("."):
-        extra = f"{extra}."
-    return f"{base} {extra}".strip()
+    closing = clause.strip() if clause else ""
+    evidence = _event_evidence_sentences(event, supporting_event)
+    return _compose_paragraph(base, evidence, closing)
 
 
 def build_love_status(
@@ -346,6 +391,7 @@ def build_health_paragraph(
     tone_hint: str | None = None,
     clause: str | None = None,
     event: Mapping[str, Any] | None = None,
+    supporting_event: Mapping[str, Any] | None = None,
 ) -> str:
     descriptor = descriptor_from_text(raw, theme, default="balanced", profile_name=profile_name)
     tone = tone_hint or tone_from_text(raw)
@@ -353,9 +399,7 @@ def build_health_paragraph(
         default_second = "Keep movements gentle and responsive to your body's signals."
     else:
         default_second = "Balance movement with rest so your body stays responsive."
-    second = clause.strip() if clause else default_second
-    if second and not second.endswith("."):
-        second = f"{second}."
+    closing = clause.strip() if clause else default_second
     event_clause = event_phrase(event)
     first = render_mini_template(
         (
@@ -372,7 +416,8 @@ def build_health_paragraph(
     )
     if not first:
         first = "You protect wellbeing by honoring balanced rhythms."
-    return f"{first} {second}".strip()
+    evidence = _event_evidence_sentences(event, supporting_event)
+    return _compose_paragraph(first, evidence, closing)
 
 
 def build_finance_paragraph(
@@ -382,6 +427,7 @@ def build_finance_paragraph(
     tone_hint: str | None = None,
     clause: str | None = None,
     event: Mapping[str, Any] | None = None,
+    supporting_event: Mapping[str, Any] | None = None,
 ) -> str:
     descriptor = descriptor_from_text(raw, theme, default="calm", profile_name=profile_name)
     tone = tone_hint or tone_from_text(raw)
@@ -419,10 +465,9 @@ def build_finance_paragraph(
         default_second = "Let emotional harmony guide practical choices."
     if not first:
         first = "You let calm awareness guide each money choice today."
-    second = clause.strip() if clause else default_second
-    if second and not second.endswith("."):
-        second = f"{second}."
-    return f"{first} {second}".strip()
+    closing = clause.strip() if clause else default_second
+    evidence = _event_evidence_sentences(event, supporting_event)
+    return _compose_paragraph(first, evidence, closing)
 
 
 def build_one_line_summary(raw: str, theme: str, profile_name: str = "") -> str:

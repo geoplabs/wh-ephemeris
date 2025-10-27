@@ -31,7 +31,7 @@ def test_classifier_disciplined_crossroads_challenge():
     }
     result = classify_event(event)
     assert result["archetype"] == "Disciplined Crossroads"
-    assert result["intensity"] == "strong"
+    assert result["intensity"] == "surge"
     assert "tone:challenge" in result["tags"]
     assert "discipline" in result["tags"]
     assert "career" in result["tags"]
