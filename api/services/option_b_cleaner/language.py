@@ -121,7 +121,183 @@ DESCRIPTOR_OVERRIDES = {
 }
 
 
-STORYLET_POOLS: Mapping[str, Mapping[str, object]] = storylet_pools()
+STORYLETS: dict[str, dict[str, Any]] = {
+    "default": {
+        "openers": {
+            "support": (
+                "You move with {descriptor} confidence through today's {focus}.",
+                "Your {descriptor} rhythm keeps today's {focus} flowing forward.",
+            ),
+            "challenge": (
+                "You steady {descriptor} turbulence inside today's {focus}.",
+                "Your {descriptor} resolve helps you navigate today's {focus} demands.",
+            ),
+            "neutral": (
+                "You bring {descriptor} awareness to today's {focus}.",
+                "Your {descriptor} pace sets the tone for today's {focus}.",
+            ),
+        },
+        "coaching": (
+            "Name the step that matters most so you stay anchored.",
+            "Pause for one breath to notice what still feels aligned.",
+            "Document a small win so progress remains tangible.",
+        ),
+        "closers": {
+            "support": (
+                "Keep trusting the rituals that already work.",
+                "Let steady choices show you the path forward.",
+            ),
+            "challenge": (
+                "Protect your bandwidth so pressure can't run the day.",
+                "Move gently but deliberately—you're allowed to pace yourself.",
+            ),
+            "neutral": (
+                "Return to the practices that remind you why you're doing this.",
+                "Stay with the process, one grounded choice at a time.",
+            ),
+        },
+    },
+    "career": {
+        "openers": {
+            "support": (
+                "You channel {descriptor} drive into today's {focus}.",
+                "Your {descriptor} ambition steadies today's {focus}.",
+            ),
+            "challenge": (
+                "You steady {descriptor} pressure across today's {focus}.",
+                "Your {descriptor} grit keeps today's {focus} in motion.",
+            ),
+            "neutral": (
+                "You organize {descriptor} focus around today's {focus}.",
+                "Your {descriptor} pace sets an intentional tone for today's {focus}.",
+            ),
+        },
+        "coaching": (
+            "Break the workload into deliberate moves you can trust.",
+            "Map the moving pieces before you commit to the next milestone.",
+            "Share an update that keeps collaborators aligned.",
+        ),
+        "closers": {
+            "support": (
+                "Let steady wins show the momentum you're building.",
+                "Lean into allies who reinforce your vision.",
+            ),
+            "challenge": (
+                "Keep pacing yourself so the pressure doesn't run the show.",
+                "Protect your bandwidth with clear boundaries.",
+            ),
+            "neutral": (
+                "Stay with the process that makes results repeatable.",
+                "Keep your workflow anchored to what truly matters.",
+            ),
+        },
+    },
+    "love": {
+        "openers": {
+            "support": (
+                "You bring {descriptor} care into today's {focus}.",
+                "Your {descriptor} presence softens today's {focus}.",
+            ),
+            "challenge": (
+                "You ease {descriptor} tension inside today's {focus}.",
+                "Your {descriptor} honesty steadies today's {focus} conversations.",
+            ),
+            "neutral": (
+                "You invite {descriptor} attention into today's {focus}.",
+                "Your {descriptor} pace keeps today's {focus} sincere.",
+            ),
+        },
+        "coaching": (
+            "Ask one curious question so connection feels mutual.",
+            "Share how your body feels when a moment lands right.",
+            "Let listening lead before you decide the next move.",
+        ),
+        "closers": {
+            "support": (
+                "Follow the conversations that feel nourishing.",
+                "Let shared rituals remind you you're supported.",
+            ),
+            "challenge": (
+                "Keep soft boundaries so tenderness can return.",
+                "Name what you need while staying receptive.",
+            ),
+            "neutral": (
+                "Let the pace stay human—no need to force answers.",
+                "Stay tuned to the gestures that feel genuine.",
+            ),
+        },
+    },
+    "health": {
+        "openers": {
+            "support": (
+                "You honor {descriptor} rhythms through today's {focus}.",
+                "Your {descriptor} awareness protects today's {focus} rituals.",
+            ),
+            "challenge": (
+                "You soften {descriptor} strain across today's {focus}.",
+                "Your {descriptor} pacing defuses today's {focus} demands.",
+            ),
+            "neutral": (
+                "You bring {descriptor} care into today's {focus}.",
+                "Your {descriptor} presence steadies today's {focus} routines.",
+            ),
+        },
+        "coaching": (
+            "Schedule breathers so your body feels consulted.",
+            "Hydrate and stretch before momentum carries you away.",
+            "Track one ritual that keeps your system grounded.",
+        ),
+        "closers": {
+            "support": (
+                "Let gentle structure support your wellbeing.",
+                "Stay loyal to the practices that replenish you.",
+            ),
+            "challenge": (
+                "Keep adjustments responsive so recovery stays on track.",
+                "Trust the feedback your body keeps sharing.",
+            ),
+            "neutral": (
+                "Balance effort with rest so your energy can reset.",
+                "Stay present with the signals that guide your care.",
+            ),
+        },
+    },
+    "finance": {
+        "openers": {
+            "support": (
+                "You guide {descriptor} awareness through today's {focus}.",
+                "Your {descriptor} clarity shapes today's {focus} choices.",
+            ),
+            "challenge": (
+                "You bring {descriptor} patience to today's {focus} decisions.",
+                "Your {descriptor} caution steadies today's {focus} review.",
+            ),
+            "neutral": (
+                "You organize {descriptor} strategy around today's {focus}.",
+                "Your {descriptor} pacing makes today's {focus} sustainable.",
+            ),
+        },
+        "coaching": (
+            "Check the numbers twice before you commit.",
+            "Match each expense to the feeling it delivers.",
+            "Journal one win that proves your plan is working.",
+        ),
+        "closers": {
+            "support": (
+                "Let aligned choices build your long game.",
+                "Trust the budget that keeps breathing room intact.",
+            ),
+            "challenge": (
+                "Keep big moves on hold until the math confirms it.",
+                "Protect resources by filtering decisions through calm.",
+            ),
+            "neutral": (
+                "Stay curious about where your focus is funding momentum.",
+                "Let steady pacing make each decision easier to trust.",
+            ),
+        },
+    },
+}
 
 
 def _story_seed(*parts: Any) -> int:
@@ -134,7 +310,7 @@ def _story_seed(*parts: Any) -> int:
 
 def _storylet_pool(area: str, section: str, tone: str) -> Sequence[str]:
     tone_key = tone if tone in {"support", "challenge", "neutral"} else "neutral"
-    area_pool = STORYLET_POOLS.get(area, {})
+    area_pool = STORYLETS.get(area, {})
     options: Sequence[str] = ()
     target = area_pool.get(section)
     if isinstance(target, Mapping):
@@ -143,7 +319,7 @@ def _storylet_pool(area: str, section: str, tone: str) -> Sequence[str]:
         options = target
     if options:
         return options
-    default_pool = STORYLET_POOLS.get("default", {})
+    default_pool = STORYLETS.get("default", {})
     fallback = default_pool.get(section)
     if isinstance(fallback, Mapping):
         return fallback.get(tone_key) or fallback.get("neutral", ()) or ()
@@ -233,20 +409,6 @@ def _normalize_tone_label(value: str | None) -> str:
     if lowered not in {"support", "challenge", "neutral"}:
         return "neutral"
     return lowered
-
-
-_HARD_VOWEL_PREFIXES = (
-    "uni",
-    "use",
-    "euro",
-    "one",
-    "ou",
-    "ya",
-)
-
-_SOFT_H_PREFIXES = ("heir", "honest", "honor", "hour")
-
-_ARTICLE_PATTERN = re.compile(r"\b([Aa])\s+([A-Za-z][^\s.,;:!?]*)")
 
 
 def _article(word: str) -> str:
