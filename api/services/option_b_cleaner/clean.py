@@ -241,7 +241,7 @@ def _singularize_token(word: str) -> str:
     specific = {
         "responsibilities": "responsibility",
         "priorities": "priority",
-        "boundaries": "boundaries",
+        "boundaries": "boundary",
         "energies": "energy",
         "conversations": "conversation",
     }
