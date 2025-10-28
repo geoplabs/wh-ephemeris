@@ -595,15 +595,18 @@ def build_opening_summary(
     descriptor = descriptor_from_text(theme, raw, profile_name=profile_name)
     focus = focus_from_text(theme, raw, profile_name=profile_name)
     article = _article(descriptor)
-    closing = clause.strip() if clause else "Harness this radiant push toward progress."
-    if closing and not closing.endswith("."):
-        closing = f"{closing}."
-    first_sentence = (
-        f"You ride {article} {descriptor} wave through today's {focus}—"
-        f"{closing}"
+    closing = clause.strip() if clause else "Keep momentum pointed toward meaningful moves."
+    closing = closing.replace("quiet clarity", "calm focus")
+    closing = closing.rstrip(".")
+    closing_fragment = closing[0].lower() + closing[1:] if closing else ""
+    backdrop = element_modality_line(sign_a, sign_b).rstrip(".")
+    summary = (
+        f"You ride {article} {descriptor} wave toward today's {focus} as {backdrop}"
     )
-    backdrop = element_modality_line(sign_a, sign_b)
-    return f"{first_sentence} {backdrop}"
+    if closing_fragment:
+        summary = f"{summary}, and {closing_fragment}"
+    summary = summary.rstrip(", ") + "."
+    return fix_indefinite_articles(summary)
 
 
 def build_morning_paragraph(
@@ -766,7 +769,7 @@ def build_finance_paragraph(
 def build_one_line_summary(raw: str, theme: str, profile_name: str = "") -> str:
     descriptor = descriptor_from_text(raw, theme, default="steady", profile_name=profile_name)
     focus = focus_from_text(raw, theme, default="momentum", profile_name=profile_name)
-    return f"You close the day by keeping {descriptor} {focus} in view."
+    return f"Keep your {focus} in view and move forward with balanced intent."
 
 
 def polished_text(raw: str, profile_name: str) -> str:

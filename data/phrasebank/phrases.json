@@ -7,7 +7,7 @@
       "area": "general",
       "clause_variants": [
         "Subtle radiant energy supports your day flow.",
-        "Momentum guides your day choices with quiet clarity."
+        "Momentum guides your day choices with calm focus."
       ],
       "bullet_templates": {
         "do": [
@@ -28,7 +28,7 @@
           "mode": "permutation",
           "items": [
             "Subtle radiant energy supports your day flow.",
-            "Momentum guides your day choices with quiet clarity."
+            "Momentum guides your day choices with calm focus."
           ]
         },
         "adjective": {
@@ -57,8 +57,8 @@
       "intensity": "background",
       "area": "career",
       "clause_variants": [
-        "Subtle radiant energy supports your career progress.",
-        "Momentum guides your career moves with quiet clarity."
+        "Subtle radiant energy supports your career progress with grounded follow-through.",
+        "Momentum guides your career moves with grounded clarity."
       ],
       "bullet_templates": {
         "do": [
@@ -78,8 +78,8 @@
         "clauses": {
           "mode": "permutation",
           "items": [
-            "Subtle radiant energy supports your career progress.",
-            "Momentum guides your career moves with quiet clarity."
+            "Subtle radiant energy supports your career progress with grounded follow-through.",
+            "Momentum guides your career moves with grounded clarity."
           ]
         },
         "adjective": {
@@ -160,7 +160,7 @@
       "area": "health",
       "clause_variants": [
         "Subtle radiant energy supports your wellness rhythms.",
-        "Momentum guides your wellness care with quiet clarity."
+        "Momentum guides your wellness care with mindful pacing."
       ],
       "bullet_templates": {
         "do": [
@@ -181,7 +181,7 @@
           "mode": "permutation",
           "items": [
             "Subtle radiant energy supports your wellness rhythms.",
-            "Momentum guides your wellness care with quiet clarity."
+            "Momentum guides your wellness care with mindful pacing."
           ]
         },
         "adjective": {
@@ -1282,7 +1282,7 @@
       "area": "general",
       "clause_variants": [
         "Subtle grounded energy supports your day flow.",
-        "Strategy guides your day choices with quiet clarity."
+        "Strategy guides your day choices with calm focus."
       ],
       "bullet_templates": {
         "do": [
@@ -1303,7 +1303,7 @@
           "mode": "permutation",
           "items": [
             "Subtle grounded energy supports your day flow.",
-            "Strategy guides your day choices with quiet clarity."
+            "Strategy guides your day choices with calm focus."
           ]
         },
         "adjective": {
@@ -1333,7 +1333,7 @@
       "area": "career",
       "clause_variants": [
         "Subtle grounded energy supports your career progress.",
-        "Strategy guides your career moves with quiet clarity."
+        "Strategy guides your career moves with grounded clarity."
       ],
       "bullet_templates": {
         "do": [
@@ -1354,7 +1354,7 @@
           "mode": "permutation",
           "items": [
             "Subtle grounded energy supports your career progress.",
-            "Strategy guides your career moves with quiet clarity."
+            "Strategy guides your career moves with grounded clarity."
           ]
         },
         "adjective": {
@@ -1435,7 +1435,7 @@
       "area": "health",
       "clause_variants": [
         "Subtle grounded energy supports your wellness rhythms.",
-        "Strategy guides your wellness care with quiet clarity."
+        "Strategy guides your wellness care with mindful pacing."
       ],
       "bullet_templates": {
         "do": [
@@ -1456,7 +1456,7 @@
           "mode": "permutation",
           "items": [
             "Subtle grounded energy supports your wellness rhythms.",
-            "Strategy guides your wellness care with quiet clarity."
+            "Strategy guides your wellness care with mindful pacing."
           ]
         },
         "adjective": {
@@ -2557,7 +2557,7 @@
       "area": "general",
       "clause_variants": [
         "Subtle heart-led energy supports your day flow.",
-        "Compassion guides your day choices with quiet clarity."
+        "Compassion guides your day choices with calm focus."
       ],
       "bullet_templates": {
         "do": [
@@ -2578,7 +2578,7 @@
           "mode": "permutation",
           "items": [
             "Subtle heart-led energy supports your day flow.",
-            "Compassion guides your day choices with quiet clarity."
+            "Compassion guides your day choices with calm focus."
           ]
         },
         "adjective": {
@@ -2608,7 +2608,7 @@
       "area": "career",
       "clause_variants": [
         "Subtle heart-led energy supports your career progress.",
-        "Compassion guides your career moves with quiet clarity."
+        "Compassion guides your career moves with grounded clarity."
       ],
       "bullet_templates": {
         "do": [
@@ -2629,7 +2629,7 @@
           "mode": "permutation",
           "items": [
             "Subtle heart-led energy supports your career progress.",
-            "Compassion guides your career moves with quiet clarity."
+            "Compassion guides your career moves with grounded clarity."
           ]
         },
         "adjective": {
@@ -2710,7 +2710,7 @@
       "area": "health",
       "clause_variants": [
         "Subtle heart-led energy supports your wellness rhythms.",
-        "Compassion guides your wellness care with quiet clarity."
+        "Compassion guides your wellness care with mindful pacing."
       ],
       "bullet_templates": {
         "do": [
@@ -2731,7 +2731,7 @@
           "mode": "permutation",
           "items": [
             "Subtle heart-led energy supports your wellness rhythms.",
-            "Compassion guides your wellness care with quiet clarity."
+            "Compassion guides your wellness care with mindful pacing."
           ]
         },
         "adjective": {
@@ -3832,7 +3832,7 @@
       "area": "general",
       "clause_variants": [
         "Subtle disciplined energy supports your day flow.",
-        "Resolve guides your day choices with quiet clarity."
+        "Resolve guides your day choices with calm focus."
       ],
       "bullet_templates": {
         "do": [
@@ -3853,7 +3853,7 @@
           "mode": "permutation",
           "items": [
             "Subtle disciplined energy supports your day flow.",
-            "Resolve guides your day choices with quiet clarity."
+            "Resolve guides your day choices with calm focus."
           ]
         },
         "adjective": {
@@ -3883,7 +3883,7 @@
       "area": "career",
       "clause_variants": [
         "Subtle disciplined energy supports your career progress.",
-        "Resolve guides your career moves with quiet clarity."
+        "Resolve guides your career moves with grounded clarity."
       ],
       "bullet_templates": {
         "do": [
@@ -3904,7 +3904,7 @@
           "mode": "permutation",
           "items": [
             "Subtle disciplined energy supports your career progress.",
-            "Resolve guides your career moves with quiet clarity."
+            "Resolve guides your career moves with grounded clarity."
           ]
         },
         "adjective": {
@@ -3985,7 +3985,7 @@
       "area": "health",
       "clause_variants": [
         "Subtle disciplined energy supports your wellness rhythms.",
-        "Resolve guides your wellness care with quiet clarity."
+        "Resolve guides your wellness care with mindful pacing."
       ],
       "bullet_templates": {
         "do": [
@@ -4006,7 +4006,7 @@
           "mode": "permutation",
           "items": [
             "Subtle disciplined energy supports your wellness rhythms.",
-            "Resolve guides your wellness care with quiet clarity."
+            "Resolve guides your wellness care with mindful pacing."
           ]
         },
         "adjective": {
@@ -5107,7 +5107,7 @@
       "area": "general",
       "clause_variants": [
         "Subtle visionary energy supports your day flow.",
-        "Insight guides your day choices with quiet clarity."
+        "Insight guides your day choices with calm focus."
       ],
       "bullet_templates": {
         "do": [
@@ -5128,7 +5128,7 @@
           "mode": "permutation",
           "items": [
             "Subtle visionary energy supports your day flow.",
-            "Insight guides your day choices with quiet clarity."
+            "Insight guides your day choices with calm focus."
           ]
         },
         "adjective": {
@@ -5158,7 +5158,7 @@
       "area": "career",
       "clause_variants": [
         "Subtle visionary energy supports your career progress.",
-        "Insight guides your career moves with quiet clarity."
+        "Insight guides your career moves with grounded clarity."
       ],
       "bullet_templates": {
         "do": [
@@ -5179,7 +5179,7 @@
           "mode": "permutation",
           "items": [
             "Subtle visionary energy supports your career progress.",
-            "Insight guides your career moves with quiet clarity."
+            "Insight guides your career moves with grounded clarity."
           ]
         },
         "adjective": {
@@ -5260,7 +5260,7 @@
       "area": "health",
       "clause_variants": [
         "Subtle visionary energy supports your wellness rhythms.",
-        "Insight guides your wellness care with quiet clarity."
+        "Insight guides your wellness care with mindful pacing."
       ],
       "bullet_templates": {
         "do": [
@@ -5281,7 +5281,7 @@
           "mode": "permutation",
           "items": [
             "Subtle visionary energy supports your wellness rhythms.",
-            "Insight guides your wellness care with quiet clarity."
+            "Insight guides your wellness care with mindful pacing."
           ]
         },
         "adjective": {
@@ -6382,7 +6382,7 @@
       "area": "general",
       "clause_variants": [
         "Subtle transformative energy supports your day flow.",
-        "Renewal guides your day choices with quiet clarity."
+        "Renewal guides your day choices with calm focus."
       ],
       "bullet_templates": {
         "do": [
@@ -6403,7 +6403,7 @@
           "mode": "permutation",
           "items": [
             "Subtle transformative energy supports your day flow.",
-            "Renewal guides your day choices with quiet clarity."
+            "Renewal guides your day choices with calm focus."
           ]
         },
         "adjective": {
@@ -6433,7 +6433,7 @@
       "area": "career",
       "clause_variants": [
         "Subtle transformative energy supports your career progress.",
-        "Renewal guides your career moves with quiet clarity."
+        "Renewal guides your career moves with grounded clarity."
       ],
       "bullet_templates": {
         "do": [
@@ -6454,7 +6454,7 @@
           "mode": "permutation",
           "items": [
             "Subtle transformative energy supports your career progress.",
-            "Renewal guides your career moves with quiet clarity."
+            "Renewal guides your career moves with grounded clarity."
           ]
         },
         "adjective": {
@@ -6535,7 +6535,7 @@
       "area": "health",
       "clause_variants": [
         "Subtle transformative energy supports your wellness rhythms.",
-        "Renewal guides your wellness care with quiet clarity."
+        "Renewal guides your wellness care with mindful pacing."
       ],
       "bullet_templates": {
         "do": [
@@ -6556,7 +6556,7 @@
           "mode": "permutation",
           "items": [
             "Subtle transformative energy supports your wellness rhythms.",
-            "Renewal guides your wellness care with quiet clarity."
+            "Renewal guides your wellness care with mindful pacing."
           ]
         },
         "adjective": {
@@ -7657,7 +7657,7 @@
       "area": "general",
       "clause_variants": [
         "Subtle steady energy supports your day flow.",
-        "Balance guides your day choices with quiet clarity."
+        "Balance guides your day choices with calm focus."
       ],
       "bullet_templates": {
         "do": [
@@ -7678,7 +7678,7 @@
           "mode": "permutation",
           "items": [
             "Subtle steady energy supports your day flow.",
-            "Balance guides your day choices with quiet clarity."
+            "Balance guides your day choices with calm focus."
           ]
         },
         "adjective": {
@@ -7708,7 +7708,7 @@
       "area": "career",
       "clause_variants": [
         "Subtle steady energy supports your career progress.",
-        "Balance guides your career moves with quiet clarity."
+        "Balance guides your career moves with grounded clarity."
       ],
       "bullet_templates": {
         "do": [
@@ -7729,7 +7729,7 @@
           "mode": "permutation",
           "items": [
             "Subtle steady energy supports your career progress.",
-            "Balance guides your career moves with quiet clarity."
+            "Balance guides your career moves with grounded clarity."
           ]
         },
         "adjective": {
@@ -7810,7 +7810,7 @@
       "area": "health",
       "clause_variants": [
         "Subtle steady energy supports your wellness rhythms.",
-        "Balance guides your wellness care with quiet clarity."
+        "Balance guides your wellness care with mindful pacing."
       ],
       "bullet_templates": {
         "do": [
@@ -7831,7 +7831,7 @@
           "mode": "permutation",
           "items": [
             "Subtle steady energy supports your wellness rhythms.",
-            "Balance guides your wellness care with quiet clarity."
+            "Balance guides your wellness care with mindful pacing."
           ]
         },
         "adjective": {

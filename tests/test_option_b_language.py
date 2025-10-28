@@ -36,7 +36,7 @@ def test_health_paragraph_without_event_uses_base_template():
         tone_hint="support",
         event=None,
     )
-    assert text.startswith("You protect wellbeing by honoring balanced rhythms.")
+    assert text.startswith("You stay present to your energy curve by honoring balanced rhythms.")
     assert "while" not in text
 
 

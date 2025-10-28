@@ -14,7 +14,7 @@ def test_opening_summary_backdrop():
         ["Libra", "Scorpio"],
         clause=clause,
     )
-    assert clause in out
+    assert clause.lower().rstrip(".") in out.lower()
     assert "Cardinal Air (Libra)" in out
     assert "Fixed Water (Scorpio)" in out
 

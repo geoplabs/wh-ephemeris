@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import re
+import hashlib
 from dataclasses import dataclass
 from typing import Any, Callable, Mapping, Sequence
 
@@ -56,6 +57,24 @@ def _aspect_details(value: Any) -> tuple[str, str]:
     return _ASPECT_STYLES.get(key, _ASPECT_FALLBACK)
 
 
+_SEXTILE_VERBS = ("supports", "boosts", "opens", "facilitates")
+
+
+def _aspect_verb(event: Mapping[str, Any]) -> str:
+    key = str(event.get("aspect") or "").strip().lower()
+    if key == "sextile":
+        seed_parts = [
+            "sextile",
+            str(event.get("transit_body") or ""),
+            str(event.get("natal_body") or ""),
+            str(event.get("natal_house") or ""),
+        ]
+        digest = hashlib.sha256("|".join(seed_parts).encode("utf-8")).hexdigest()
+        index = int(digest[:8], 16) % len(_SEXTILE_VERBS)
+        return _SEXTILE_VERBS[index]
+    return _aspect_details(key)[0]
+
+
 def _event_focus(value: Any) -> str:
     if isinstance(value, str):
         return clean_token_phrase(value)
@@ -80,7 +99,7 @@ SAFE_DESCRIPTOR_WHITELIST: Mapping[str, Callable[[Mapping[str, Any]], str]] = {
     "transit_sign": lambda event: _sanitize_name(event.get("transit_sign")),
     "natal_sign": lambda event: _sanitize_name(event.get("natal_sign")),
     "aspect": lambda event: _sanitize_lower(event.get("aspect")),
-    "aspect_verb": lambda event: _aspect_details(event.get("aspect"))[0],
+    "aspect_verb": _aspect_verb,
     "aspect_family": lambda event: _aspect_details(event.get("aspect"))[1],
     "natal_house_label": lambda event: _house_label(event.get("natal_house")),
     "event_focus": lambda event: _event_focus(

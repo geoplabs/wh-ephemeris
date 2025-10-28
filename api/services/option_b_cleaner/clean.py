@@ -181,8 +181,23 @@ def _format_phrase(words: list[str], mode: str = "do") -> str:
         tokens = ["openings" if w == "opportunity" else w for w in tokens]
     if "intention" in tokens:
         tokens = ["intentions" if w == "intention" else w for w in tokens]
-    if len(tokens) == 1 and tokens[0] == "steady":
-        tokens.append("balance")
+    if tokens and tokens[0] in {"curious", "sensitive"}:
+        noun_map = {
+            "curious": ("conversation", "conversations"),
+            "sensitive": ("boundary", "boundaries"),
+        }
+        singular, plural = noun_map[tokens[0]]
+        if all(t not in {singular, plural} for t in tokens[1:]):
+            tokens.insert(1, singular if mode == "do" else plural)
+    if tokens and tokens[0] == "radiant" and all(t not in {"drive", "momentum"} for t in tokens[1:]):
+        tokens.insert(1, "drive")
+    if len(tokens) == 1:
+        filler = {
+            "steady": "balance",
+            "sensitive": "boundaries",
+            "curious": "conversations",
+        }.get(tokens[0], "focus")
+        tokens.append(filler)
     phrase = " ".join(tokens)
     if not phrase:
         return "steady focus"
@@ -202,15 +217,15 @@ def _resolve_templates(area: str | None, mode: str, asset: PhraseAsset | None) -
         if templates:
             return templates
     return (
-        "Focus on {phrase} today.",
-        "Choose {phrase} now.",
-        "Set {phrase} priorities today.",
-        "Plan {phrase} today.",
+        "Prioritize {phrase} so progress is tangible today.",
+        "Channel {phrase} into a visible win.",
+        "Clarify {phrase} and note the next step before the afternoon.",
+        "Schedule {phrase} so momentum keeps building.",
     ) if mode == "do" else (
-        "Avoid {phrase} today.",
-        "Skip {phrase} now.",
-        "Hold back from {phrase} today.",
-        "Delay {phrase} moves today.",
+        "Avoid {phrase} if it scatters your focus.",
+        "Skip {phrase} when you need clarity to decide.",
+        "Hold back from {phrase} until timing improves.",
+        "Delay {phrase} so boundaries stay firm.",
     )
 
 

@@ -1,5 +1,7 @@
 import pytest
 
+import re
+
 pytest.importorskip("jinja2")
 
 from api.services.option_b_cleaner.render import build_context
@@ -179,5 +181,5 @@ def test_paragraphs_embed_event_details():
     assert "Saturn presses on your Sun" in ctx["career_paragraph"]
     assert "Venus flows with your Moon" in ctx["love_paragraph"]
     assert "Mars aligns with your Mercury" in ctx["health_paragraph"]
-    assert "Jupiter supports your Venus" in ctx["finance_paragraph"]
+    assert re.search(r"Jupiter (supports|boosts|opens|facilitates) your Venus", ctx["finance_paragraph"])
     assert "Saturn presses on your Sun" in ctx["morning_paragraph"]
