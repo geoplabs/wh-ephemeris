@@ -23,9 +23,9 @@ _PHASE_LABEL_PATTERNS: tuple[re.Pattern[str], ...] = (
 
 
 _ASPECT_STYLES: Mapping[str, tuple[str, str]] = {
-    "conjunction": ("aligns with", "exact conjunction"),
+    "conjunction": ("aligns with", "conjunction"),
     "sextile": ("supports", "supportive sextile"),
-    "square": ("presses on", "pressing square"),
+    "square": ("presses on", "square alignment"),
     "trine": ("flows with", "flowing trine"),
     "opposition": ("balances", "balancing opposition"),
 }
@@ -219,13 +219,41 @@ class _SafeTokens(dict[str, str]):
 
 
 _WHITESPACE = re.compile(r"\s+")
+_SOFT_H_PREFIXES = {"honest", "honor", "honour", "hour", "herb"}
+_HARD_VOWEL_PREFIXES = {"one", "once", "united", "unicorn", "euro", "use", "user"}
+_ARTICLE_PATTERN = re.compile(r"\b([Aa]n?)\s+([A-Za-z][A-Za-z'\-]*)")
+
+
+def _indefinite_article(word: str) -> str:
+    if not word:
+        return "a"
+    lowered = word.lower()
+    if any(lowered.startswith(prefix) for prefix in _SOFT_H_PREFIXES):
+        return "an"
+    if lowered[0] in "aeiou":
+        if any(lowered.startswith(prefix) for prefix in _HARD_VOWEL_PREFIXES):
+            return "a"
+        return "an"
+    return "a"
+
+
+def _fix_indefinite_articles(text: str) -> str:
+    def repl(match: re.Match[str]) -> str:
+        article, word = match.group(1), match.group(2)
+        desired = _indefinite_article(word)
+        if desired == article.lower():
+            return match.group(0)
+        replacement = desired.capitalize() if article[0].isupper() else desired
+        return f"{replacement} {word}"
+
+    return _ARTICLE_PATTERN.sub(repl, text)
 
 
 def _normalize_sentence(text: str) -> str:
     text = _WHITESPACE.sub(" ", text).strip()
     text = text.replace(" ,", ",").replace(" .", ".")
     text = re.sub(r"\s+—\s+", " — ", text)
-    return text
+    return _fix_indefinite_articles(text)
 
 
 def render_mini_template(templates: Sequence[MiniTemplate], tokens: Mapping[str, Any]) -> str:

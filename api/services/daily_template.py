@@ -15,7 +15,12 @@ from jsonschema import Draft7Validator
 from jinja2 import Environment, Template
 
 from ..schemas.forecasts import DailyTemplatedResponse
-from .option_b_cleaner.render import build_context
+from .option_b_cleaner.render import (
+    build_context,
+    collect_bullet_roots,
+    normalize_avoid,
+    normalize_bullets,
+)
 from .remedy_templates import remedy_templates_for_planet
 
 try:  # pragma: no cover - optional dependency during tests
@@ -1014,6 +1019,50 @@ def _build_fallback(daily: Dict[str, Any]) -> DailyTemplatedResponse:
         ensure_sentence=True,
     )
 
+    career_bullet_lines = normalize_bullets(
+        career_bullets or default_career_bullets,
+        profile,
+        area="career",
+    ) or normalize_bullets(default_career_bullets, profile, area="career")
+
+    finance_bullet_lines = normalize_bullets(
+        finance_bullets or default_finance_bullets,
+        profile,
+        area="finance",
+    ) or normalize_bullets(default_finance_bullets, profile, area="finance")
+
+    health_option_lines = normalize_bullets(
+        health_notes or list(DEFAULT_HEALTH_NOTES),
+        profile,
+        area="health",
+    ) or normalize_bullets(list(DEFAULT_HEALTH_NOTES), profile, area="health")
+
+    do_today_lines = normalize_bullets(
+        do_today,
+        profile,
+        area="general",
+    ) or normalize_bullets(
+        [
+            "Focus on one priority",
+            "Speak kindly",
+            "Move your body",
+            "Hydrate intentionally",
+        ],
+        profile,
+        area="general",
+    )
+
+    positive_roots = collect_bullet_roots(
+        career_bullet_lines + health_option_lines + finance_bullet_lines + do_today_lines
+    )
+
+    avoid_today_lines = normalize_avoid(
+        avoid_today,
+        profile,
+        area="general",
+        forbidden_roots=positive_roots,
+    )
+
     fallback_payload = {
         "profile_name": profile,
         "date": date,
@@ -1026,7 +1075,7 @@ def _build_fallback(daily: Dict[str, Any]) -> DailyTemplatedResponse:
         },
         "career": {
             "paragraph": career_paragraph,
-            "bullets": career_bullets or default_career_bullets,
+            "bullets": career_bullet_lines,
         },
         "love": {
             "paragraph": love_paragraph,
@@ -1035,14 +1084,14 @@ def _build_fallback(daily: Dict[str, Any]) -> DailyTemplatedResponse:
         },
         "health": {
             "paragraph": health_paragraph,
-            "good_options": (health_notes or list(DEFAULT_HEALTH_NOTES))[:SANITIZED_LIST_LIMIT],
+            "good_options": health_option_lines,
         },
         "finance": {
             "paragraph": finance_paragraph,
-            "bullets": finance_bullets or default_finance_bullets,
+            "bullets": finance_bullet_lines,
         },
-        "do_today": do_today,
-        "avoid_today": avoid_today,
+        "do_today": do_today_lines,
+        "avoid_today": avoid_today_lines,
         "caution_window": fallback_caution,
         "remedies": fallback_remedies,
         "lucky": fallback_lucky,

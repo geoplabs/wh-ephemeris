@@ -242,6 +242,12 @@ def _collect_bullet_roots(sentences: Sequence[str]) -> set[str]:
     return combined
 
 
+def collect_bullet_roots(sentences: Sequence[str]) -> set[str]:
+    """Public helper exposing the normalized bullet roots for ``sentences``."""
+
+    return _collect_bullet_roots(sentences)
+
+
 def _sanitize_value(value: Any) -> Any:
     if isinstance(value, str):
         cleaned = _strip_dashes(value)
