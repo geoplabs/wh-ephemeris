@@ -3,6 +3,7 @@ ASPECT_EFFECT = {
     "sun_mars_conjunction": "Strong drive; channel into one goal",
     "saturn_venus_square": "Set boundaries; delay favors patience",
     "mercury_chiron_trine": "Healing talk; journaling brings clarity",
+    "mercury_chiron_quincunx": "Micro-adjust routines when discomfort flares",
     "sun_sun_square": "Guard ego; choose calm clarity",
     "sun_pluto_conjunction": "Deep personal power; transform through intent",
     "sun_jupiter_sextile": "Openings for growth and support",
@@ -36,4 +37,4 @@ DIR_BY_PLANET = {
     "Pluto": "South",  # Pluto often mapped via Mars
 }
 
-DEFAULT_TIME_WINDOW = "10:30 AM – 12:00 PM"
+DEFAULT_TIME_WINDOW = "10:30 AM - 12:00 PM"

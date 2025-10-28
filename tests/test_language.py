@@ -1,4 +1,5 @@
 from api.services.option_b_cleaner.language import (
+    _ensure_sentence,
     build_career_paragraph,
     build_love_status,
     build_opening_summary,
@@ -33,3 +34,9 @@ def test_love_status_voice():
     single = build_love_status("Channel this focus with intention.", "single")
     assert attached.startswith("If you're attached, you")
     assert single.startswith("If you're single, you")
+
+
+def test_ensure_sentence_collapses_repeated_words():
+    sentence = _ensure_sentence("Money choices choices support the plan")
+    assert "choices choices" not in sentence
+    assert sentence.endswith(".")
