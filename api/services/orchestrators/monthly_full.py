@@ -209,7 +209,7 @@ def build_viewmodel(
                     "applying": ev.get("applying"),
                     "domains": ev["domains"],
                     "severity": ev["severity"],
-                    "copy": ev.get("copy"),
+                    "description": ev.get("description") or ev.get("copy"),
                     "notes": [],
                 }
                 for ev in top

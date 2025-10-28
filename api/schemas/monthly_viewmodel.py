@@ -30,7 +30,7 @@ class EventVM(BaseModel):
     applying: Optional[bool] = None
     domains: List[str] = []
     severity: str  # subtle | notable | strong | major
-    copy: Optional[str] = None
+    description: Optional[str] = None
     notes: List[str] = []
 
 
