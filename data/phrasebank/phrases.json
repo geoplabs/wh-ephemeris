@@ -108,8 +108,8 @@
       "intensity": "background",
       "area": "love",
       "clause_variants": [
-        "Subtle radiant energy supports your relationship connections with warmth.",
-        "Momentum guides openings in your relationships with warm intention."
+        "Subtle radiant energy supports your relationship connections.",
+        "Momentum guides openings in your relationships with quiet clarity."
       ],
       "bullet_templates": {
         "do": [
@@ -129,8 +129,8 @@
         "clauses": {
           "mode": "permutation",
           "items": [
-            "Subtle radiant energy supports your relationship connections with warmth.",
-            "Momentum guides openings in your relationships with warm intention."
+            "Subtle radiant energy supports your relationship connections.",
+            "Momentum guides openings in your relationships with quiet clarity."
           ]
         },
         "adjective": {
@@ -211,7 +211,7 @@
       "area": "finance",
       "clause_variants": [
         "Subtle radiant energy supports your financial decisions.",
-        "Momentum guides your financial planning with measured clarity."
+        "Momentum guides your financial planning with quiet clarity."
       ],
       "bullet_templates": {
         "do": [
@@ -232,7 +232,7 @@
           "mode": "permutation",
           "items": [
             "Subtle radiant energy supports your financial decisions.",
-            "Momentum guides your financial planning with measured clarity."
+            "Momentum guides your financial planning with quiet clarity."
           ]
         },
         "adjective": {
@@ -1384,7 +1384,7 @@
       "area": "love",
       "clause_variants": [
         "Subtle grounded energy supports your relationship connections.",
-        "Strategy guides openings in your relationships with warm intention."
+        "Strategy guides openings in your relationships with quiet clarity."
       ],
       "bullet_templates": {
         "do": [
@@ -1405,7 +1405,7 @@
           "mode": "permutation",
           "items": [
             "Subtle grounded energy supports your relationship connections.",
-            "Strategy guides openings in your relationships with warm intention."
+            "Strategy guides openings in your relationships with quiet clarity."
           ]
         },
         "adjective": {
@@ -1486,7 +1486,7 @@
       "area": "finance",
       "clause_variants": [
         "Subtle grounded energy supports your financial decisions.",
-        "Strategy guides your financial planning with measured clarity."
+        "Strategy guides your financial planning with quiet clarity."
       ],
       "bullet_templates": {
         "do": [
@@ -1507,7 +1507,7 @@
           "mode": "permutation",
           "items": [
             "Subtle grounded energy supports your financial decisions.",
-            "Strategy guides your financial planning with measured clarity."
+            "Strategy guides your financial planning with quiet clarity."
           ]
         },
         "adjective": {
@@ -2659,7 +2659,7 @@
       "area": "love",
       "clause_variants": [
         "Subtle heart-led energy supports your relationship connections.",
-        "Compassion guides openings in your relationships with warm intention."
+        "Compassion guides openings in your relationships with quiet clarity."
       ],
       "bullet_templates": {
         "do": [
@@ -2680,7 +2680,7 @@
           "mode": "permutation",
           "items": [
             "Subtle heart-led energy supports your relationship connections.",
-            "Compassion guides openings in your relationships with warm intention."
+            "Compassion guides openings in your relationships with quiet clarity."
           ]
         },
         "adjective": {
@@ -2761,7 +2761,7 @@
       "area": "finance",
       "clause_variants": [
         "Subtle heart-led energy supports your financial decisions.",
-        "Compassion guides your financial planning with measured clarity."
+        "Compassion guides your financial planning with quiet clarity."
       ],
       "bullet_templates": {
         "do": [
@@ -2782,7 +2782,7 @@
           "mode": "permutation",
           "items": [
             "Subtle heart-led energy supports your financial decisions.",
-            "Compassion guides your financial planning with measured clarity."
+            "Compassion guides your financial planning with quiet clarity."
           ]
         },
         "adjective": {
@@ -3934,7 +3934,7 @@
       "area": "love",
       "clause_variants": [
         "Subtle disciplined energy supports your relationship connections.",
-        "Resolve guides openings in your relationships with warm intention."
+        "Resolve guides openings in your relationships with quiet clarity."
       ],
       "bullet_templates": {
         "do": [
@@ -3955,7 +3955,7 @@
           "mode": "permutation",
           "items": [
             "Subtle disciplined energy supports your relationship connections.",
-            "Resolve guides openings in your relationships with warm intention."
+            "Resolve guides openings in your relationships with quiet clarity."
           ]
         },
         "adjective": {
@@ -4036,7 +4036,7 @@
       "area": "finance",
       "clause_variants": [
         "Subtle disciplined energy supports your financial decisions.",
-        "Resolve guides your financial planning with measured clarity."
+        "Resolve guides your financial planning with quiet clarity."
       ],
       "bullet_templates": {
         "do": [
@@ -4057,7 +4057,7 @@
           "mode": "permutation",
           "items": [
             "Subtle disciplined energy supports your financial decisions.",
-            "Resolve guides your financial planning with measured clarity."
+            "Resolve guides your financial planning with quiet clarity."
           ]
         },
         "adjective": {
@@ -5209,7 +5209,7 @@
       "area": "love",
       "clause_variants": [
         "Subtle visionary energy supports your relationship connections.",
-        "Insight guides openings in your relationships with warm intention."
+        "Insight guides openings in your relationships with quiet clarity."
       ],
       "bullet_templates": {
         "do": [
@@ -5230,7 +5230,7 @@
           "mode": "permutation",
           "items": [
             "Subtle visionary energy supports your relationship connections.",
-            "Insight guides openings in your relationships with warm intention."
+            "Insight guides openings in your relationships with quiet clarity."
           ]
         },
         "adjective": {
@@ -5311,7 +5311,7 @@
       "area": "finance",
       "clause_variants": [
         "Subtle visionary energy supports your financial decisions.",
-        "Insight guides your financial planning with measured clarity."
+        "Insight guides your financial planning with quiet clarity."
       ],
       "bullet_templates": {
         "do": [
@@ -5332,7 +5332,7 @@
           "mode": "permutation",
           "items": [
             "Subtle visionary energy supports your financial decisions.",
-            "Insight guides your financial planning with measured clarity."
+            "Insight guides your financial planning with quiet clarity."
           ]
         },
         "adjective": {
@@ -6484,7 +6484,7 @@
       "area": "love",
       "clause_variants": [
         "Subtle transformative energy supports your relationship connections.",
-        "Renewal guides openings in your relationships with warm intention."
+        "Renewal guides openings in your relationships with quiet clarity."
       ],
       "bullet_templates": {
         "do": [
@@ -6505,7 +6505,7 @@
           "mode": "permutation",
           "items": [
             "Subtle transformative energy supports your relationship connections.",
-            "Renewal guides openings in your relationships with warm intention."
+            "Renewal guides openings in your relationships with quiet clarity."
           ]
         },
         "adjective": {
@@ -6586,7 +6586,7 @@
       "area": "finance",
       "clause_variants": [
         "Subtle transformative energy supports your financial decisions.",
-        "Renewal guides your financial planning with measured clarity."
+        "Renewal guides your financial planning with quiet clarity."
       ],
       "bullet_templates": {
         "do": [
@@ -6607,7 +6607,7 @@
           "mode": "permutation",
           "items": [
             "Subtle transformative energy supports your financial decisions.",
-            "Renewal guides your financial planning with measured clarity."
+            "Renewal guides your financial planning with quiet clarity."
           ]
         },
         "adjective": {
@@ -7759,7 +7759,7 @@
       "area": "love",
       "clause_variants": [
         "Subtle steady energy supports your relationship connections.",
-        "Balance guides openings in your relationships with warm intention."
+        "Balance guides openings in your relationships with quiet clarity."
       ],
       "bullet_templates": {
         "do": [
@@ -7780,7 +7780,7 @@
           "mode": "permutation",
           "items": [
             "Subtle steady energy supports your relationship connections.",
-            "Balance guides openings in your relationships with warm intention."
+            "Balance guides openings in your relationships with quiet clarity."
           ]
         },
         "adjective": {
@@ -7861,7 +7861,7 @@
       "area": "finance",
       "clause_variants": [
         "Subtle steady energy supports your financial decisions.",
-        "Balance guides your financial planning with measured clarity."
+        "Balance guides your financial planning with quiet clarity."
       ],
       "bullet_templates": {
         "do": [
@@ -7882,7 +7882,7 @@
           "mode": "permutation",
           "items": [
             "Subtle steady energy supports your financial decisions.",
-            "Balance guides your financial planning with measured clarity."
+            "Balance guides your financial planning with quiet clarity."
           ]
         },
         "adjective": {
