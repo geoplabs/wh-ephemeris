@@ -9,7 +9,7 @@ from .clean import clean_token_phrase
 
 
 _ASPECT_STYLES: Mapping[str, tuple[str, str]] = {
-    "conjunction": ("aligns with", "harmonizing conjunction"),
+    "conjunction": ("aligns with", "exact conjunction"),
     "sextile": ("supports", "supportive sextile"),
     "square": ("presses on", "pressing square"),
     "trine": ("flows with", "flowing trine"),
@@ -40,6 +40,27 @@ def _sanitize_name(value: Any) -> str:
 def _sanitize_lower(value: Any) -> str:
     phrase = clean_token_phrase(value)
     return phrase.lower() if phrase else ""
+
+
+def _format_orb(value: Any) -> str:
+    try:
+        number = float(value)
+    except (TypeError, ValueError):
+        return ""
+    return f"{abs(number):.2f}° orb"
+
+
+def _aspect_phase(event: Mapping[str, Any]) -> str:
+    applying = event.get("applying")
+    if isinstance(applying, bool):
+        return "applying" if applying else "separating"
+    note = clean_token_phrase(event.get("note"))
+    lowered = note.lower()
+    if "applying" in lowered:
+        return "applying"
+    if "separating" in lowered:
+        return "separating"
+    return ""
 
 
 def _house_label(value: Any) -> str:
@@ -93,6 +114,20 @@ def _transit_influence(event: Mapping[str, Any]) -> str:
     return f"{body} influence"
 
 
+def _sign_clause(event: Mapping[str, Any]) -> str:
+    transit = _sanitize_name(event.get("transit_sign"))
+    natal = _sanitize_name(event.get("natal_sign"))
+    if transit and natal:
+        if transit == natal:
+            return f"in {transit}"
+        return f"from {transit} to {natal}"
+    if transit:
+        return f"in {transit}"
+    if natal:
+        return f"in {natal}"
+    return ""
+
+
 SAFE_DESCRIPTOR_WHITELIST: Mapping[str, Callable[[Mapping[str, Any]], str]] = {
     "transit_body": lambda event: _sanitize_name(event.get("transit_body")),
     "natal_body": lambda event: _sanitize_name(event.get("natal_body")),
@@ -101,6 +136,9 @@ SAFE_DESCRIPTOR_WHITELIST: Mapping[str, Callable[[Mapping[str, Any]], str]] = {
     "aspect": lambda event: _sanitize_lower(event.get("aspect")),
     "aspect_verb": _aspect_verb,
     "aspect_family": lambda event: _aspect_details(event.get("aspect"))[1],
+    "aspect_phase": _aspect_phase,
+    "orb_text": lambda event: _format_orb(event.get("orb")),
+    "sign_clause": _sign_clause,
     "natal_house_label": lambda event: _house_label(event.get("natal_house")),
     "event_focus": lambda event: _event_focus(
         event.get("focus_label")
@@ -172,6 +210,49 @@ def render_mini_template(templates: Sequence[MiniTemplate], tokens: Mapping[str,
 
 
 DEFAULT_EVENT_TEMPLATES: tuple[MiniTemplate, ...] = (
+    MiniTemplate(
+        "{transit_body} {aspect_verb} your {natal_body} {sign_clause}—an {aspect_phase} {aspect_family} at {orb_text}",
+        (
+            "transit_body",
+            "aspect_verb",
+            "natal_body",
+            "sign_clause",
+            "aspect_phase",
+            "aspect_family",
+            "orb_text",
+        ),
+    ),
+    MiniTemplate(
+        "{transit_body} {aspect_verb} your {natal_body}—an {aspect_phase} {aspect_family} at {orb_text}",
+        (
+            "transit_body",
+            "aspect_verb",
+            "natal_body",
+            "aspect_phase",
+            "aspect_family",
+            "orb_text",
+        ),
+    ),
+    MiniTemplate(
+        "{transit_body} {aspect_verb} your {natal_body}—an {aspect_family} at {orb_text}",
+        (
+            "transit_body",
+            "aspect_verb",
+            "natal_body",
+            "aspect_family",
+            "orb_text",
+        ),
+    ),
+    MiniTemplate(
+        "{transit_body} {aspect_verb} your {natal_body}—an {aspect_phase} {aspect_family}",
+        (
+            "transit_body",
+            "aspect_verb",
+            "natal_body",
+            "aspect_phase",
+            "aspect_family",
+        ),
+    ),
     MiniTemplate(
         "{transit_body} {aspect_verb} your {natal_body} in the {natal_house_label}—a {aspect_family} influence",
         ("transit_body", "aspect_verb", "natal_body", "natal_house_label", "aspect_family"),
