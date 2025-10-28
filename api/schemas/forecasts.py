@@ -123,6 +123,13 @@ class LuckyDetails(BaseModel):
     affirmation: str
 
 
+class CautionWindow(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    time_window: str
+    note: str
+
+
 class DailyForecastResponse(BaseModel):
     meta: Dict[str, Any]
     summary: str
@@ -177,5 +184,7 @@ class DailyTemplatedResponse(BaseModel):
     finance: SectionWithBullets
     do_today: conlist(str, min_length=0, max_length=4) = Field(default_factory=list)
     avoid_today: conlist(str, min_length=0, max_length=4) = Field(default_factory=list)
+    caution_window: CautionWindow
+    remedies: conlist(str, min_length=0, max_length=4) = Field(default_factory=list)
     lucky: LuckyDetails
     one_line_summary: str

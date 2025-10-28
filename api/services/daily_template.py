@@ -16,6 +16,7 @@ from jinja2 import Environment, Template
 
 from ..schemas.forecasts import DailyTemplatedResponse
 from .option_b_cleaner.render import build_context
+from .remedy_templates import remedy_templates_for_planet
 
 try:  # pragma: no cover - optional dependency during tests
     from openai import OpenAI
@@ -49,6 +50,8 @@ TEMPLATE_SCHEMA: Dict[str, Any] = {
         "finance",
         "do_today",
         "avoid_today",
+        "caution_window",
+        "remedies",
         "lucky",
         "one_line_summary",
     ],
@@ -101,6 +104,15 @@ TEMPLATE_SCHEMA: Dict[str, Any] = {
         },
         "do_today": {"type": "array", "items": {"type": "string"}, "maxItems": 6},
         "avoid_today": {"type": "array", "items": {"type": "string"}, "maxItems": 6},
+        "caution_window": {
+            "type": "object",
+            "required": ["time_window", "note"],
+            "properties": {
+                "time_window": {"type": "string"},
+                "note": {"type": "string"},
+            },
+        },
+        "remedies": {"type": "array", "items": {"type": "string"}, "maxItems": 6},
         "lucky": {
             "type": "object",
             "required": ["color", "time_window", "direction", "affirmation"],
@@ -476,6 +488,179 @@ DEFAULT_HEALTH_NOTES: Tuple[str, ...] = (
     "Plenty of water",
 )
 
+DEFAULT_MANTRA = "I choose what strengthens me."
+SECONDARY_MANTRA = "I keep my presence clear and calm."
+DISTINCT_PHRASE_FALLBACK = "I welcome steady clarity."
+
+
+CHALLENGING_ASPECTS = {
+    "square",
+    "opposition",
+    "quincunx",
+    "retrograde",
+    "semi-square",
+    "sesquisquare",
+}
+
+CHALLENGING_KEYWORDS = {
+    "pressure",
+    "tension",
+    "strain",
+    "challenge",
+    "caution",
+    "warning",
+    "delay",
+    "stress",
+    "conflict",
+    "pushback",
+}
+
+
+def _strip_emdash(text: Optional[str]) -> str:
+    if not isinstance(text, str):
+        return ""
+    return text.replace("—", "-").replace("–", "-")
+
+
+def _normalize_for_compare(text: Optional[str]) -> str:
+    if not text:
+        return ""
+    return re.sub(r"\s+", " ", text.strip()).lower()
+
+
+def _select_distinct_phrase(
+    candidate: Optional[str], *, fallback: str, avoid: str, secondary: str
+) -> str:
+    options = [candidate, fallback, secondary, DISTINCT_PHRASE_FALLBACK]
+    normalized_avoid = _normalize_for_compare(avoid)
+    for option in options:
+        if not option:
+            continue
+        stripped = option.strip()
+        if not stripped:
+            continue
+        if _normalize_for_compare(stripped) != normalized_avoid:
+            return stripped
+    return fallback
+
+
+def _dominant_body(events: Sequence[Mapping[str, Any]]) -> str:
+    for event in events:
+        if not isinstance(event, Mapping):
+            continue
+        for key in ("transit_body", "body", "planet"):
+            candidate = _coerce_string(event.get(key))
+            if candidate:
+                return candidate
+    return "Sun"
+
+
+def _dominant_sign(events: Sequence[Mapping[str, Any]]) -> str:
+    for event in events:
+        if not isinstance(event, Mapping):
+            continue
+        for key in ("transit_sign", "sign", "natal_sign", "zodiac"):
+            candidate = _coerce_string(event.get(key))
+            if candidate:
+                return candidate
+    return "Leo"
+
+
+def _is_challenging_event(event: Mapping[str, Any]) -> bool:
+    aspect = _coerce_string(event.get("aspect")).lower()
+    note = _coerce_string(event.get("note")).lower()
+    if any(token in aspect for token in CHALLENGING_ASPECTS):
+        return True
+    return any(keyword in note for keyword in CHALLENGING_KEYWORDS)
+
+
+def _event_time_window(event: Mapping[str, Any]) -> str:
+    for key in ("time_window", "window", "time", "span", "range"):
+        candidate = _strip_emdash(_coerce_string(event.get(key)))
+        if candidate:
+            return candidate
+    start = _strip_emdash(_coerce_string(event.get("start_time")))
+    end = _strip_emdash(_coerce_string(event.get("end_time")))
+    if start and end:
+        return f"{start}-{end}"
+    return ""
+
+
+def _build_caution_window(
+    daily: Mapping[str, Any],
+    top_events: Sequence[Mapping[str, Any]],
+    *,
+    fallback_time: str = "14:00-16:00 (afternoon)",
+    fallback_note: str = "Use this span for careful review and gentler pacing.",
+) -> Dict[str, str]:
+    provided = _sanitize_mapping(daily.get("caution_window"))
+    note = _strip_emdash(_coerce_string(provided.get("note")))
+    time_window = _strip_emdash(_coerce_string(provided.get("time_window")))
+
+    if not time_window or not note:
+        candidate = next((event for event in top_events if _is_challenging_event(event)), None)
+        if candidate is None and top_events:
+            candidate = top_events[0]
+        if candidate:
+            if not time_window:
+                time_window = _event_time_window(candidate)
+            if not note:
+                raw_note = _strip_emdash(_coerce_string(candidate.get("note")))
+                note = _trim_for_display(raw_note, ensure_sentence=True)
+
+    final_time = time_window or fallback_time
+    final_note = note or fallback_note
+    return {
+        "time_window": final_time,
+        "note": _ensure_sentence(final_note),
+    }
+
+
+def _format_remedy_text(template: str, *, sign: str, theme: str) -> str:
+    tokens = {
+        "sign": sign or "your sign",
+        "theme": theme or "day",
+    }
+    text = template.format(**tokens)
+    text = _strip_emdash(text)
+    return _ensure_sentence(text)
+
+
+def _fallback_remedies(
+    daily: Mapping[str, Any],
+    *,
+    theme: str,
+    top_events: Sequence[Mapping[str, Any]],
+) -> List[str]:
+    provided = daily.get("remedies")
+    cleaned = _sanitize_string_list(provided) if provided else []
+    if cleaned:
+        return cleaned[:SANITIZED_LIST_LIMIT]
+
+    dominant_body = _dominant_body(top_events)
+    dominant_sign = _dominant_sign(top_events)
+    theme_token = theme.lower().strip() if theme else "day"
+    sign_token = dominant_sign or "your sign"
+    templates = remedy_templates_for_planet(dominant_body)
+    remedies: List[str] = []
+    seen: set[str] = set()
+    for template in templates:
+        candidate = _format_remedy_text(
+            template,
+            sign=sign_token,
+            theme=theme_token,
+        )
+        if candidate:
+            lowered = candidate.lower()
+            if lowered not in seen:
+                remedies.append(candidate)
+                seen.add(lowered)
+        if len(remedies) >= SANITIZED_LIST_LIMIT:
+            break
+    if not remedies:
+        remedies.append(_ensure_sentence("Ground yourself with three steady breaths."))
+    return remedies
+
 
 def _build_fallback(daily: Dict[str, Any]) -> DailyTemplatedResponse:
     meta = daily.get("meta", {})
@@ -494,13 +679,25 @@ def _build_fallback(daily: Dict[str, Any]) -> DailyTemplatedResponse:
     date = meta.get("date") or time.strftime("%Y-%m-%d")
 
     lucky_details = _sanitize_mapping(daily.get("lucky"))
+    lucky_affirmation = _strip_emdash(_coerce_string(lucky_details.get("affirmation")))
     fallback_lucky = {
-        "color": _coerce_string(lucky_details.get("color")) or "Deep Red",
-        "time_window": _coerce_string(lucky_details.get("time_window")) or "10:00–12:00",
-        "direction": _coerce_string(lucky_details.get("direction")) or "SE",
-        "affirmation": _coerce_string(lucky_details.get("affirmation"))
-        or "My focus is steady and encouraging.",
+        "color": _strip_emdash(_coerce_string(lucky_details.get("color"))) or "Deep Red",
+        "time_window": _strip_emdash(_coerce_string(lucky_details.get("time_window")))
+        or "10:00-12:00",
+        "direction": _strip_emdash(_coerce_string(lucky_details.get("direction"))) or "SE",
+        "affirmation": lucky_affirmation or "My focus is steady and encouraging.",
     }
+
+    fallback_caution = _build_caution_window(daily, top_events)
+
+    morning_details = _sanitize_mapping(daily.get("morning_mindset"))
+    raw_mantra = _strip_emdash(_coerce_string(morning_details.get("mantra")))
+    fallback_mantra = _select_distinct_phrase(
+        raw_mantra,
+        fallback=DEFAULT_MANTRA,
+        avoid=fallback_lucky["affirmation"],
+        secondary=SECONDARY_MANTRA,
+    )
 
     summary_text = _coerce_string(daily.get("summary"))
     if summary_text:
@@ -528,6 +725,8 @@ def _build_fallback(daily: Dict[str, Any]) -> DailyTemplatedResponse:
         headline_source,
         fallback="Focused Momentum",
     ) or "Focused Momentum"
+
+    fallback_remedies = _fallback_remedies(daily, theme=theme, top_events=top_events)
 
     focus_map: Dict[str, Dict[str, Any]] = {}
     for entry in focus_areas:
@@ -644,7 +843,7 @@ def _build_fallback(daily: Dict[str, Any]) -> DailyTemplatedResponse:
         "opening_summary": summary_for_opening,
         "morning_mindset": {
             "paragraph": summary_for_opening,
-            "mantra": fallback_lucky["affirmation"],
+            "mantra": fallback_mantra,
         },
         "career": {"paragraph": career_paragraph_src, "bullets": career_bullets},
         "love": {"paragraph": love_paragraph_src, "attached": "", "single": ""},
@@ -677,7 +876,12 @@ def _build_fallback(daily: Dict[str, Any]) -> DailyTemplatedResponse:
             "opening_summary": ctx.get("opening_summary", summary_for_opening),
             "morning_mindset": {
                 "paragraph": ctx.get("morning_paragraph", summary_for_opening),
-                "mantra": ctx.get("mantra", fallback_lucky["affirmation"]),
+                "mantra": _select_distinct_phrase(
+                    _strip_emdash(_coerce_string(ctx.get("mantra"))),
+                    fallback=fallback_mantra,
+                    avoid=fallback_lucky["affirmation"],
+                    secondary=SECONDARY_MANTRA,
+                ),
             },
             "career": {
                 "paragraph": ctx.get("career_paragraph", career_paragraph_src),
@@ -698,6 +902,8 @@ def _build_fallback(daily: Dict[str, Any]) -> DailyTemplatedResponse:
             },
             "do_today": do_today_story[:SANITIZED_LIST_LIMIT],
             "avoid_today": avoid_today_story[:SANITIZED_LIST_LIMIT],
+            "caution_window": ctx.get("caution_window") or fallback_caution,
+            "remedies": (ctx.get("remedies") or fallback_remedies)[:SANITIZED_LIST_LIMIT],
             "lucky": fallback_lucky,
             "one_line_summary": ctx.get("one_line_summary", summary_for_opening),
         }
@@ -766,7 +972,7 @@ def _build_fallback(daily: Dict[str, Any]) -> DailyTemplatedResponse:
     )
 
     lucky_affirmation = fallback_lucky["affirmation"]
-    mantra_source = lucky_affirmation or "Small steps carry real power."
+    mantra_source = fallback_mantra or DEFAULT_MANTRA
     opening_summary = _render_from_templates(
         OPENING_SUMMARY_TEMPLATES,
         {
@@ -830,6 +1036,8 @@ def _build_fallback(daily: Dict[str, Any]) -> DailyTemplatedResponse:
         },
         "do_today": do_today,
         "avoid_today": avoid_today,
+        "caution_window": fallback_caution,
+        "remedies": fallback_remedies,
         "lucky": fallback_lucky,
         "one_line_summary": one_line_summary,
     }
@@ -858,7 +1066,7 @@ def _render_with_llm(
         f"MODEL={TEMPLATE_MODEL}",
         "- Respond with raw JSON only (no code fences).",
         "- Top-level keys must be exactly: profile_name, date, mood, theme, opening_summary,",
-        "  morning_mindset, career, love, health, finance, do_today, avoid_today, lucky, one_line_summary.",
+        "  morning_mindset, career, love, health, finance, do_today, avoid_today, caution_window, remedies, lucky, one_line_summary.",
         "- Use meta.profile_name (Title Case) and meta.date.",
         "- morning_mindset must be an object with: {paragraph: string, mantra: string}",
         "- career must be an object with: {paragraph: string, bullets: [up to 4 strings]}",
@@ -866,6 +1074,8 @@ def _render_with_llm(
         "- health must be an object with: {paragraph: string, good_options: [up to 4 strings]}",
         "- finance must be an object with: {paragraph: string, bullets: [up to 4 strings]}",
         "- do_today and avoid_today must be arrays with up to 4 short strings each.",
+        "- caution_window must be an object with: {time_window: string, note: string}",
+        "- remedies must be an array with up to 4 short strings.",
         "- lucky must be an object with: {color: string, time_window: string, direction: string, affirmation: string}",
         "- Use EXACTLY these field names. Do not use bullet_points, use bullets. Do not omit required fields.",
         "- Reference significant transits lightly; keep it readable.",
