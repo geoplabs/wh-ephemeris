@@ -7,7 +7,7 @@
       "area": "general",
       "clause_variants": [
         "Subtle radiant energy supports your day flow.",
-        "Momentum guides your day choices with quiet clarity."
+        "Momentum guides your day choices with calm focus."
       ],
       "bullet_templates": {
         "do": [
@@ -28,7 +28,7 @@
           "mode": "permutation",
           "items": [
             "Subtle radiant energy supports your day flow.",
-            "Momentum guides your day choices with quiet clarity."
+            "Momentum guides your day choices with calm focus."
           ]
         },
         "adjective": {
@@ -57,8 +57,8 @@
       "intensity": "background",
       "area": "career",
       "clause_variants": [
-        "Subtle radiant energy supports your career progress.",
-        "Momentum guides your career moves with quiet clarity."
+        "Subtle radiant energy supports your career progress with grounded follow-through.",
+        "Momentum guides your career moves with grounded clarity."
       ],
       "bullet_templates": {
         "do": [
@@ -78,8 +78,8 @@
         "clauses": {
           "mode": "permutation",
           "items": [
-            "Subtle radiant energy supports your career progress.",
-            "Momentum guides your career moves with quiet clarity."
+            "Subtle radiant energy supports your career progress with grounded follow-through.",
+            "Momentum guides your career moves with grounded clarity."
           ]
         },
         "adjective": {
@@ -108,8 +108,8 @@
       "intensity": "background",
       "area": "love",
       "clause_variants": [
-        "Subtle radiant energy supports your relationships connections.",
-        "Momentum guides your relationships openings with quiet clarity."
+        "Subtle radiant energy supports your relationship connections with warmth.",
+        "Momentum guides openings in your relationships with warm intention."
       ],
       "bullet_templates": {
         "do": [
@@ -129,8 +129,8 @@
         "clauses": {
           "mode": "permutation",
           "items": [
-            "Subtle radiant energy supports your relationships connections.",
-            "Momentum guides your relationships openings with quiet clarity."
+            "Subtle radiant energy supports your relationship connections with warmth.",
+            "Momentum guides openings in your relationships with warm intention."
           ]
         },
         "adjective": {
@@ -160,7 +160,7 @@
       "area": "health",
       "clause_variants": [
         "Subtle radiant energy supports your wellness rhythms.",
-        "Momentum guides your wellness care with quiet clarity."
+        "Momentum guides your wellness care with mindful pacing."
       ],
       "bullet_templates": {
         "do": [
@@ -181,7 +181,7 @@
           "mode": "permutation",
           "items": [
             "Subtle radiant energy supports your wellness rhythms.",
-            "Momentum guides your wellness care with quiet clarity."
+            "Momentum guides your wellness care with mindful pacing."
           ]
         },
         "adjective": {
@@ -210,8 +210,8 @@
       "intensity": "background",
       "area": "finance",
       "clause_variants": [
-        "Subtle radiant energy supports your finances decisions.",
-        "Momentum guides your finances planning with quiet clarity."
+        "Subtle radiant energy supports your financial decisions.",
+        "Momentum guides your financial planning with measured clarity."
       ],
       "bullet_templates": {
         "do": [
@@ -231,8 +231,8 @@
         "clauses": {
           "mode": "permutation",
           "items": [
-            "Subtle radiant energy supports your finances decisions.",
-            "Momentum guides your finances planning with quiet clarity."
+            "Subtle radiant energy supports your financial decisions.",
+            "Momentum guides your financial planning with measured clarity."
           ]
         },
         "adjective": {
@@ -363,8 +363,8 @@
       "intensity": "gentle",
       "area": "love",
       "clause_variants": [
-        "Gentle radiant energy supports your relationships connections.",
-        "Momentum guides your relationships openings with measured clarity."
+        "Gentle radiant energy supports your relationship connections.",
+        "Momentum guides openings in your relationships with measured clarity."
       ],
       "bullet_templates": {
         "do": [
@@ -384,8 +384,8 @@
         "clauses": {
           "mode": "permutation",
           "items": [
-            "Gentle radiant energy supports your relationships connections.",
-            "Momentum guides your relationships openings with measured clarity."
+            "Gentle radiant energy supports your relationship connections.",
+            "Momentum guides openings in your relationships with measured clarity."
           ]
         },
         "adjective": {
@@ -465,8 +465,8 @@
       "intensity": "gentle",
       "area": "finance",
       "clause_variants": [
-        "Gentle radiant energy supports your finances decisions.",
-        "Momentum guides your finances planning with measured clarity."
+        "Gentle radiant energy supports your financial decisions.",
+        "Momentum guides your financial planning with measured clarity."
       ],
       "bullet_templates": {
         "do": [
@@ -486,8 +486,8 @@
         "clauses": {
           "mode": "permutation",
           "items": [
-            "Gentle radiant energy supports your finances decisions.",
-            "Momentum guides your finances planning with measured clarity."
+            "Gentle radiant energy supports your financial decisions.",
+            "Momentum guides your financial planning with measured clarity."
           ]
         },
         "adjective": {
@@ -618,8 +618,8 @@
       "intensity": "steady",
       "area": "love",
       "clause_variants": [
-        "Steady radiant energy supports your relationships connections.",
-        "Momentum guides your relationships openings with reliable clarity."
+        "Steady radiant energy supports your relationship connections.",
+        "Momentum guides openings in your relationships with reliable clarity."
       ],
       "bullet_templates": {
         "do": [
@@ -639,8 +639,8 @@
         "clauses": {
           "mode": "permutation",
           "items": [
-            "Steady radiant energy supports your relationships connections.",
-            "Momentum guides your relationships openings with reliable clarity."
+            "Steady radiant energy supports your relationship connections.",
+            "Momentum guides openings in your relationships with reliable clarity."
           ]
         },
         "adjective": {
@@ -720,8 +720,8 @@
       "intensity": "steady",
       "area": "finance",
       "clause_variants": [
-        "Steady radiant energy supports your finances decisions.",
-        "Momentum guides your finances planning with reliable clarity."
+        "Steady radiant energy supports your financial decisions.",
+        "Momentum guides your financial planning with reliable clarity."
       ],
       "bullet_templates": {
         "do": [
@@ -741,8 +741,8 @@
         "clauses": {
           "mode": "permutation",
           "items": [
-            "Steady radiant energy supports your finances decisions.",
-            "Momentum guides your finances planning with reliable clarity."
+            "Steady radiant energy supports your financial decisions.",
+            "Momentum guides your financial planning with reliable clarity."
           ]
         },
         "adjective": {
@@ -873,8 +873,8 @@
       "intensity": "strong",
       "area": "love",
       "clause_variants": [
-        "Strong radiant energy supports your relationships connections.",
-        "Momentum guides your relationships openings with bold clarity."
+        "Strong radiant energy supports your relationship connections.",
+        "Momentum guides openings in your relationships with bold clarity."
       ],
       "bullet_templates": {
         "do": [
@@ -894,8 +894,8 @@
         "clauses": {
           "mode": "permutation",
           "items": [
-            "Strong radiant energy supports your relationships connections.",
-            "Momentum guides your relationships openings with bold clarity."
+            "Strong radiant energy supports your relationship connections.",
+            "Momentum guides openings in your relationships with bold clarity."
           ]
         },
         "adjective": {
@@ -975,8 +975,8 @@
       "intensity": "strong",
       "area": "finance",
       "clause_variants": [
-        "Strong radiant energy supports your finances decisions.",
-        "Momentum guides your finances planning with bold clarity."
+        "Strong radiant energy supports your financial decisions.",
+        "Momentum guides your financial planning with bold clarity."
       ],
       "bullet_templates": {
         "do": [
@@ -996,8 +996,8 @@
         "clauses": {
           "mode": "permutation",
           "items": [
-            "Strong radiant energy supports your finances decisions.",
-            "Momentum guides your finances planning with bold clarity."
+            "Strong radiant energy supports your financial decisions.",
+            "Momentum guides your financial planning with bold clarity."
           ]
         },
         "adjective": {
@@ -1128,8 +1128,8 @@
       "intensity": "surge",
       "area": "love",
       "clause_variants": [
-        "Peak radiant energy supports your relationships connections.",
-        "Momentum guides your relationships openings with urgent clarity."
+        "Peak radiant energy supports your relationship connections.",
+        "Momentum guides openings in your relationships with urgent clarity."
       ],
       "bullet_templates": {
         "do": [
@@ -1149,8 +1149,8 @@
         "clauses": {
           "mode": "permutation",
           "items": [
-            "Peak radiant energy supports your relationships connections.",
-            "Momentum guides your relationships openings with urgent clarity."
+            "Peak radiant energy supports your relationship connections.",
+            "Momentum guides openings in your relationships with urgent clarity."
           ]
         },
         "adjective": {
@@ -1230,8 +1230,8 @@
       "intensity": "surge",
       "area": "finance",
       "clause_variants": [
-        "Peak radiant energy supports your finances decisions.",
-        "Momentum guides your finances planning with urgent clarity."
+        "Peak radiant energy supports your financial decisions.",
+        "Momentum guides your financial planning with urgent clarity."
       ],
       "bullet_templates": {
         "do": [
@@ -1251,8 +1251,8 @@
         "clauses": {
           "mode": "permutation",
           "items": [
-            "Peak radiant energy supports your finances decisions.",
-            "Momentum guides your finances planning with urgent clarity."
+            "Peak radiant energy supports your financial decisions.",
+            "Momentum guides your financial planning with urgent clarity."
           ]
         },
         "adjective": {
@@ -1282,7 +1282,7 @@
       "area": "general",
       "clause_variants": [
         "Subtle grounded energy supports your day flow.",
-        "Strategy guides your day choices with quiet clarity."
+        "Strategy guides your day choices with calm focus."
       ],
       "bullet_templates": {
         "do": [
@@ -1303,7 +1303,7 @@
           "mode": "permutation",
           "items": [
             "Subtle grounded energy supports your day flow.",
-            "Strategy guides your day choices with quiet clarity."
+            "Strategy guides your day choices with calm focus."
           ]
         },
         "adjective": {
@@ -1333,7 +1333,7 @@
       "area": "career",
       "clause_variants": [
         "Subtle grounded energy supports your career progress.",
-        "Strategy guides your career moves with quiet clarity."
+        "Strategy guides your career moves with grounded clarity."
       ],
       "bullet_templates": {
         "do": [
@@ -1354,7 +1354,7 @@
           "mode": "permutation",
           "items": [
             "Subtle grounded energy supports your career progress.",
-            "Strategy guides your career moves with quiet clarity."
+            "Strategy guides your career moves with grounded clarity."
           ]
         },
         "adjective": {
@@ -1383,8 +1383,8 @@
       "intensity": "background",
       "area": "love",
       "clause_variants": [
-        "Subtle grounded energy supports your relationships connections.",
-        "Strategy guides your relationships openings with quiet clarity."
+        "Subtle grounded energy supports your relationship connections.",
+        "Strategy guides openings in your relationships with warm intention."
       ],
       "bullet_templates": {
         "do": [
@@ -1404,8 +1404,8 @@
         "clauses": {
           "mode": "permutation",
           "items": [
-            "Subtle grounded energy supports your relationships connections.",
-            "Strategy guides your relationships openings with quiet clarity."
+            "Subtle grounded energy supports your relationship connections.",
+            "Strategy guides openings in your relationships with warm intention."
           ]
         },
         "adjective": {
@@ -1435,7 +1435,7 @@
       "area": "health",
       "clause_variants": [
         "Subtle grounded energy supports your wellness rhythms.",
-        "Strategy guides your wellness care with quiet clarity."
+        "Strategy guides your wellness care with mindful pacing."
       ],
       "bullet_templates": {
         "do": [
@@ -1456,7 +1456,7 @@
           "mode": "permutation",
           "items": [
             "Subtle grounded energy supports your wellness rhythms.",
-            "Strategy guides your wellness care with quiet clarity."
+            "Strategy guides your wellness care with mindful pacing."
           ]
         },
         "adjective": {
@@ -1485,8 +1485,8 @@
       "intensity": "background",
       "area": "finance",
       "clause_variants": [
-        "Subtle grounded energy supports your finances decisions.",
-        "Strategy guides your finances planning with quiet clarity."
+        "Subtle grounded energy supports your financial decisions.",
+        "Strategy guides your financial planning with measured clarity."
       ],
       "bullet_templates": {
         "do": [
@@ -1506,8 +1506,8 @@
         "clauses": {
           "mode": "permutation",
           "items": [
-            "Subtle grounded energy supports your finances decisions.",
-            "Strategy guides your finances planning with quiet clarity."
+            "Subtle grounded energy supports your financial decisions.",
+            "Strategy guides your financial planning with measured clarity."
           ]
         },
         "adjective": {
@@ -1638,8 +1638,8 @@
       "intensity": "gentle",
       "area": "love",
       "clause_variants": [
-        "Gentle grounded energy supports your relationships connections.",
-        "Strategy guides your relationships openings with measured clarity."
+        "Gentle grounded energy supports your relationship connections.",
+        "Strategy guides openings in your relationships with measured clarity."
       ],
       "bullet_templates": {
         "do": [
@@ -1659,8 +1659,8 @@
         "clauses": {
           "mode": "permutation",
           "items": [
-            "Gentle grounded energy supports your relationships connections.",
-            "Strategy guides your relationships openings with measured clarity."
+            "Gentle grounded energy supports your relationship connections.",
+            "Strategy guides openings in your relationships with measured clarity."
           ]
         },
         "adjective": {
@@ -1740,8 +1740,8 @@
       "intensity": "gentle",
       "area": "finance",
       "clause_variants": [
-        "Gentle grounded energy supports your finances decisions.",
-        "Strategy guides your finances planning with measured clarity."
+        "Gentle grounded energy supports your financial decisions.",
+        "Strategy guides your financial planning with measured clarity."
       ],
       "bullet_templates": {
         "do": [
@@ -1761,8 +1761,8 @@
         "clauses": {
           "mode": "permutation",
           "items": [
-            "Gentle grounded energy supports your finances decisions.",
-            "Strategy guides your finances planning with measured clarity."
+            "Gentle grounded energy supports your financial decisions.",
+            "Strategy guides your financial planning with measured clarity."
           ]
         },
         "adjective": {
@@ -1893,8 +1893,8 @@
       "intensity": "steady",
       "area": "love",
       "clause_variants": [
-        "Steady grounded energy supports your relationships connections.",
-        "Strategy guides your relationships openings with reliable clarity."
+        "Steady grounded energy supports your relationship connections.",
+        "Strategy guides openings in your relationships with reliable clarity."
       ],
       "bullet_templates": {
         "do": [
@@ -1914,8 +1914,8 @@
         "clauses": {
           "mode": "permutation",
           "items": [
-            "Steady grounded energy supports your relationships connections.",
-            "Strategy guides your relationships openings with reliable clarity."
+            "Steady grounded energy supports your relationship connections.",
+            "Strategy guides openings in your relationships with reliable clarity."
           ]
         },
         "adjective": {
@@ -1995,8 +1995,8 @@
       "intensity": "steady",
       "area": "finance",
       "clause_variants": [
-        "Steady grounded energy supports your finances decisions.",
-        "Strategy guides your finances planning with reliable clarity."
+        "Steady grounded energy supports your financial decisions.",
+        "Strategy guides your financial planning with reliable clarity."
       ],
       "bullet_templates": {
         "do": [
@@ -2016,8 +2016,8 @@
         "clauses": {
           "mode": "permutation",
           "items": [
-            "Steady grounded energy supports your finances decisions.",
-            "Strategy guides your finances planning with reliable clarity."
+            "Steady grounded energy supports your financial decisions.",
+            "Strategy guides your financial planning with reliable clarity."
           ]
         },
         "adjective": {
@@ -2148,8 +2148,8 @@
       "intensity": "strong",
       "area": "love",
       "clause_variants": [
-        "Strong grounded energy supports your relationships connections.",
-        "Strategy guides your relationships openings with bold clarity."
+        "Strong grounded energy supports your relationship connections.",
+        "Strategy guides openings in your relationships with bold clarity."
       ],
       "bullet_templates": {
         "do": [
@@ -2169,8 +2169,8 @@
         "clauses": {
           "mode": "permutation",
           "items": [
-            "Strong grounded energy supports your relationships connections.",
-            "Strategy guides your relationships openings with bold clarity."
+            "Strong grounded energy supports your relationship connections.",
+            "Strategy guides openings in your relationships with bold clarity."
           ]
         },
         "adjective": {
@@ -2250,8 +2250,8 @@
       "intensity": "strong",
       "area": "finance",
       "clause_variants": [
-        "Strong grounded energy supports your finances decisions.",
-        "Strategy guides your finances planning with bold clarity."
+        "Strong grounded energy supports your financial decisions.",
+        "Strategy guides your financial planning with bold clarity."
       ],
       "bullet_templates": {
         "do": [
@@ -2271,8 +2271,8 @@
         "clauses": {
           "mode": "permutation",
           "items": [
-            "Strong grounded energy supports your finances decisions.",
-            "Strategy guides your finances planning with bold clarity."
+            "Strong grounded energy supports your financial decisions.",
+            "Strategy guides your financial planning with bold clarity."
           ]
         },
         "adjective": {
@@ -2403,8 +2403,8 @@
       "intensity": "surge",
       "area": "love",
       "clause_variants": [
-        "Peak grounded energy supports your relationships connections.",
-        "Strategy guides your relationships openings with urgent clarity."
+        "Peak grounded energy supports your relationship connections.",
+        "Strategy guides openings in your relationships with urgent clarity."
       ],
       "bullet_templates": {
         "do": [
@@ -2424,8 +2424,8 @@
         "clauses": {
           "mode": "permutation",
           "items": [
-            "Peak grounded energy supports your relationships connections.",
-            "Strategy guides your relationships openings with urgent clarity."
+            "Peak grounded energy supports your relationship connections.",
+            "Strategy guides openings in your relationships with urgent clarity."
           ]
         },
         "adjective": {
@@ -2505,8 +2505,8 @@
       "intensity": "surge",
       "area": "finance",
       "clause_variants": [
-        "Peak grounded energy supports your finances decisions.",
-        "Strategy guides your finances planning with urgent clarity."
+        "Peak grounded energy supports your financial decisions.",
+        "Strategy guides your financial planning with urgent clarity."
       ],
       "bullet_templates": {
         "do": [
@@ -2526,8 +2526,8 @@
         "clauses": {
           "mode": "permutation",
           "items": [
-            "Peak grounded energy supports your finances decisions.",
-            "Strategy guides your finances planning with urgent clarity."
+            "Peak grounded energy supports your financial decisions.",
+            "Strategy guides your financial planning with urgent clarity."
           ]
         },
         "adjective": {
@@ -2557,7 +2557,7 @@
       "area": "general",
       "clause_variants": [
         "Subtle heart-led energy supports your day flow.",
-        "Compassion guides your day choices with quiet clarity."
+        "Compassion guides your day choices with calm focus."
       ],
       "bullet_templates": {
         "do": [
@@ -2578,7 +2578,7 @@
           "mode": "permutation",
           "items": [
             "Subtle heart-led energy supports your day flow.",
-            "Compassion guides your day choices with quiet clarity."
+            "Compassion guides your day choices with calm focus."
           ]
         },
         "adjective": {
@@ -2608,7 +2608,7 @@
       "area": "career",
       "clause_variants": [
         "Subtle heart-led energy supports your career progress.",
-        "Compassion guides your career moves with quiet clarity."
+        "Compassion guides your career moves with grounded clarity."
       ],
       "bullet_templates": {
         "do": [
@@ -2629,7 +2629,7 @@
           "mode": "permutation",
           "items": [
             "Subtle heart-led energy supports your career progress.",
-            "Compassion guides your career moves with quiet clarity."
+            "Compassion guides your career moves with grounded clarity."
           ]
         },
         "adjective": {
@@ -2658,8 +2658,8 @@
       "intensity": "background",
       "area": "love",
       "clause_variants": [
-        "Subtle heart-led energy supports your relationships connections.",
-        "Compassion guides your relationships openings with quiet clarity."
+        "Subtle heart-led energy supports your relationship connections.",
+        "Compassion guides openings in your relationships with warm intention."
       ],
       "bullet_templates": {
         "do": [
@@ -2679,8 +2679,8 @@
         "clauses": {
           "mode": "permutation",
           "items": [
-            "Subtle heart-led energy supports your relationships connections.",
-            "Compassion guides your relationships openings with quiet clarity."
+            "Subtle heart-led energy supports your relationship connections.",
+            "Compassion guides openings in your relationships with warm intention."
           ]
         },
         "adjective": {
@@ -2710,7 +2710,7 @@
       "area": "health",
       "clause_variants": [
         "Subtle heart-led energy supports your wellness rhythms.",
-        "Compassion guides your wellness care with quiet clarity."
+        "Compassion guides your wellness care with mindful pacing."
       ],
       "bullet_templates": {
         "do": [
@@ -2731,7 +2731,7 @@
           "mode": "permutation",
           "items": [
             "Subtle heart-led energy supports your wellness rhythms.",
-            "Compassion guides your wellness care with quiet clarity."
+            "Compassion guides your wellness care with mindful pacing."
           ]
         },
         "adjective": {
@@ -2760,8 +2760,8 @@
       "intensity": "background",
       "area": "finance",
       "clause_variants": [
-        "Subtle heart-led energy supports your finances decisions.",
-        "Compassion guides your finances planning with quiet clarity."
+        "Subtle heart-led energy supports your financial decisions.",
+        "Compassion guides your financial planning with measured clarity."
       ],
       "bullet_templates": {
         "do": [
@@ -2781,8 +2781,8 @@
         "clauses": {
           "mode": "permutation",
           "items": [
-            "Subtle heart-led energy supports your finances decisions.",
-            "Compassion guides your finances planning with quiet clarity."
+            "Subtle heart-led energy supports your financial decisions.",
+            "Compassion guides your financial planning with measured clarity."
           ]
         },
         "adjective": {
@@ -2913,8 +2913,8 @@
       "intensity": "gentle",
       "area": "love",
       "clause_variants": [
-        "Gentle heart-led energy supports your relationships connections.",
-        "Compassion guides your relationships openings with measured clarity."
+        "Gentle heart-led energy supports your relationship connections.",
+        "Compassion guides openings in your relationships with measured clarity."
       ],
       "bullet_templates": {
         "do": [
@@ -2934,8 +2934,8 @@
         "clauses": {
           "mode": "permutation",
           "items": [
-            "Gentle heart-led energy supports your relationships connections.",
-            "Compassion guides your relationships openings with measured clarity."
+            "Gentle heart-led energy supports your relationship connections.",
+            "Compassion guides openings in your relationships with measured clarity."
           ]
         },
         "adjective": {
@@ -3015,8 +3015,8 @@
       "intensity": "gentle",
       "area": "finance",
       "clause_variants": [
-        "Gentle heart-led energy supports your finances decisions.",
-        "Compassion guides your finances planning with measured clarity."
+        "Gentle heart-led energy supports your financial decisions.",
+        "Compassion guides your financial planning with measured clarity."
       ],
       "bullet_templates": {
         "do": [
@@ -3036,8 +3036,8 @@
         "clauses": {
           "mode": "permutation",
           "items": [
-            "Gentle heart-led energy supports your finances decisions.",
-            "Compassion guides your finances planning with measured clarity."
+            "Gentle heart-led energy supports your financial decisions.",
+            "Compassion guides your financial planning with measured clarity."
           ]
         },
         "adjective": {
@@ -3168,8 +3168,8 @@
       "intensity": "steady",
       "area": "love",
       "clause_variants": [
-        "Steady heart-led energy supports your relationships connections.",
-        "Compassion guides your relationships openings with reliable clarity."
+        "Steady heart-led energy supports your relationship connections.",
+        "Compassion guides openings in your relationships with reliable clarity."
       ],
       "bullet_templates": {
         "do": [
@@ -3189,8 +3189,8 @@
         "clauses": {
           "mode": "permutation",
           "items": [
-            "Steady heart-led energy supports your relationships connections.",
-            "Compassion guides your relationships openings with reliable clarity."
+            "Steady heart-led energy supports your relationship connections.",
+            "Compassion guides openings in your relationships with reliable clarity."
           ]
         },
         "adjective": {
@@ -3270,8 +3270,8 @@
       "intensity": "steady",
       "area": "finance",
       "clause_variants": [
-        "Steady heart-led energy supports your finances decisions.",
-        "Compassion guides your finances planning with reliable clarity."
+        "Steady heart-led energy supports your financial decisions.",
+        "Compassion guides your financial planning with reliable clarity."
       ],
       "bullet_templates": {
         "do": [
@@ -3291,8 +3291,8 @@
         "clauses": {
           "mode": "permutation",
           "items": [
-            "Steady heart-led energy supports your finances decisions.",
-            "Compassion guides your finances planning with reliable clarity."
+            "Steady heart-led energy supports your financial decisions.",
+            "Compassion guides your financial planning with reliable clarity."
           ]
         },
         "adjective": {
@@ -3423,8 +3423,8 @@
       "intensity": "strong",
       "area": "love",
       "clause_variants": [
-        "Strong heart-led energy supports your relationships connections.",
-        "Compassion guides your relationships openings with bold clarity."
+        "Strong heart-led energy supports your relationship connections.",
+        "Compassion guides openings in your relationships with bold clarity."
       ],
       "bullet_templates": {
         "do": [
@@ -3444,8 +3444,8 @@
         "clauses": {
           "mode": "permutation",
           "items": [
-            "Strong heart-led energy supports your relationships connections.",
-            "Compassion guides your relationships openings with bold clarity."
+            "Strong heart-led energy supports your relationship connections.",
+            "Compassion guides openings in your relationships with bold clarity."
           ]
         },
         "adjective": {
@@ -3525,8 +3525,8 @@
       "intensity": "strong",
       "area": "finance",
       "clause_variants": [
-        "Strong heart-led energy supports your finances decisions.",
-        "Compassion guides your finances planning with bold clarity."
+        "Strong heart-led energy supports your financial decisions.",
+        "Compassion guides your financial planning with bold clarity."
       ],
       "bullet_templates": {
         "do": [
@@ -3546,8 +3546,8 @@
         "clauses": {
           "mode": "permutation",
           "items": [
-            "Strong heart-led energy supports your finances decisions.",
-            "Compassion guides your finances planning with bold clarity."
+            "Strong heart-led energy supports your financial decisions.",
+            "Compassion guides your financial planning with bold clarity."
           ]
         },
         "adjective": {
@@ -3678,8 +3678,8 @@
       "intensity": "surge",
       "area": "love",
       "clause_variants": [
-        "Peak heart-led energy supports your relationships connections.",
-        "Compassion guides your relationships openings with urgent clarity."
+        "Peak heart-led energy supports your relationship connections.",
+        "Compassion guides openings in your relationships with urgent clarity."
       ],
       "bullet_templates": {
         "do": [
@@ -3699,8 +3699,8 @@
         "clauses": {
           "mode": "permutation",
           "items": [
-            "Peak heart-led energy supports your relationships connections.",
-            "Compassion guides your relationships openings with urgent clarity."
+            "Peak heart-led energy supports your relationship connections.",
+            "Compassion guides openings in your relationships with urgent clarity."
           ]
         },
         "adjective": {
@@ -3780,8 +3780,8 @@
       "intensity": "surge",
       "area": "finance",
       "clause_variants": [
-        "Peak heart-led energy supports your finances decisions.",
-        "Compassion guides your finances planning with urgent clarity."
+        "Peak heart-led energy supports your financial decisions.",
+        "Compassion guides your financial planning with urgent clarity."
       ],
       "bullet_templates": {
         "do": [
@@ -3801,8 +3801,8 @@
         "clauses": {
           "mode": "permutation",
           "items": [
-            "Peak heart-led energy supports your finances decisions.",
-            "Compassion guides your finances planning with urgent clarity."
+            "Peak heart-led energy supports your financial decisions.",
+            "Compassion guides your financial planning with urgent clarity."
           ]
         },
         "adjective": {
@@ -3832,7 +3832,7 @@
       "area": "general",
       "clause_variants": [
         "Subtle disciplined energy supports your day flow.",
-        "Resolve guides your day choices with quiet clarity."
+        "Resolve guides your day choices with calm focus."
       ],
       "bullet_templates": {
         "do": [
@@ -3853,7 +3853,7 @@
           "mode": "permutation",
           "items": [
             "Subtle disciplined energy supports your day flow.",
-            "Resolve guides your day choices with quiet clarity."
+            "Resolve guides your day choices with calm focus."
           ]
         },
         "adjective": {
@@ -3883,7 +3883,7 @@
       "area": "career",
       "clause_variants": [
         "Subtle disciplined energy supports your career progress.",
-        "Resolve guides your career moves with quiet clarity."
+        "Resolve guides your career moves with grounded clarity."
       ],
       "bullet_templates": {
         "do": [
@@ -3904,7 +3904,7 @@
           "mode": "permutation",
           "items": [
             "Subtle disciplined energy supports your career progress.",
-            "Resolve guides your career moves with quiet clarity."
+            "Resolve guides your career moves with grounded clarity."
           ]
         },
         "adjective": {
@@ -3933,8 +3933,8 @@
       "intensity": "background",
       "area": "love",
       "clause_variants": [
-        "Subtle disciplined energy supports your relationships connections.",
-        "Resolve guides your relationships openings with quiet clarity."
+        "Subtle disciplined energy supports your relationship connections.",
+        "Resolve guides openings in your relationships with warm intention."
       ],
       "bullet_templates": {
         "do": [
@@ -3954,8 +3954,8 @@
         "clauses": {
           "mode": "permutation",
           "items": [
-            "Subtle disciplined energy supports your relationships connections.",
-            "Resolve guides your relationships openings with quiet clarity."
+            "Subtle disciplined energy supports your relationship connections.",
+            "Resolve guides openings in your relationships with warm intention."
           ]
         },
         "adjective": {
@@ -3985,7 +3985,7 @@
       "area": "health",
       "clause_variants": [
         "Subtle disciplined energy supports your wellness rhythms.",
-        "Resolve guides your wellness care with quiet clarity."
+        "Resolve guides your wellness care with mindful pacing."
       ],
       "bullet_templates": {
         "do": [
@@ -4006,7 +4006,7 @@
           "mode": "permutation",
           "items": [
             "Subtle disciplined energy supports your wellness rhythms.",
-            "Resolve guides your wellness care with quiet clarity."
+            "Resolve guides your wellness care with mindful pacing."
           ]
         },
         "adjective": {
@@ -4035,8 +4035,8 @@
       "intensity": "background",
       "area": "finance",
       "clause_variants": [
-        "Subtle disciplined energy supports your finances decisions.",
-        "Resolve guides your finances planning with quiet clarity."
+        "Subtle disciplined energy supports your financial decisions.",
+        "Resolve guides your financial planning with measured clarity."
       ],
       "bullet_templates": {
         "do": [
@@ -4056,8 +4056,8 @@
         "clauses": {
           "mode": "permutation",
           "items": [
-            "Subtle disciplined energy supports your finances decisions.",
-            "Resolve guides your finances planning with quiet clarity."
+            "Subtle disciplined energy supports your financial decisions.",
+            "Resolve guides your financial planning with measured clarity."
           ]
         },
         "adjective": {
@@ -4188,8 +4188,8 @@
       "intensity": "gentle",
       "area": "love",
       "clause_variants": [
-        "Gentle disciplined energy supports your relationships connections.",
-        "Resolve guides your relationships openings with measured clarity."
+        "Gentle disciplined energy supports your relationship connections.",
+        "Resolve guides openings in your relationships with measured clarity."
       ],
       "bullet_templates": {
         "do": [
@@ -4209,8 +4209,8 @@
         "clauses": {
           "mode": "permutation",
           "items": [
-            "Gentle disciplined energy supports your relationships connections.",
-            "Resolve guides your relationships openings with measured clarity."
+            "Gentle disciplined energy supports your relationship connections.",
+            "Resolve guides openings in your relationships with measured clarity."
           ]
         },
         "adjective": {
@@ -4290,8 +4290,8 @@
       "intensity": "gentle",
       "area": "finance",
       "clause_variants": [
-        "Gentle disciplined energy supports your finances decisions.",
-        "Resolve guides your finances planning with measured clarity."
+        "Gentle disciplined energy supports your financial decisions.",
+        "Resolve guides your financial planning with measured clarity."
       ],
       "bullet_templates": {
         "do": [
@@ -4311,8 +4311,8 @@
         "clauses": {
           "mode": "permutation",
           "items": [
-            "Gentle disciplined energy supports your finances decisions.",
-            "Resolve guides your finances planning with measured clarity."
+            "Gentle disciplined energy supports your financial decisions.",
+            "Resolve guides your financial planning with measured clarity."
           ]
         },
         "adjective": {
@@ -4443,8 +4443,8 @@
       "intensity": "steady",
       "area": "love",
       "clause_variants": [
-        "Steady disciplined energy supports your relationships connections.",
-        "Resolve guides your relationships openings with reliable clarity."
+        "Steady disciplined energy supports your relationship connections.",
+        "Resolve guides openings in your relationships with reliable clarity."
       ],
       "bullet_templates": {
         "do": [
@@ -4464,8 +4464,8 @@
         "clauses": {
           "mode": "permutation",
           "items": [
-            "Steady disciplined energy supports your relationships connections.",
-            "Resolve guides your relationships openings with reliable clarity."
+            "Steady disciplined energy supports your relationship connections.",
+            "Resolve guides openings in your relationships with reliable clarity."
           ]
         },
         "adjective": {
@@ -4545,8 +4545,8 @@
       "intensity": "steady",
       "area": "finance",
       "clause_variants": [
-        "Steady disciplined energy supports your finances decisions.",
-        "Resolve guides your finances planning with reliable clarity."
+        "Steady disciplined energy supports your financial decisions.",
+        "Resolve guides your financial planning with reliable clarity."
       ],
       "bullet_templates": {
         "do": [
@@ -4566,8 +4566,8 @@
         "clauses": {
           "mode": "permutation",
           "items": [
-            "Steady disciplined energy supports your finances decisions.",
-            "Resolve guides your finances planning with reliable clarity."
+            "Steady disciplined energy supports your financial decisions.",
+            "Resolve guides your financial planning with reliable clarity."
           ]
         },
         "adjective": {
@@ -4698,8 +4698,8 @@
       "intensity": "strong",
       "area": "love",
       "clause_variants": [
-        "Strong disciplined energy supports your relationships connections.",
-        "Resolve guides your relationships openings with bold clarity."
+        "Strong disciplined energy supports your relationship connections.",
+        "Resolve guides openings in your relationships with bold clarity."
       ],
       "bullet_templates": {
         "do": [
@@ -4719,8 +4719,8 @@
         "clauses": {
           "mode": "permutation",
           "items": [
-            "Strong disciplined energy supports your relationships connections.",
-            "Resolve guides your relationships openings with bold clarity."
+            "Strong disciplined energy supports your relationship connections.",
+            "Resolve guides openings in your relationships with bold clarity."
           ]
         },
         "adjective": {
@@ -4800,8 +4800,8 @@
       "intensity": "strong",
       "area": "finance",
       "clause_variants": [
-        "Strong disciplined energy supports your finances decisions.",
-        "Resolve guides your finances planning with bold clarity."
+        "Strong disciplined energy supports your financial decisions.",
+        "Resolve guides your financial planning with bold clarity."
       ],
       "bullet_templates": {
         "do": [
@@ -4821,8 +4821,8 @@
         "clauses": {
           "mode": "permutation",
           "items": [
-            "Strong disciplined energy supports your finances decisions.",
-            "Resolve guides your finances planning with bold clarity."
+            "Strong disciplined energy supports your financial decisions.",
+            "Resolve guides your financial planning with bold clarity."
           ]
         },
         "adjective": {
@@ -4953,8 +4953,8 @@
       "intensity": "surge",
       "area": "love",
       "clause_variants": [
-        "Peak disciplined energy supports your relationships connections.",
-        "Resolve guides your relationships openings with urgent clarity."
+        "Peak disciplined energy supports your relationship connections.",
+        "Resolve guides openings in your relationships with urgent clarity."
       ],
       "bullet_templates": {
         "do": [
@@ -4974,8 +4974,8 @@
         "clauses": {
           "mode": "permutation",
           "items": [
-            "Peak disciplined energy supports your relationships connections.",
-            "Resolve guides your relationships openings with urgent clarity."
+            "Peak disciplined energy supports your relationship connections.",
+            "Resolve guides openings in your relationships with urgent clarity."
           ]
         },
         "adjective": {
@@ -5055,8 +5055,8 @@
       "intensity": "surge",
       "area": "finance",
       "clause_variants": [
-        "Peak disciplined energy supports your finances decisions.",
-        "Resolve guides your finances planning with urgent clarity."
+        "Peak disciplined energy supports your financial decisions.",
+        "Resolve guides your financial planning with urgent clarity."
       ],
       "bullet_templates": {
         "do": [
@@ -5076,8 +5076,8 @@
         "clauses": {
           "mode": "permutation",
           "items": [
-            "Peak disciplined energy supports your finances decisions.",
-            "Resolve guides your finances planning with urgent clarity."
+            "Peak disciplined energy supports your financial decisions.",
+            "Resolve guides your financial planning with urgent clarity."
           ]
         },
         "adjective": {
@@ -5107,7 +5107,7 @@
       "area": "general",
       "clause_variants": [
         "Subtle visionary energy supports your day flow.",
-        "Insight guides your day choices with quiet clarity."
+        "Insight guides your day choices with calm focus."
       ],
       "bullet_templates": {
         "do": [
@@ -5128,7 +5128,7 @@
           "mode": "permutation",
           "items": [
             "Subtle visionary energy supports your day flow.",
-            "Insight guides your day choices with quiet clarity."
+            "Insight guides your day choices with calm focus."
           ]
         },
         "adjective": {
@@ -5158,7 +5158,7 @@
       "area": "career",
       "clause_variants": [
         "Subtle visionary energy supports your career progress.",
-        "Insight guides your career moves with quiet clarity."
+        "Insight guides your career moves with grounded clarity."
       ],
       "bullet_templates": {
         "do": [
@@ -5179,7 +5179,7 @@
           "mode": "permutation",
           "items": [
             "Subtle visionary energy supports your career progress.",
-            "Insight guides your career moves with quiet clarity."
+            "Insight guides your career moves with grounded clarity."
           ]
         },
         "adjective": {
@@ -5208,8 +5208,8 @@
       "intensity": "background",
       "area": "love",
       "clause_variants": [
-        "Subtle visionary energy supports your relationships connections.",
-        "Insight guides your relationships openings with quiet clarity."
+        "Subtle visionary energy supports your relationship connections.",
+        "Insight guides openings in your relationships with warm intention."
       ],
       "bullet_templates": {
         "do": [
@@ -5229,8 +5229,8 @@
         "clauses": {
           "mode": "permutation",
           "items": [
-            "Subtle visionary energy supports your relationships connections.",
-            "Insight guides your relationships openings with quiet clarity."
+            "Subtle visionary energy supports your relationship connections.",
+            "Insight guides openings in your relationships with warm intention."
           ]
         },
         "adjective": {
@@ -5260,7 +5260,7 @@
       "area": "health",
       "clause_variants": [
         "Subtle visionary energy supports your wellness rhythms.",
-        "Insight guides your wellness care with quiet clarity."
+        "Insight guides your wellness care with mindful pacing."
       ],
       "bullet_templates": {
         "do": [
@@ -5281,7 +5281,7 @@
           "mode": "permutation",
           "items": [
             "Subtle visionary energy supports your wellness rhythms.",
-            "Insight guides your wellness care with quiet clarity."
+            "Insight guides your wellness care with mindful pacing."
           ]
         },
         "adjective": {
@@ -5310,8 +5310,8 @@
       "intensity": "background",
       "area": "finance",
       "clause_variants": [
-        "Subtle visionary energy supports your finances decisions.",
-        "Insight guides your finances planning with quiet clarity."
+        "Subtle visionary energy supports your financial decisions.",
+        "Insight guides your financial planning with measured clarity."
       ],
       "bullet_templates": {
         "do": [
@@ -5331,8 +5331,8 @@
         "clauses": {
           "mode": "permutation",
           "items": [
-            "Subtle visionary energy supports your finances decisions.",
-            "Insight guides your finances planning with quiet clarity."
+            "Subtle visionary energy supports your financial decisions.",
+            "Insight guides your financial planning with measured clarity."
           ]
         },
         "adjective": {
@@ -5463,8 +5463,8 @@
       "intensity": "gentle",
       "area": "love",
       "clause_variants": [
-        "Gentle visionary energy supports your relationships connections.",
-        "Insight guides your relationships openings with measured clarity."
+        "Gentle visionary energy supports your relationship connections.",
+        "Insight guides openings in your relationships with measured clarity."
       ],
       "bullet_templates": {
         "do": [
@@ -5484,8 +5484,8 @@
         "clauses": {
           "mode": "permutation",
           "items": [
-            "Gentle visionary energy supports your relationships connections.",
-            "Insight guides your relationships openings with measured clarity."
+            "Gentle visionary energy supports your relationship connections.",
+            "Insight guides openings in your relationships with measured clarity."
           ]
         },
         "adjective": {
@@ -5565,8 +5565,8 @@
       "intensity": "gentle",
       "area": "finance",
       "clause_variants": [
-        "Gentle visionary energy supports your finances decisions.",
-        "Insight guides your finances planning with measured clarity."
+        "Gentle visionary energy supports your financial decisions.",
+        "Insight guides your financial planning with measured clarity."
       ],
       "bullet_templates": {
         "do": [
@@ -5586,8 +5586,8 @@
         "clauses": {
           "mode": "permutation",
           "items": [
-            "Gentle visionary energy supports your finances decisions.",
-            "Insight guides your finances planning with measured clarity."
+            "Gentle visionary energy supports your financial decisions.",
+            "Insight guides your financial planning with measured clarity."
           ]
         },
         "adjective": {
@@ -5718,8 +5718,8 @@
       "intensity": "steady",
       "area": "love",
       "clause_variants": [
-        "Steady visionary energy supports your relationships connections.",
-        "Insight guides your relationships openings with reliable clarity."
+        "Steady visionary energy supports your relationship connections.",
+        "Insight guides openings in your relationships with reliable clarity."
       ],
       "bullet_templates": {
         "do": [
@@ -5739,8 +5739,8 @@
         "clauses": {
           "mode": "permutation",
           "items": [
-            "Steady visionary energy supports your relationships connections.",
-            "Insight guides your relationships openings with reliable clarity."
+            "Steady visionary energy supports your relationship connections.",
+            "Insight guides openings in your relationships with reliable clarity."
           ]
         },
         "adjective": {
@@ -5820,8 +5820,8 @@
       "intensity": "steady",
       "area": "finance",
       "clause_variants": [
-        "Steady visionary energy supports your finances decisions.",
-        "Insight guides your finances planning with reliable clarity."
+        "Steady visionary energy supports your financial decisions.",
+        "Insight guides your financial planning with reliable clarity."
       ],
       "bullet_templates": {
         "do": [
@@ -5841,8 +5841,8 @@
         "clauses": {
           "mode": "permutation",
           "items": [
-            "Steady visionary energy supports your finances decisions.",
-            "Insight guides your finances planning with reliable clarity."
+            "Steady visionary energy supports your financial decisions.",
+            "Insight guides your financial planning with reliable clarity."
           ]
         },
         "adjective": {
@@ -5973,8 +5973,8 @@
       "intensity": "strong",
       "area": "love",
       "clause_variants": [
-        "Strong visionary energy supports your relationships connections.",
-        "Insight guides your relationships openings with bold clarity."
+        "Strong visionary energy supports your relationship connections.",
+        "Insight guides openings in your relationships with bold clarity."
       ],
       "bullet_templates": {
         "do": [
@@ -5994,8 +5994,8 @@
         "clauses": {
           "mode": "permutation",
           "items": [
-            "Strong visionary energy supports your relationships connections.",
-            "Insight guides your relationships openings with bold clarity."
+            "Strong visionary energy supports your relationship connections.",
+            "Insight guides openings in your relationships with bold clarity."
           ]
         },
         "adjective": {
@@ -6075,8 +6075,8 @@
       "intensity": "strong",
       "area": "finance",
       "clause_variants": [
-        "Strong visionary energy supports your finances decisions.",
-        "Insight guides your finances planning with bold clarity."
+        "Strong visionary energy supports your financial decisions.",
+        "Insight guides your financial planning with bold clarity."
       ],
       "bullet_templates": {
         "do": [
@@ -6096,8 +6096,8 @@
         "clauses": {
           "mode": "permutation",
           "items": [
-            "Strong visionary energy supports your finances decisions.",
-            "Insight guides your finances planning with bold clarity."
+            "Strong visionary energy supports your financial decisions.",
+            "Insight guides your financial planning with bold clarity."
           ]
         },
         "adjective": {
@@ -6228,8 +6228,8 @@
       "intensity": "surge",
       "area": "love",
       "clause_variants": [
-        "Peak visionary energy supports your relationships connections.",
-        "Insight guides your relationships openings with urgent clarity."
+        "Peak visionary energy supports your relationship connections.",
+        "Insight guides openings in your relationships with urgent clarity."
       ],
       "bullet_templates": {
         "do": [
@@ -6249,8 +6249,8 @@
         "clauses": {
           "mode": "permutation",
           "items": [
-            "Peak visionary energy supports your relationships connections.",
-            "Insight guides your relationships openings with urgent clarity."
+            "Peak visionary energy supports your relationship connections.",
+            "Insight guides openings in your relationships with urgent clarity."
           ]
         },
         "adjective": {
@@ -6330,8 +6330,8 @@
       "intensity": "surge",
       "area": "finance",
       "clause_variants": [
-        "Peak visionary energy supports your finances decisions.",
-        "Insight guides your finances planning with urgent clarity."
+        "Peak visionary energy supports your financial decisions.",
+        "Insight guides your financial planning with urgent clarity."
       ],
       "bullet_templates": {
         "do": [
@@ -6351,8 +6351,8 @@
         "clauses": {
           "mode": "permutation",
           "items": [
-            "Peak visionary energy supports your finances decisions.",
-            "Insight guides your finances planning with urgent clarity."
+            "Peak visionary energy supports your financial decisions.",
+            "Insight guides your financial planning with urgent clarity."
           ]
         },
         "adjective": {
@@ -6382,7 +6382,7 @@
       "area": "general",
       "clause_variants": [
         "Subtle transformative energy supports your day flow.",
-        "Renewal guides your day choices with quiet clarity."
+        "Renewal guides your day choices with calm focus."
       ],
       "bullet_templates": {
         "do": [
@@ -6403,7 +6403,7 @@
           "mode": "permutation",
           "items": [
             "Subtle transformative energy supports your day flow.",
-            "Renewal guides your day choices with quiet clarity."
+            "Renewal guides your day choices with calm focus."
           ]
         },
         "adjective": {
@@ -6433,7 +6433,7 @@
       "area": "career",
       "clause_variants": [
         "Subtle transformative energy supports your career progress.",
-        "Renewal guides your career moves with quiet clarity."
+        "Renewal guides your career moves with grounded clarity."
       ],
       "bullet_templates": {
         "do": [
@@ -6454,7 +6454,7 @@
           "mode": "permutation",
           "items": [
             "Subtle transformative energy supports your career progress.",
-            "Renewal guides your career moves with quiet clarity."
+            "Renewal guides your career moves with grounded clarity."
           ]
         },
         "adjective": {
@@ -6483,8 +6483,8 @@
       "intensity": "background",
       "area": "love",
       "clause_variants": [
-        "Subtle transformative energy supports your relationships connections.",
-        "Renewal guides your relationships openings with quiet clarity."
+        "Subtle transformative energy supports your relationship connections.",
+        "Renewal guides openings in your relationships with warm intention."
       ],
       "bullet_templates": {
         "do": [
@@ -6504,8 +6504,8 @@
         "clauses": {
           "mode": "permutation",
           "items": [
-            "Subtle transformative energy supports your relationships connections.",
-            "Renewal guides your relationships openings with quiet clarity."
+            "Subtle transformative energy supports your relationship connections.",
+            "Renewal guides openings in your relationships with warm intention."
           ]
         },
         "adjective": {
@@ -6535,7 +6535,7 @@
       "area": "health",
       "clause_variants": [
         "Subtle transformative energy supports your wellness rhythms.",
-        "Renewal guides your wellness care with quiet clarity."
+        "Renewal guides your wellness care with mindful pacing."
       ],
       "bullet_templates": {
         "do": [
@@ -6556,7 +6556,7 @@
           "mode": "permutation",
           "items": [
             "Subtle transformative energy supports your wellness rhythms.",
-            "Renewal guides your wellness care with quiet clarity."
+            "Renewal guides your wellness care with mindful pacing."
           ]
         },
         "adjective": {
@@ -6585,8 +6585,8 @@
       "intensity": "background",
       "area": "finance",
       "clause_variants": [
-        "Subtle transformative energy supports your finances decisions.",
-        "Renewal guides your finances planning with quiet clarity."
+        "Subtle transformative energy supports your financial decisions.",
+        "Renewal guides your financial planning with measured clarity."
       ],
       "bullet_templates": {
         "do": [
@@ -6606,8 +6606,8 @@
         "clauses": {
           "mode": "permutation",
           "items": [
-            "Subtle transformative energy supports your finances decisions.",
-            "Renewal guides your finances planning with quiet clarity."
+            "Subtle transformative energy supports your financial decisions.",
+            "Renewal guides your financial planning with measured clarity."
           ]
         },
         "adjective": {
@@ -6738,8 +6738,8 @@
       "intensity": "gentle",
       "area": "love",
       "clause_variants": [
-        "Gentle transformative energy supports your relationships connections.",
-        "Renewal guides your relationships openings with measured clarity."
+        "Gentle transformative energy supports your relationship connections.",
+        "Renewal guides openings in your relationships with measured clarity."
       ],
       "bullet_templates": {
         "do": [
@@ -6759,8 +6759,8 @@
         "clauses": {
           "mode": "permutation",
           "items": [
-            "Gentle transformative energy supports your relationships connections.",
-            "Renewal guides your relationships openings with measured clarity."
+            "Gentle transformative energy supports your relationship connections.",
+            "Renewal guides openings in your relationships with measured clarity."
           ]
         },
         "adjective": {
@@ -6840,8 +6840,8 @@
       "intensity": "gentle",
       "area": "finance",
       "clause_variants": [
-        "Gentle transformative energy supports your finances decisions.",
-        "Renewal guides your finances planning with measured clarity."
+        "Gentle transformative energy supports your financial decisions.",
+        "Renewal guides your financial planning with measured clarity."
       ],
       "bullet_templates": {
         "do": [
@@ -6861,8 +6861,8 @@
         "clauses": {
           "mode": "permutation",
           "items": [
-            "Gentle transformative energy supports your finances decisions.",
-            "Renewal guides your finances planning with measured clarity."
+            "Gentle transformative energy supports your financial decisions.",
+            "Renewal guides your financial planning with measured clarity."
           ]
         },
         "adjective": {
@@ -6993,8 +6993,8 @@
       "intensity": "steady",
       "area": "love",
       "clause_variants": [
-        "Steady transformative energy supports your relationships connections.",
-        "Renewal guides your relationships openings with reliable clarity."
+        "Steady transformative energy supports your relationship connections.",
+        "Renewal guides openings in your relationships with reliable clarity."
       ],
       "bullet_templates": {
         "do": [
@@ -7014,8 +7014,8 @@
         "clauses": {
           "mode": "permutation",
           "items": [
-            "Steady transformative energy supports your relationships connections.",
-            "Renewal guides your relationships openings with reliable clarity."
+            "Steady transformative energy supports your relationship connections.",
+            "Renewal guides openings in your relationships with reliable clarity."
           ]
         },
         "adjective": {
@@ -7095,8 +7095,8 @@
       "intensity": "steady",
       "area": "finance",
       "clause_variants": [
-        "Steady transformative energy supports your finances decisions.",
-        "Renewal guides your finances planning with reliable clarity."
+        "Steady transformative energy supports your financial decisions.",
+        "Renewal guides your financial planning with reliable clarity."
       ],
       "bullet_templates": {
         "do": [
@@ -7116,8 +7116,8 @@
         "clauses": {
           "mode": "permutation",
           "items": [
-            "Steady transformative energy supports your finances decisions.",
-            "Renewal guides your finances planning with reliable clarity."
+            "Steady transformative energy supports your financial decisions.",
+            "Renewal guides your financial planning with reliable clarity."
           ]
         },
         "adjective": {
@@ -7248,8 +7248,8 @@
       "intensity": "strong",
       "area": "love",
       "clause_variants": [
-        "Strong transformative energy supports your relationships connections.",
-        "Renewal guides your relationships openings with bold clarity."
+        "Strong transformative energy supports your relationship connections.",
+        "Renewal guides openings in your relationships with bold clarity."
       ],
       "bullet_templates": {
         "do": [
@@ -7269,8 +7269,8 @@
         "clauses": {
           "mode": "permutation",
           "items": [
-            "Strong transformative energy supports your relationships connections.",
-            "Renewal guides your relationships openings with bold clarity."
+            "Strong transformative energy supports your relationship connections.",
+            "Renewal guides openings in your relationships with bold clarity."
           ]
         },
         "adjective": {
@@ -7350,8 +7350,8 @@
       "intensity": "strong",
       "area": "finance",
       "clause_variants": [
-        "Strong transformative energy supports your finances decisions.",
-        "Renewal guides your finances planning with bold clarity."
+        "Strong transformative energy supports your financial decisions.",
+        "Renewal guides your financial planning with bold clarity."
       ],
       "bullet_templates": {
         "do": [
@@ -7371,8 +7371,8 @@
         "clauses": {
           "mode": "permutation",
           "items": [
-            "Strong transformative energy supports your finances decisions.",
-            "Renewal guides your finances planning with bold clarity."
+            "Strong transformative energy supports your financial decisions.",
+            "Renewal guides your financial planning with bold clarity."
           ]
         },
         "adjective": {
@@ -7503,8 +7503,8 @@
       "intensity": "surge",
       "area": "love",
       "clause_variants": [
-        "Peak transformative energy supports your relationships connections.",
-        "Renewal guides your relationships openings with urgent clarity."
+        "Peak transformative energy supports your relationship connections.",
+        "Renewal guides openings in your relationships with urgent clarity."
       ],
       "bullet_templates": {
         "do": [
@@ -7524,8 +7524,8 @@
         "clauses": {
           "mode": "permutation",
           "items": [
-            "Peak transformative energy supports your relationships connections.",
-            "Renewal guides your relationships openings with urgent clarity."
+            "Peak transformative energy supports your relationship connections.",
+            "Renewal guides openings in your relationships with urgent clarity."
           ]
         },
         "adjective": {
@@ -7605,8 +7605,8 @@
       "intensity": "surge",
       "area": "finance",
       "clause_variants": [
-        "Peak transformative energy supports your finances decisions.",
-        "Renewal guides your finances planning with urgent clarity."
+        "Peak transformative energy supports your financial decisions.",
+        "Renewal guides your financial planning with urgent clarity."
       ],
       "bullet_templates": {
         "do": [
@@ -7626,8 +7626,8 @@
         "clauses": {
           "mode": "permutation",
           "items": [
-            "Peak transformative energy supports your finances decisions.",
-            "Renewal guides your finances planning with urgent clarity."
+            "Peak transformative energy supports your financial decisions.",
+            "Renewal guides your financial planning with urgent clarity."
           ]
         },
         "adjective": {
@@ -7657,7 +7657,7 @@
       "area": "general",
       "clause_variants": [
         "Subtle steady energy supports your day flow.",
-        "Balance guides your day choices with quiet clarity."
+        "Balance guides your day choices with calm focus."
       ],
       "bullet_templates": {
         "do": [
@@ -7678,7 +7678,7 @@
           "mode": "permutation",
           "items": [
             "Subtle steady energy supports your day flow.",
-            "Balance guides your day choices with quiet clarity."
+            "Balance guides your day choices with calm focus."
           ]
         },
         "adjective": {
@@ -7708,7 +7708,7 @@
       "area": "career",
       "clause_variants": [
         "Subtle steady energy supports your career progress.",
-        "Balance guides your career moves with quiet clarity."
+        "Balance guides your career moves with grounded clarity."
       ],
       "bullet_templates": {
         "do": [
@@ -7729,7 +7729,7 @@
           "mode": "permutation",
           "items": [
             "Subtle steady energy supports your career progress.",
-            "Balance guides your career moves with quiet clarity."
+            "Balance guides your career moves with grounded clarity."
           ]
         },
         "adjective": {
@@ -7758,8 +7758,8 @@
       "intensity": "background",
       "area": "love",
       "clause_variants": [
-        "Subtle steady energy supports your relationships connections.",
-        "Balance guides your relationships openings with quiet clarity."
+        "Subtle steady energy supports your relationship connections.",
+        "Balance guides openings in your relationships with warm intention."
       ],
       "bullet_templates": {
         "do": [
@@ -7779,8 +7779,8 @@
         "clauses": {
           "mode": "permutation",
           "items": [
-            "Subtle steady energy supports your relationships connections.",
-            "Balance guides your relationships openings with quiet clarity."
+            "Subtle steady energy supports your relationship connections.",
+            "Balance guides openings in your relationships with warm intention."
           ]
         },
         "adjective": {
@@ -7810,7 +7810,7 @@
       "area": "health",
       "clause_variants": [
         "Subtle steady energy supports your wellness rhythms.",
-        "Balance guides your wellness care with quiet clarity."
+        "Balance guides your wellness care with mindful pacing."
       ],
       "bullet_templates": {
         "do": [
@@ -7831,7 +7831,7 @@
           "mode": "permutation",
           "items": [
             "Subtle steady energy supports your wellness rhythms.",
-            "Balance guides your wellness care with quiet clarity."
+            "Balance guides your wellness care with mindful pacing."
           ]
         },
         "adjective": {
@@ -7860,8 +7860,8 @@
       "intensity": "background",
       "area": "finance",
       "clause_variants": [
-        "Subtle steady energy supports your finances decisions.",
-        "Balance guides your finances planning with quiet clarity."
+        "Subtle steady energy supports your financial decisions.",
+        "Balance guides your financial planning with measured clarity."
       ],
       "bullet_templates": {
         "do": [
@@ -7881,8 +7881,8 @@
         "clauses": {
           "mode": "permutation",
           "items": [
-            "Subtle steady energy supports your finances decisions.",
-            "Balance guides your finances planning with quiet clarity."
+            "Subtle steady energy supports your financial decisions.",
+            "Balance guides your financial planning with measured clarity."
           ]
         },
         "adjective": {
@@ -8013,8 +8013,8 @@
       "intensity": "gentle",
       "area": "love",
       "clause_variants": [
-        "Gentle steady energy supports your relationships connections.",
-        "Balance guides your relationships openings with measured clarity."
+        "Gentle steady energy supports your relationship connections.",
+        "Balance guides openings in your relationships with measured clarity."
       ],
       "bullet_templates": {
         "do": [
@@ -8034,8 +8034,8 @@
         "clauses": {
           "mode": "permutation",
           "items": [
-            "Gentle steady energy supports your relationships connections.",
-            "Balance guides your relationships openings with measured clarity."
+            "Gentle steady energy supports your relationship connections.",
+            "Balance guides openings in your relationships with measured clarity."
           ]
         },
         "adjective": {
@@ -8115,8 +8115,8 @@
       "intensity": "gentle",
       "area": "finance",
       "clause_variants": [
-        "Gentle steady energy supports your finances decisions.",
-        "Balance guides your finances planning with measured clarity."
+        "Gentle steady energy supports your financial decisions.",
+        "Balance guides your financial planning with measured clarity."
       ],
       "bullet_templates": {
         "do": [
@@ -8136,8 +8136,8 @@
         "clauses": {
           "mode": "permutation",
           "items": [
-            "Gentle steady energy supports your finances decisions.",
-            "Balance guides your finances planning with measured clarity."
+            "Gentle steady energy supports your financial decisions.",
+            "Balance guides your financial planning with measured clarity."
           ]
         },
         "adjective": {
@@ -8166,7 +8166,7 @@
       "intensity": "steady",
       "area": "general",
       "clause_variants": [
-        "Steady steady energy supports your day flow.",
+        "Steady integrative energy supports your day flow.",
         "Balance guides your day choices with reliable clarity."
       ],
       "bullet_templates": {
@@ -8187,7 +8187,7 @@
         "clauses": {
           "mode": "permutation",
           "items": [
-            "Steady steady energy supports your day flow.",
+            "Steady integrative energy supports your day flow.",
             "Balance guides your day choices with reliable clarity."
           ]
         },
@@ -8217,7 +8217,7 @@
       "intensity": "steady",
       "area": "career",
       "clause_variants": [
-        "Steady steady energy supports your career progress.",
+        "Steady integrative energy supports your career progress.",
         "Balance guides your career moves with reliable clarity."
       ],
       "bullet_templates": {
@@ -8238,7 +8238,7 @@
         "clauses": {
           "mode": "permutation",
           "items": [
-            "Steady steady energy supports your career progress.",
+            "Steady integrative energy supports your career progress.",
             "Balance guides your career moves with reliable clarity."
           ]
         },
@@ -8268,8 +8268,8 @@
       "intensity": "steady",
       "area": "love",
       "clause_variants": [
-        "Steady steady energy supports your relationships connections.",
-        "Balance guides your relationships openings with reliable clarity."
+        "Steady integrative energy supports your relationship connections.",
+        "Balance guides openings in your relationships with reliable clarity."
       ],
       "bullet_templates": {
         "do": [
@@ -8289,8 +8289,8 @@
         "clauses": {
           "mode": "permutation",
           "items": [
-            "Steady steady energy supports your relationships connections.",
-            "Balance guides your relationships openings with reliable clarity."
+            "Steady integrative energy supports your relationship connections.",
+            "Balance guides openings in your relationships with reliable clarity."
           ]
         },
         "adjective": {
@@ -8319,7 +8319,7 @@
       "intensity": "steady",
       "area": "health",
       "clause_variants": [
-        "Steady steady energy supports your wellness rhythms.",
+        "Steady integrative energy supports your wellness rhythms.",
         "Balance guides your wellness care with reliable clarity."
       ],
       "bullet_templates": {
@@ -8340,7 +8340,7 @@
         "clauses": {
           "mode": "permutation",
           "items": [
-            "Steady steady energy supports your wellness rhythms.",
+            "Steady integrative energy supports your wellness rhythms.",
             "Balance guides your wellness care with reliable clarity."
           ]
         },
@@ -8370,8 +8370,8 @@
       "intensity": "steady",
       "area": "finance",
       "clause_variants": [
-        "Steady steady energy supports your finances decisions.",
-        "Balance guides your finances planning with reliable clarity."
+        "Steady integrative energy supports your financial decisions.",
+        "Balance guides your financial planning with reliable clarity."
       ],
       "bullet_templates": {
         "do": [
@@ -8391,8 +8391,8 @@
         "clauses": {
           "mode": "permutation",
           "items": [
-            "Steady steady energy supports your finances decisions.",
-            "Balance guides your finances planning with reliable clarity."
+            "Steady integrative energy supports your financial decisions.",
+            "Balance guides your financial planning with reliable clarity."
           ]
         },
         "adjective": {
@@ -8523,8 +8523,8 @@
       "intensity": "strong",
       "area": "love",
       "clause_variants": [
-        "Strong steady energy supports your relationships connections.",
-        "Balance guides your relationships openings with bold clarity."
+        "Strong steady energy supports your relationship connections.",
+        "Balance guides openings in your relationships with bold clarity."
       ],
       "bullet_templates": {
         "do": [
@@ -8544,8 +8544,8 @@
         "clauses": {
           "mode": "permutation",
           "items": [
-            "Strong steady energy supports your relationships connections.",
-            "Balance guides your relationships openings with bold clarity."
+            "Strong steady energy supports your relationship connections.",
+            "Balance guides openings in your relationships with bold clarity."
           ]
         },
         "adjective": {
@@ -8625,8 +8625,8 @@
       "intensity": "strong",
       "area": "finance",
       "clause_variants": [
-        "Strong steady energy supports your finances decisions.",
-        "Balance guides your finances planning with bold clarity."
+        "Strong steady energy supports your financial decisions.",
+        "Balance guides your financial planning with bold clarity."
       ],
       "bullet_templates": {
         "do": [
@@ -8646,8 +8646,8 @@
         "clauses": {
           "mode": "permutation",
           "items": [
-            "Strong steady energy supports your finances decisions.",
-            "Balance guides your finances planning with bold clarity."
+            "Strong steady energy supports your financial decisions.",
+            "Balance guides your financial planning with bold clarity."
           ]
         },
         "adjective": {
@@ -8778,8 +8778,8 @@
       "intensity": "surge",
       "area": "love",
       "clause_variants": [
-        "Peak steady energy supports your relationships connections.",
-        "Balance guides your relationships openings with urgent clarity."
+        "Peak steady energy supports your relationship connections.",
+        "Balance guides openings in your relationships with urgent clarity."
       ],
       "bullet_templates": {
         "do": [
@@ -8799,8 +8799,8 @@
         "clauses": {
           "mode": "permutation",
           "items": [
-            "Peak steady energy supports your relationships connections.",
-            "Balance guides your relationships openings with urgent clarity."
+            "Peak steady energy supports your relationship connections.",
+            "Balance guides openings in your relationships with urgent clarity."
           ]
         },
         "adjective": {
@@ -8880,8 +8880,8 @@
       "intensity": "surge",
       "area": "finance",
       "clause_variants": [
-        "Peak steady energy supports your finances decisions.",
-        "Balance guides your finances planning with urgent clarity."
+        "Peak steady energy supports your financial decisions.",
+        "Balance guides your financial planning with urgent clarity."
       ],
       "bullet_templates": {
         "do": [
@@ -8901,8 +8901,8 @@
         "clauses": {
           "mode": "permutation",
           "items": [
-            "Peak steady energy supports your finances decisions.",
-            "Balance guides your finances planning with urgent clarity."
+            "Peak steady energy supports your financial decisions.",
+            "Balance guides your financial planning with urgent clarity."
           ]
         },
         "adjective": {

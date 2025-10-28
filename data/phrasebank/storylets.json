@@ -1,0 +1,179 @@
+{
+  "storylets": {
+    "default": {
+      "openers": {
+        "support": [
+          "You move with {descriptor} confidence through today's {focus}.",
+          "Your {descriptor} rhythm keeps today's {focus} flowing forward."
+        ],
+        "challenge": [
+          "You steady {descriptor} turbulence inside today's {focus}.",
+          "Your {descriptor} resolve helps you navigate today's {focus} demands."
+        ],
+        "neutral": [
+          "You bring {descriptor} awareness to today's {focus}.",
+          "Your {descriptor} pace sets the tone for today's {focus}."
+        ]
+      },
+      "coaching": [
+        "Name the step that matters most so you stay anchored.",
+        "Pause for one breath to notice what still feels aligned.",
+        "Document a small win so progress remains tangible."
+      ],
+      "closers": {
+        "support": [
+          "Keep trusting the rituals that already work.",
+          "Let steady choices show you the path forward."
+        ],
+        "challenge": [
+          "Protect your bandwidth so pressure can't run the day.",
+          "Move gently but deliberately—you're allowed to pace yourself."
+        ],
+        "neutral": [
+          "Return to the practices that remind you why you're doing this.",
+          "Stay with the process, one grounded choice at a time."
+        ]
+      }
+    },
+    "career": {
+      "openers": {
+        "support": [
+          "Your {descriptor} drive is focused and cooperative across today's {focus}.",
+          "You lead with {descriptor} coordination so today's {focus} stays on track."
+        ],
+        "challenge": [
+          "You steady {descriptor} pressure by sequencing today's {focus}.",
+          "Your {descriptor} grit keeps today's {focus} collaborative even under strain."
+        ],
+        "neutral": [
+          "You map {descriptor} priorities across today's {focus}.",
+          "Your {descriptor} pacing keeps today's {focus} on schedule."
+        ]
+      },
+      "coaching": [
+        "Draft a brief status before midday to keep collaborators aligned.",
+        "Block twenty focused minutes to map the moving pieces.",
+        "Confirm one next step with a teammate before the afternoon."
+      ],
+      "closers": {
+        "support": [
+          "Log one visible win before you wrap for the day.",
+          "Line up tomorrow's first move so momentum continues."
+        ],
+        "challenge": [
+          "Protect the last hour for clean handoffs and boundaries.",
+          "Close the loop with clear notes so pressure stays contained."
+        ],
+        "neutral": [
+          "Capture decisions in writing before you log off.",
+          "End the day by highlighting the priority that moved."
+        ]
+      }
+    },
+    "love": {
+      "openers": {
+        "support": [
+          "You invite {descriptor} warmth into today's {focus} rituals.",
+          "Your {descriptor} presence keeps today's {focus} receptive."
+        ],
+        "challenge": [
+          "You ease {descriptor} tension by pacing today's {focus} conversations.",
+          "Your {descriptor} honesty steadies today's {focus} check-ins."
+        ],
+        "neutral": [
+          "You bring {descriptor} attention to today's {focus} exchanges.",
+          "Your {descriptor} listening keeps today's {focus} grounded."
+        ]
+      },
+      "coaching": [
+        "Ask one thoughtful question over dinner so connection deepens.",
+        "Offer a small ritual tonight that shows you're present.",
+        "Let listening lead before you decide on next steps."
+      ],
+      "closers": {
+        "support": [
+          "Close the evening with a shared moment that feels nourishing.",
+          "Notice the gesture that keeps tenderness alive tonight."
+        ],
+        "challenge": [
+          "Name what you need and choose a gentle boundary for the evening.",
+          "Pause before reacting so softness has room to return."
+        ],
+        "neutral": [
+          "Keep the pace human—linger on the detail that matters most.",
+          "Let the night wind down with a ritual that feels genuine."
+        ]
+      }
+    },
+    "health": {
+      "openers": {
+        "support": [
+          "You honor {descriptor} rhythms as you move through today's {focus}.",
+          "Your {descriptor} awareness keeps today's {focus} grounded in body cues."
+        ],
+        "challenge": [
+          "You soften {descriptor} strain by sequencing today's {focus}.",
+          "Your {descriptor} pacing steadies today's {focus} when energy dips."
+        ],
+        "neutral": [
+          "You bring {descriptor} care into today's {focus} routines.",
+          "Your {descriptor} presence keeps today's {focus} sustainable."
+        ]
+      },
+      "coaching": [
+        "Hydrate and stretch before the afternoon rush begins.",
+        "Log one body cue after lunch so you can adjust in real time.",
+        "Schedule a five-minute reset when you notice tension stacking."
+      ],
+      "closers": {
+        "support": [
+          "Close the day with a replenishing ritual you know you'll keep.",
+          "Tuck in early enough for the rest your body requested."
+        ],
+        "challenge": [
+          "Wind down with gentle mobility so recovery stays on track.",
+          "Note one feedback signal before bed so tomorrow starts lighter."
+        ],
+        "neutral": [
+          "Balance movement and rest before evening settles in.",
+          "Let a calming practice anchor your night routine."
+        ]
+      }
+    },
+    "finance": {
+      "openers": {
+        "support": [
+          "You guide {descriptor} awareness through today's {focus} checkpoints.",
+          "Your {descriptor} clarity frames today's {focus} decisions."
+        ],
+        "challenge": [
+          "You bring {descriptor} patience to today's {focus} guardrails.",
+          "Your {descriptor} caution steadies today's {focus} review period."
+        ],
+        "neutral": [
+          "You organize {descriptor} strategy around today's {focus} planning.",
+          "Your {descriptor} pacing keeps today's {focus} sustainable."
+        ]
+      },
+      "coaching": [
+        "Pair each expense with the outcome it should deliver before you commit.",
+        "Audit one shared cost this afternoon to keep boundaries clear.",
+        "Check the numbers twice before you close the books tonight."
+      ],
+      "closers": {
+        "support": [
+          "Capture today's wins in your budget tracker before evening.",
+          "Line up tomorrow's money move while the plan feels fresh."
+        ],
+        "challenge": [
+          "Leave big decisions for another day once you've double-checked the math.",
+          "Protect reserves by ending the night with a quick ledger review."
+        ],
+        "neutral": [
+          "Wrap up by reconciling one detail so the plan stays clean.",
+          "Finish with a calm review that keeps your guardrails intact."
+        ]
+      }
+    }
+  }
+}

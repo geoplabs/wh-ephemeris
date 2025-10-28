@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from collections import Counter
 from typing import Any, Iterable, Mapping, Sequence
 
 from src.content.archetype_router import classify_event
@@ -122,6 +123,45 @@ SOURCE_WEIGHTS: Mapping[str, float] = {
     "classification": 0.9,
 }
 
+AREA_SOURCE_WEIGHTS: Mapping[str, Mapping[str, float]] = {
+    "career": {
+        "house": 1.35,
+        "house:fallback": 1.05,
+        "house:borrowed": 0.95,
+        "focus": 1.9,
+        "body": 0.95,
+        "tag": 0.75,
+        "classification": 1.05,
+    },
+    "love": {
+        "house": 1.25,
+        "house:fallback": 1.0,
+        "house:borrowed": 0.95,
+        "focus": 1.75,
+        "body": 0.9,
+        "tag": 0.85,
+        "classification": 1.1,
+    },
+    "health": {
+        "house": 1.4,
+        "house:fallback": 1.1,
+        "house:borrowed": 1.0,
+        "focus": 1.6,
+        "body": 1.0,
+        "tag": 0.7,
+        "classification": 0.95,
+    },
+    "finance": {
+        "house": 1.3,
+        "house:fallback": 1.05,
+        "house:borrowed": 1.0,
+        "focus": 1.7,
+        "body": 0.95,
+        "tag": 0.9,
+        "classification": 1.05,
+    },
+}
+
 _FOCUS_FIELDS = (
     "focus",
     "focus_area",
@@ -197,6 +237,27 @@ def _areas_from_tags(tags: Iterable[Any]) -> Sequence[str]:
     return tuple(results)
 
 
+def _house_distance(a: Any, b: Any) -> int | None:
+    if not isinstance(a, int) or not isinstance(b, int):
+        return None
+    diff = abs(a - b)
+    return min(diff, 12 - diff)
+
+
+def _source_weight(area: str, source: str) -> float:
+    weights = AREA_SOURCE_WEIGHTS.get(area, {})
+    if source in weights:
+        return weights[source]
+    base = source.split(":", 1)[0]
+    if base in weights:
+        return weights[base]
+    if source in SOURCE_WEIGHTS:
+        return SOURCE_WEIGHTS[source]
+    if base in SOURCE_WEIGHTS:
+        return SOURCE_WEIGHTS[base]
+    return 0.4
+
+
 def annotate_events(events: Iterable[Mapping[str, Any]]) -> list[dict[str, Any]]:
     """Return a shallow-copied list of events annotated with area hints."""
 
@@ -205,36 +266,39 @@ def annotate_events(events: Iterable[Mapping[str, Any]]) -> list[dict[str, Any]]
         copied = dict(event)
         classification = classify_event(copied)
         copied["classification"] = classification
-        area_sources: dict[str, set[str]] = {}
+        area_sources: dict[str, list[str]] = {}
 
         natal_house = copied.get("natal_house")
         if isinstance(natal_house, int):
-            for area in HOUSE_TO_AREAS.get(natal_house, ()):  # type: ignore[arg-type]
-                area_sources.setdefault(area, set()).add("house")
+            primary_house_areas = set(HOUSE_TO_AREAS.get(natal_house, ()))  # type: ignore[arg-type]
+            for area in primary_house_areas:
+                area_sources.setdefault(area, []).append("house")
             for area, houses in AREA_FALLBACK_HOUSES.items():
+                if area in primary_house_areas:
+                    continue
                 if natal_house in houses:
-                    area_sources.setdefault(area, set()).add("house")
+                    area_sources.setdefault(area, []).append("house:fallback")
 
         for label in _iter_focus_labels(copied):
             focus_area = _focus_area_from_label(label)
             if focus_area:
-                area_sources.setdefault(focus_area, set()).add("focus")
+                area_sources.setdefault(focus_area, []).append("focus")
                 copied.setdefault("focus_area", focus_area)
 
         for key in ("transit_body", "natal_body"):
             for area in _areas_from_body(copied.get(key)):
-                area_sources.setdefault(area, set()).add("body")
+                area_sources.setdefault(area, []).append("body")
 
         tags = copied.get("tags")
         if isinstance(tags, (list, tuple, set)):
             for area in _areas_from_tags(tags):
-                area_sources.setdefault(area, set()).add("tag")
+                area_sources.setdefault(area, []).append("tag")
 
         class_tags = classification.get("tags") if isinstance(classification, Mapping) else ()
         for area in _areas_from_tags(class_tags):
-            area_sources.setdefault(area, set()).add("classification")
+            area_sources.setdefault(area, []).append("classification")
 
-        copied["area_hints"] = {area: sorted(sources) for area, sources in area_sources.items()}
+        copied["area_hints"] = {area: tuple(sources) for area, sources in area_sources.items()}
         annotated.append(copied)
     return annotated
 
@@ -246,11 +310,18 @@ def _candidate(
     *,
     fallback: bool = False,
 ) -> dict[str, Any] | None:
-    normalized_sources = sorted(set(sources))
-    if not fallback and not normalized_sources:
+    contributions = [source for source in sources if source]
+    counts = Counter(contributions)
+    if not fallback and not counts:
         return None
     strength = _event_strength(event)
-    relevance = sum(SOURCE_WEIGHTS.get(source, 0.4) for source in normalized_sources)
+    relevance = 0.0
+    source_breakdown: dict[str, float] = {}
+    for source, count in counts.items():
+        weight = _source_weight(area, source)
+        contribution = weight * count
+        source_breakdown[source] = round(contribution, 4)
+        relevance += contribution
     if relevance and strength < 5.0:
         strength *= 1.2
     classification = event.get("classification") or {}
@@ -264,13 +335,20 @@ def _candidate(
     if classification.get("archetype") == "Steady Integration" and area == "health":
         coherence += 0.2
     total = strength + relevance * 25.0 + coherence * 18.0
+    display_sources: list[str] = []
+    for source, count in sorted(counts.items()):
+        label = source.replace(":", " → ")
+        if count > 1:
+            label = f"{label}×{count}"
+        display_sources.append(label)
     candidate = {
         "area": area,
         "event": event,
         "strength": round(strength, 4),
         "relevance": round(relevance, 4),
         "score": round(total, 4),
-        "sources": normalized_sources,
+        "sources": display_sources,
+        "source_breakdown": source_breakdown,
     }
     if fallback:
         candidate["is_fallback"] = True
@@ -283,16 +361,42 @@ def _fallback_candidate(area: str, events: Sequence[Mapping[str, Any]]) -> dict[
     best_score = float("-inf")
     for event in events:
         house = event.get("natal_house")
-        if houses and house not in houses:
+        contributions: list[str] = []
+        closest_distance: int | None = None
+        if isinstance(house, int) and houses:
+            if house in houses:
+                rank = houses.index(house)
+                repeats = max(1, len(houses) - rank)
+                contributions.extend(["house:fallback"] * repeats)
+                closest_distance = 0
+            else:
+                distances = [d for target in houses if (d := _house_distance(house, target)) is not None]
+                if distances:
+                    closest_distance = min(distances)
+                    if closest_distance <= 2:
+                        repeats = 2 - closest_distance + 1
+                        contributions.extend(["house:borrowed"] * repeats)
+        focus_area = event.get("focus_area")
+        if isinstance(focus_area, str) and focus_area.strip().lower() == area:
+            contributions.append("focus")
+        candidate = _candidate(event, area, contributions, fallback=True)
+        if not candidate:
             continue
-        candidate = _candidate(event, area, (), fallback=True)
-        if candidate and candidate["score"] > best_score:
+        closeness_bonus = 0.0
+        if closest_distance is not None:
+            closeness_bonus = max(0, 3 - closest_distance)
+        candidate_score = candidate["score"] + closeness_bonus
+        if candidate_score > best_score:
             best = candidate
-            best_score = candidate["score"]
+            best_score = candidate_score
     if best:
         return best
     if events:
-        return _candidate(events[0], area, (), fallback=True)
+        extra_sources: list[str] = []
+        house = events[0].get("natal_house")
+        if isinstance(house, int):
+            extra_sources.append("house:borrowed")
+        return _candidate(events[0], area, extra_sources, fallback=True)
     return None
 
 
@@ -314,9 +418,10 @@ def rank_events_by_area(
         hints = event.get("area_hints") or {}
         focus_area = event.get("focus_area")
         for area in target_areas:
-            sources = set(hints.get(area, []))
-            if focus_area == area:
-                sources.add("focus")
+            raw_sources = list(hints.get(area, ()))
+            sources: list[str] = list(raw_sources)
+            if isinstance(focus_area, str) and focus_area == area:
+                sources.append("focus")
             candidate = _candidate(event, area, sources)
             if candidate:
                 rankings[area].append(candidate)
@@ -346,6 +451,8 @@ def summarize_rankings(rankings: Mapping[str, Sequence[Mapping[str, Any]]]) -> d
                 "score": candidate.get("score", 0.0),
                 "sources": list(candidate.get("sources", [])),
             }
+            if candidate.get("source_breakdown"):
+                payload["source_breakdown"] = dict(candidate["source_breakdown"])
             if candidate.get("is_fallback"):
                 payload["is_fallback"] = True
             serialized.append(payload)
