@@ -46,6 +46,35 @@ def test_avoid_bullet():
     assert 3 <= len(out.rstrip(".").split()) <= 10
 
 
+def test_bullet_cleanup_handles_boundary_priority():
+    asset = get_asset("Radiant Expansion", "steady", "career")
+    sentence = "Set sensitive responsibility boundaries priorities that highlight your leadership."
+    out = imperative_bullet(sentence, order=2, area="career", asset=asset)
+    assert "boundaries priorities" not in out
+    assert "outer conversations" not in out
+
+
+def test_bullet_keeps_support_phrase():
+    asset = get_asset("Radiant Expansion", "steady", "career")
+    sentence = "Choose radiant drive to support professional wins."
+    out = imperative_bullet(sentence, order=1, area="career", asset=asset)
+    assert "to support professional wins" in out
+
+
+def test_bullet_prunes_growth_intentions_tail():
+    asset = get_asset("Radiant Expansion", "steady", "general")
+    sentence = "Choose emotional growth rhythms to anchor your intentions."
+    out = imperative_bullet(sentence, order=0, area="general", asset=asset)
+    assert out.endswith("growth rhythms today.")
+
+
+def test_health_bullet_retains_tune_phrase():
+    asset = get_asset("Steady Integration", "steady", "health")
+    sentence = "Focus on radiant drive to tune into your body."
+    out = imperative_bullet(sentence, order=0, area="health", asset=asset)
+    assert out == "Focus on radiant drive to tune into your body."
+
+
 def test_clamp():
     p = "Sentence one. Sentence two. Sentence three."
     assert clamp_sentences(p, 2).count(".") <= 2

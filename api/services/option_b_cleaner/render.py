@@ -19,6 +19,7 @@ from .language import (
     build_opening_summary,
     fix_indefinite_articles,
 )
+from ..remedy_templates import remedy_templates_for_planet
 from src.content.archetype_router import classify_event
 from src.content.area_selector import rank_events_by_area, summarize_rankings
 from src.content.phrasebank import (
@@ -31,6 +32,226 @@ from src.content.variation import VariationEngine
 
 
 TEMPLATES_DIR = Path(__file__).resolve().parent
+
+CAUTION_ASPECTS = {
+    "square",
+    "opposition",
+    "quincunx",
+    "retrograde",
+    "semi-square",
+    "sesquisquare",
+}
+
+CAUTION_KEYWORDS = {
+    "pressure",
+    "tension",
+    "strain",
+    "challenge",
+    "caution",
+    "warning",
+    "delay",
+    "stress",
+    "conflict",
+    "pushback",
+}
+
+CAUTION_FALLBACK_TIME = "14:00-16:00 (afternoon)"
+CAUTION_FALLBACK_NOTE = "Use this span for careful review and gentler pacing."
+MAX_LIST_ITEMS = 4
+
+
+_BULLET_STOPWORDS = {
+    "a",
+    "about",
+    "and",
+    "anchor",
+    "as",
+    "at",
+    "be",
+    "build",
+    "by",
+    "clarity",
+    "can",
+    "care",
+    "for",
+    "focus",
+    "from",
+    "if",
+    "in",
+    "into",
+    "keep",
+    "make",
+    "move",
+    "moves",
+    "need",
+    "note",
+    "of",
+    "on",
+    "plan",
+    "set",
+    "share",
+    "so",
+    "step",
+    "support",
+    "take",
+    "that",
+    "the",
+    "their",
+    "this",
+    "through",
+    "to",
+    "today",
+    "update",
+    "what",
+    "when",
+    "with",
+    "wins",
+    "your",
+}
+
+
+def _coerce_text(value: Any) -> str:
+    if isinstance(value, str):
+        return value.strip()
+    if value is None:
+        return ""
+    return str(value).strip()
+
+
+def _strip_dashes(value: str) -> str:
+    return value.replace("—", "-").replace("–", "-")
+
+
+def _ensure_sentence(text: str) -> str:
+    cleaned = " ".join(text.split())
+    if not cleaned:
+        return ""
+    if cleaned[-1] not in ".!?":
+        cleaned = f"{cleaned}."
+    return cleaned
+
+
+def _looks_challenging(aspect: str, note: str, tone: str, intensity: str) -> bool:
+    if tone == "challenge":
+        return True
+    if intensity in {"intense", "challenge", "hard"}:
+        return True
+    if any(token in aspect for token in CAUTION_ASPECTS):
+        return True
+    return any(keyword in note for keyword in CAUTION_KEYWORDS)
+
+
+def _event_time_window(event: Mapping[str, Any]) -> str:
+    for key in ("time_window", "window", "time", "span", "range"):
+        candidate = _strip_dashes(_coerce_text(event.get(key)))
+        if candidate:
+            return candidate
+    start = _strip_dashes(_coerce_text(event.get("start_time")))
+    end = _strip_dashes(_coerce_text(event.get("end_time")))
+    if start and end:
+        return f"{start}-{end}"
+    return ""
+
+
+def _build_caution_window_from_events(
+    enriched_events: Sequence[Mapping[str, Any]]
+) -> dict[str, str]:
+    for item in enriched_events:
+        event = item.get("event") if isinstance(item, Mapping) else None
+        if not isinstance(event, Mapping):
+            continue
+        tone = _coerce_text(item.get("tone")) if isinstance(item, Mapping) else ""
+        classification = item.get("classification") if isinstance(item, Mapping) else {}
+        intensity = _coerce_text((classification or {}).get("intensity"))
+        aspect = _coerce_text(event.get("aspect")).lower()
+        note = _coerce_text(event.get("note"))
+        if _looks_challenging(aspect, note.lower(), tone, intensity):
+            time_window = _event_time_window(event) or CAUTION_FALLBACK_TIME
+            note_text = _ensure_sentence(
+                _strip_dashes(note) or CAUTION_FALLBACK_NOTE
+            )
+            return {"time_window": time_window, "note": note_text}
+
+    if enriched_events:
+        fallback_event = enriched_events[0].get("event") if isinstance(enriched_events[0], Mapping) else None
+        if isinstance(fallback_event, Mapping):
+            time_window = _event_time_window(fallback_event) or CAUTION_FALLBACK_TIME
+            note_text = _ensure_sentence(
+                _strip_dashes(_coerce_text(fallback_event.get("note")))
+                or CAUTION_FALLBACK_NOTE
+            )
+            return {"time_window": time_window, "note": note_text}
+
+    return {"time_window": CAUTION_FALLBACK_TIME, "note": CAUTION_FALLBACK_NOTE}
+
+
+def _build_remedies(planet: str, sign: str, theme: str) -> list[str]:
+    templates = remedy_templates_for_planet(planet)
+    theme_token = (theme or "day").strip().lower() or "day"
+    sign_token = (sign or "your sign").strip() or "your sign"
+    remedies: list[str] = []
+    seen: set[str] = set()
+    for template in templates:
+        text = template.format(sign=sign_token, theme=theme_token)
+        formatted = _ensure_sentence(_strip_dashes(text))
+        if formatted:
+            lowered = formatted.lower()
+            if lowered not in seen:
+                remedies.append(formatted)
+                seen.add(lowered)
+        if len(remedies) >= MAX_LIST_ITEMS:
+            break
+    if not remedies:
+        remedies.append(_ensure_sentence("Ground yourself with three steady breaths."))
+    return remedies
+
+
+def _bullet_tail_key(sentence: str) -> str:
+    core = sentence.rstrip(".!?").strip().lower()
+    if not core:
+        return ""
+    parts = core.split()
+    if len(parts) <= 3:
+        return core
+    return " ".join(parts[-3:])
+
+
+def _bullet_root_tokens(sentence: str) -> set[str]:
+    tokens = re.findall(r"[A-Za-z]+", sentence.lower())
+    roots: set[str] = set()
+    for token in tokens:
+        if token in _BULLET_STOPWORDS:
+            continue
+        if len(token) <= 2:
+            continue
+        base = token
+        if base.endswith("ing") and len(base) > 4:
+            base = base[:-3]
+        elif base.endswith("ies") and len(base) > 4:
+            base = base[:-3] + "y"
+        elif base.endswith("s") and len(base) > 3:
+            base = base[:-1]
+        roots.add(base)
+    return roots
+
+
+def _collect_bullet_roots(sentences: Sequence[str]) -> set[str]:
+    combined: set[str] = set()
+    for sentence in sentences:
+        combined.update(_bullet_root_tokens(sentence))
+    return combined
+
+
+def _sanitize_value(value: Any) -> Any:
+    if isinstance(value, str):
+        cleaned = _strip_dashes(value)
+        cleaned = " ".join(cleaned.split())
+        return cleaned.strip()
+    if isinstance(value, list):
+        return [_sanitize_value(item) for item in value]
+    if isinstance(value, dict):
+        return {key: _sanitize_value(item) for key, item in value.items()}
+    return value
 
 
 def _env(templates_dir: Path) -> Environment:
@@ -94,17 +315,17 @@ def normalize_bullets(
     area: str,
     asset: PhraseAsset | None = None,
     engine: VariationEngine | None = None,
+    forbidden_roots: Iterable[str] | None = None,
 ) -> list[str]:
-    ordered: Sequence[str] = bullets or []
-    if engine and ordered:
-        ordered = engine.permutation(f"{area}.bullets", ordered)
-    out: list[str] = []
-    for idx, raw in enumerate(ordered):
-        cleaned = to_you_pov(raw or "", profile_name)
-        bullet = imperative_bullet(cleaned, idx, area=area, asset=asset)
-        if bullet and bullet not in out:
-            out.append(bullet)
-    return out[:4]
+    return _normalize_bullet_list(
+        bullets,
+        profile_name,
+        area=area,
+        asset=asset,
+        engine=engine,
+        mode="do",
+        forbidden_roots=forbidden_roots,
+    )
 
 
 def normalize_avoid(
@@ -114,17 +335,104 @@ def normalize_avoid(
     area: str,
     asset: PhraseAsset | None = None,
     engine: VariationEngine | None = None,
+    forbidden_roots: Iterable[str] | None = None,
+) -> list[str]:
+    return _normalize_bullet_list(
+        bullets,
+        profile_name,
+        area=area,
+        asset=asset,
+        engine=engine,
+        mode="avoid",
+        forbidden_roots=forbidden_roots,
+    )
+
+
+def _normalize_bullet_list(
+    bullets: list[str],
+    profile_name: str,
+    *,
+    area: str,
+    asset: PhraseAsset | None,
+    engine: VariationEngine | None,
+    mode: str,
+    forbidden_roots: Iterable[str] | None,
 ) -> list[str]:
     ordered: Sequence[str] = bullets or []
     if engine and ordered:
-        ordered = engine.permutation(f"{area}.avoid", ordered)
+        tag = f"{area}.{'avoid' if mode == 'avoid' else 'bullets'}"
+        ordered = engine.permutation(tag, ordered)
     out: list[str] = []
+    used_tails: set[str] = set()
+    used_roots: set[str] = set(forbidden_roots or [])
     for idx, raw in enumerate(ordered):
         cleaned = to_you_pov(raw or "", profile_name)
-        bullet = imperative_bullet(cleaned, idx, mode="avoid", area=area, asset=asset)
-        if bullet and bullet not in out:
-            out.append(bullet)
+        candidate, tail, roots = _select_bullet_sentence(
+            cleaned,
+            base_order=idx,
+            area=area,
+            asset=asset,
+            mode=mode,
+            used_tails=used_tails,
+            used_roots=used_roots,
+        )
+        if not candidate:
+            continue
+        if roots and roots.intersection(used_roots):
+            continue
+        if candidate in out:
+            continue
+        out.append(candidate)
+        if tail:
+            used_tails.add(tail)
+        if roots:
+            used_roots.update(roots)
+        if len(out) >= MAX_LIST_ITEMS:
+            break
+    if mode == "avoid" and not out:
+        out.extend(
+            [
+                "Avoid overextending your energy today.",
+                "Skip reactive conversations when clarity is low.",
+                "Hold back from impulse spending until timing improves.",
+                "Delay tough calls so boundaries stay clear.",
+            ][: MAX_LIST_ITEMS]
+        )
     return out[:4]
+
+
+def _select_bullet_sentence(
+    text: str,
+    *,
+    base_order: int,
+    area: str,
+    asset: PhraseAsset | None,
+    mode: str,
+    used_tails: set[str],
+    used_roots: set[str],
+) -> tuple[str | None, str, set[str]]:
+    fallback: tuple[str | None, str, set[str]] = (None, "", set())
+    for offset in range(4):
+        order = base_order + offset
+        candidate = imperative_bullet(
+            text,
+            order,
+            mode=mode,
+            area=area,
+            asset=asset,
+        )
+        if not candidate:
+            continue
+        tail = _bullet_tail_key(candidate)
+        roots = _bullet_root_tokens(candidate)
+        if not fallback[0]:
+            fallback = (candidate, tail, roots)
+        if tail and tail in used_tails:
+            continue
+        if roots and roots.intersection(used_roots):
+            continue
+        return candidate, tail, roots
+    return fallback
 
 
 def _tone_from_tags(tags: Iterable[str]) -> str:
@@ -186,13 +494,27 @@ def _append_variation_sentences(base: str, extras: Sequence[str]) -> str:
     extra_list = [text.strip() for text in extras if text and text.strip()]
     if not extra_list:
         return base
+    segments: list[str] = []
+    seen: set[str] = set()
+
+    def _append_segments(text: str) -> None:
+        for part in re.split(r"(?<=[.!?])\s+", text.strip()):
+            cleaned = part.strip()
+            if not cleaned:
+                continue
+            if cleaned[-1] not in ".!?":
+                cleaned = f"{cleaned}."
+            normalized = cleaned.lower()
+            if normalized not in seen:
+                segments.append(cleaned)
+                seen.add(normalized)
+
     base_clean = (base or "").strip()
-    if base_clean and base_clean[-1] not in ".!?":
-        base_clean = f"{base_clean}."
     if base_clean:
-        combined = " ".join([base_clean, *extra_list]).strip()
-    else:
-        combined = " ".join(extra_list).strip()
+        _append_segments(base_clean)
+    for sentence in extra_list:
+        _append_segments(sentence)
+    combined = " ".join(segments).strip()
     return fix_indefinite_articles(combined)
 
 
@@ -211,6 +533,8 @@ def build_context(option_b_json: dict[str, Any]) -> dict[str, Any]:
     tone_hints = {section: _section_tone(enriched_events, section) for section in SECTION_TAGS}
     top_classification = enriched_events[0]["classification"] if enriched_events else None
     area_summary = summarize_rankings(area_rankings)
+    caution_window = _build_caution_window_from_events(enriched_events)
+    remedy_lines = _build_remedies(dom_planet, dom_sign, option_b_json.get("theme", ""))
     selected_area_events: dict[str, dict[str, Any] | None] = {}
     for area, summary in area_summary.items():
         primary = summary.get("selected") if summary else None
@@ -305,6 +629,87 @@ def build_context(option_b_json: dict[str, Any]) -> dict[str, Any]:
             "supporting": selected.get("supporting_event"),
         }
 
+    career_paragraph = build_career_paragraph(
+        career.get("paragraph", ""),
+        profile_name=profile_name,
+        tone_hint=tone_hints["career"],
+        clause=phrase_context.get("career", {}).get("clause"),
+        event=area_events.get("career", {}).get("primary"),
+        supporting_event=area_events.get("career", {}).get("supporting"),
+    )
+    career_bullets = normalize_bullets(
+        career.get("bullets", []),
+        profile_name,
+        area="career",
+        asset=phrase_context.get("career", {}).get("asset"),
+        engine=phrase_context.get("career", {}).get("engine"),
+    )
+    love_paragraph = build_love_paragraph(
+        love.get("paragraph", ""),
+        profile_name=profile_name,
+        tone_hint=tone_hints["love"],
+        clause=phrase_context.get("love", {}).get("clause"),
+        event=area_events.get("love", {}).get("primary"),
+        supporting_event=area_events.get("love", {}).get("supporting"),
+    )
+    love_attached = build_love_status(
+        love.get("attached", ""), "attached", profile_name=profile_name, tone_hint=tone_hints["love"]
+    )
+    love_single = build_love_status(
+        love.get("single", ""), "single", profile_name=profile_name, tone_hint=tone_hints["love"]
+    )
+    health_paragraph = build_health_paragraph(
+        health.get("paragraph", ""),
+        option_b_json.get("theme", ""),
+        profile_name=profile_name,
+        tone_hint=tone_hints["health"],
+        clause=phrase_context.get("health", {}).get("clause"),
+        event=area_events.get("health", {}).get("primary"),
+        supporting_event=area_events.get("health", {}).get("supporting"),
+    )
+    health_opts = normalize_bullets(
+        health.get("good_options", []),
+        profile_name,
+        area="health",
+        asset=phrase_context.get("health", {}).get("asset"),
+        engine=phrase_context.get("health", {}).get("engine"),
+    )
+    finance_paragraph = build_finance_paragraph(
+        finance.get("paragraph", ""),
+        option_b_json.get("theme", ""),
+        profile_name=profile_name,
+        tone_hint=tone_hints["finance"],
+        clause=phrase_context.get("finance", {}).get("clause"),
+        event=area_events.get("finance", {}).get("primary"),
+        supporting_event=area_events.get("finance", {}).get("supporting"),
+    )
+    finance_bullets = normalize_bullets(
+        finance.get("bullets", []),
+        profile_name,
+        area="finance",
+        asset=phrase_context.get("finance", {}).get("asset"),
+        engine=phrase_context.get("finance", {}).get("engine"),
+    )
+
+    general_do = normalize_bullets(
+        option_b_json.get("do_today", []),
+        profile_name,
+        area="general",
+        asset=general_asset,
+        engine=general_engine,
+    )
+    positive_roots = _collect_bullet_roots(
+        career_bullets + health_opts + finance_bullets + general_do
+    )
+    general_avoid = normalize_avoid(
+        option_b_json.get("avoid_today", []),
+        profile_name,
+        area="general",
+        asset=general_asset,
+        engine=general_engine,
+        forbidden_roots=positive_roots,
+    )
+
     ctx: dict[str, Any] = {
         "profile_name": profile_name,
         "date": date,
@@ -327,81 +732,19 @@ def build_context(option_b_json: dict[str, Any]) -> dict[str, Any]:
             general_optional,
         ),
         "mantra": (morning.get("mantra") or "I choose what strengthens me.").strip(),
-        "career_paragraph": build_career_paragraph(
-            career.get("paragraph", ""),
-            profile_name=profile_name,
-            tone_hint=tone_hints["career"],
-            clause=phrase_context.get("career", {}).get("clause"),
-            event=area_events.get("career", {}).get("primary"),
-            supporting_event=area_events.get("career", {}).get("supporting"),
-        ),
-        "career_bullets": normalize_bullets(
-            career.get("bullets", []),
-            profile_name,
-            area="career",
-            asset=phrase_context.get("career", {}).get("asset"),
-            engine=phrase_context.get("career", {}).get("engine"),
-        ),
-        "love_paragraph": build_love_paragraph(
-            love.get("paragraph", ""),
-            profile_name=profile_name,
-            tone_hint=tone_hints["love"],
-            clause=phrase_context.get("love", {}).get("clause"),
-            event=area_events.get("love", {}).get("primary"),
-            supporting_event=area_events.get("love", {}).get("supporting"),
-        ),
-        "love_attached": build_love_status(
-            love.get("attached", ""), "attached", profile_name=profile_name, tone_hint=tone_hints["love"]
-        ),
-        "love_single": build_love_status(
-            love.get("single", ""), "single", profile_name=profile_name, tone_hint=tone_hints["love"]
-        ),
-        "health_paragraph": build_health_paragraph(
-            health.get("paragraph", ""),
-            option_b_json.get("theme", ""),
-            profile_name=profile_name,
-            tone_hint=tone_hints["health"],
-            clause=phrase_context.get("health", {}).get("clause"),
-            event=area_events.get("health", {}).get("primary"),
-            supporting_event=area_events.get("health", {}).get("supporting"),
-        ),
-        "health_opts": normalize_bullets(
-            health.get("good_options", []),
-            profile_name,
-            area="health",
-            asset=phrase_context.get("health", {}).get("asset"),
-            engine=phrase_context.get("health", {}).get("engine"),
-        ),
-        "finance_paragraph": build_finance_paragraph(
-            finance.get("paragraph", ""),
-            option_b_json.get("theme", ""),
-            profile_name=profile_name,
-            tone_hint=tone_hints["finance"],
-            clause=phrase_context.get("finance", {}).get("clause"),
-            event=area_events.get("finance", {}).get("primary"),
-            supporting_event=area_events.get("finance", {}).get("supporting"),
-        ),
-        "finance_bullets": normalize_bullets(
-            finance.get("bullets", []),
-            profile_name,
-            area="finance",
-            asset=phrase_context.get("finance", {}).get("asset"),
-            engine=phrase_context.get("finance", {}).get("engine"),
-        ),
-        "do_today": normalize_bullets(
-            option_b_json.get("do_today", []),
-            profile_name,
-            area="general",
-            asset=general_asset,
-            engine=general_engine,
-        ),
-        "avoid_today": normalize_avoid(
-            option_b_json.get("avoid_today", []),
-            profile_name,
-            area="general",
-            asset=general_asset,
-            engine=general_engine,
-        ),
+        "career_paragraph": career_paragraph,
+        "career_bullets": career_bullets,
+        "love_paragraph": love_paragraph,
+        "love_attached": love_attached,
+        "love_single": love_single,
+        "health_paragraph": health_paragraph,
+        "health_opts": health_opts,
+        "finance_paragraph": finance_paragraph,
+        "finance_bullets": finance_bullets,
+        "do_today": general_do,
+        "avoid_today": general_avoid,
+        "caution_window": caution_window,
+        "remedies": remedy_lines[:MAX_LIST_ITEMS],
         "lucky": lucky,
         "one_line_summary": build_one_line_summary(
             option_b_json.get("one_line_summary", ""), option_b_json.get("theme", ""), profile_name=profile_name
@@ -445,7 +788,7 @@ def build_context(option_b_json: dict[str, Any]) -> dict[str, Any]:
             },
         },
     }
-    return ctx
+    return _sanitize_value(ctx)
 
 
 def render(option_b_json: dict[str, Any], templates_dir: str | None = None) -> str:

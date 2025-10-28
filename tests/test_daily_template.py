@@ -1,5 +1,6 @@
 import importlib
 import json
+import re
 import sys
 import types
 
@@ -147,6 +148,45 @@ def _collect_strings(value):
     return []
 
 
+_ROOT_STOPWORDS = {
+    "avoid",
+    "clarity",
+    "choose",
+    "focus",
+    "hold",
+    "keep",
+    "momentum",
+    "note",
+    "plan",
+    "set",
+    "skip",
+    "stay",
+    "support",
+    "today",
+    "track",
+    "trust",
+    "with",
+    "your",
+}
+
+
+def _root_tokens(sentences):
+    tokens: set[str] = set()
+    for sentence in sentences:
+        for token in re.findall(r"[A-Za-z]+", sentence.lower()):
+            if token in _ROOT_STOPWORDS or len(token) <= 2:
+                continue
+            base = token
+            if base.endswith("ing") and len(base) > 4:
+                base = base[:-3]
+            elif base.endswith("ies") and len(base) > 4:
+                base = base[:-3] + "y"
+            elif base.endswith("s") and len(base) > 3:
+                base = base[:-1]
+            tokens.add(base)
+    return tokens
+
+
 def test_trim_for_display_avoids_ellipses():
     text = "One. Two sentences follow with extra detail that would have been clipped."
     trimmed = _trim_for_display(text, width=40, ensure_sentence=True)
@@ -167,6 +207,95 @@ def test_build_fallback_has_no_ellipses():
             continue
         assert "..." not in text
         assert "…" not in text
+        assert "—" not in text
+        assert "–" not in text
+
+
+def test_fallback_mantra_differs_from_affirmation():
+    payload = _sample_daily_payload()
+    fallback = _build_fallback(payload).model_dump(mode="python")
+    assert fallback["morning_mindset"]["mantra"]
+    assert fallback["morning_mindset"]["mantra"] != fallback["lucky"]["affirmation"]
+
+
+def test_fallback_mantra_replaces_matching_affirmation():
+    payload = _sample_daily_payload()
+    shared_text = "I stand steady — even when plans shift."
+    payload["lucky"]["affirmation"] = shared_text
+    payload["morning_mindset"] = {"mantra": shared_text}
+
+    fallback = _build_fallback(payload).model_dump(mode="python")
+
+    lucky_affirmation = fallback["lucky"]["affirmation"]
+    mantra = fallback["morning_mindset"]["mantra"]
+
+    assert "—" not in lucky_affirmation and "–" not in lucky_affirmation
+    assert "—" not in mantra and "–" not in mantra
+    assert lucky_affirmation.endswith("plans shift.")
+    assert mantra != lucky_affirmation
+
+
+def test_fallback_adds_caution_and_remedies():
+    fallback = _build_fallback(_sample_daily_payload()).model_dump(mode="python")
+    caution = fallback["caution_window"]
+    assert caution["time_window"]
+    assert caution["note"].endswith(".")
+    assert "—" not in caution["time_window"] and "–" not in caution["time_window"]
+    remedies = fallback["remedies"]
+    assert remedies and len(remedies) <= 4
+    for item in remedies:
+        assert item.endswith(".")
+        assert "—" not in item and "–" not in item
+
+
+def test_sanitize_payload_preserves_caution_and_remedies():
+    payload = {
+        "profile_name": "Ethan",
+        "date": "2025-10-30",
+        "mood": "motivated",
+        "theme": "Radiant focus",
+        "opening_summary": "A focused day awaits.",
+        "morning_mindset": {"paragraph": "Stay steady.", "mantra": "I choose clarity."},
+        "career": {"paragraph": "Share progress.", "bullets": ["Send an update."]},
+        "love": {
+            "paragraph": "Listen closely.",
+            "attached": "Offer a kind word.",
+            "single": "Stay open to conversation.",
+        },
+        "health": {"paragraph": "Stretch mindfully.", "good_options": ["Hydrate well."]},
+        "finance": {"paragraph": "Review budgets.", "bullets": ["Check expenses."]},
+        "do_today": ["Outline priorities."],
+        "avoid_today": ["Skip impulsive decisions."],
+        "caution_window": {"time_window": "13:00-14:00", "note": "Double-check commitments."},
+        "remedies": ["Take three deep breaths.", "Review your calendar."],
+        "lucky": {
+            "color": "royal blue",
+            "time_window": "08:00-10:00",
+            "direction": "North",
+            "affirmation": "I act with purpose.",
+        },
+        "one_line_summary": "Lead with balance.",
+    }
+
+    sanitized = daily_template._sanitize_payload(payload)
+
+    assert sanitized["caution_window"] == {
+        "time_window": "13:00-14:00",
+        "note": "Double-check commitments.",
+    }
+    assert sanitized["remedies"] == [
+        "Take three deep breaths.",
+        "Review your calendar.",
+    ]
+
+
+def test_fallback_do_and_avoid_focus_are_distinct():
+    fallback = _build_fallback(_sample_daily_payload()).model_dump(mode="python")
+    do_roots = _root_tokens(fallback["do_today"])
+    avoid_roots = _root_tokens(fallback["avoid_today"])
+    assert do_roots
+    assert avoid_roots
+    assert not do_roots.intersection(avoid_roots)
 
 
 def test_generate_daily_template_skips_llm_when_use_ai_false(monkeypatch):
