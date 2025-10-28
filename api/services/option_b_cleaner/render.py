@@ -19,6 +19,7 @@ from .language import (
     build_opening_summary,
     fix_indefinite_articles,
 )
+from ..remedy_templates import remedy_templates_for_planet
 from src.content.archetype_router import classify_event
 from src.content.area_selector import rank_events_by_area, summarize_rankings
 from src.content.phrasebank import (
@@ -31,6 +32,128 @@ from src.content.variation import VariationEngine
 
 
 TEMPLATES_DIR = Path(__file__).resolve().parent
+
+CAUTION_ASPECTS = {
+    "square",
+    "opposition",
+    "quincunx",
+    "retrograde",
+    "semi-square",
+    "sesquisquare",
+}
+
+CAUTION_KEYWORDS = {
+    "pressure",
+    "tension",
+    "strain",
+    "challenge",
+    "caution",
+    "warning",
+    "delay",
+    "stress",
+    "conflict",
+    "pushback",
+}
+
+CAUTION_FALLBACK_TIME = "14:00-16:00 (afternoon)"
+CAUTION_FALLBACK_NOTE = "Use this span for careful review and gentler pacing."
+MAX_LIST_ITEMS = 4
+
+
+def _coerce_text(value: Any) -> str:
+    if isinstance(value, str):
+        return value.strip()
+    if value is None:
+        return ""
+    return str(value).strip()
+
+
+def _strip_dashes(value: str) -> str:
+    return value.replace("—", "-").replace("–", "-")
+
+
+def _ensure_sentence(text: str) -> str:
+    cleaned = " ".join(text.split())
+    if not cleaned:
+        return ""
+    if cleaned[-1] not in ".!?":
+        cleaned = f"{cleaned}."
+    return cleaned
+
+
+def _looks_challenging(aspect: str, note: str, tone: str, intensity: str) -> bool:
+    if tone == "challenge":
+        return True
+    if intensity in {"intense", "challenge", "hard"}:
+        return True
+    if any(token in aspect for token in CAUTION_ASPECTS):
+        return True
+    return any(keyword in note for keyword in CAUTION_KEYWORDS)
+
+
+def _event_time_window(event: Mapping[str, Any]) -> str:
+    for key in ("time_window", "window", "time", "span", "range"):
+        candidate = _strip_dashes(_coerce_text(event.get(key)))
+        if candidate:
+            return candidate
+    start = _strip_dashes(_coerce_text(event.get("start_time")))
+    end = _strip_dashes(_coerce_text(event.get("end_time")))
+    if start and end:
+        return f"{start}-{end}"
+    return ""
+
+
+def _build_caution_window_from_events(
+    enriched_events: Sequence[Mapping[str, Any]]
+) -> dict[str, str]:
+    for item in enriched_events:
+        event = item.get("event") if isinstance(item, Mapping) else None
+        if not isinstance(event, Mapping):
+            continue
+        tone = _coerce_text(item.get("tone")) if isinstance(item, Mapping) else ""
+        classification = item.get("classification") if isinstance(item, Mapping) else {}
+        intensity = _coerce_text((classification or {}).get("intensity"))
+        aspect = _coerce_text(event.get("aspect")).lower()
+        note = _coerce_text(event.get("note"))
+        if _looks_challenging(aspect, note.lower(), tone, intensity):
+            time_window = _event_time_window(event) or CAUTION_FALLBACK_TIME
+            note_text = _ensure_sentence(
+                _strip_dashes(note) or CAUTION_FALLBACK_NOTE
+            )
+            return {"time_window": time_window, "note": note_text}
+
+    if enriched_events:
+        fallback_event = enriched_events[0].get("event") if isinstance(enriched_events[0], Mapping) else None
+        if isinstance(fallback_event, Mapping):
+            time_window = _event_time_window(fallback_event) or CAUTION_FALLBACK_TIME
+            note_text = _ensure_sentence(
+                _strip_dashes(_coerce_text(fallback_event.get("note")))
+                or CAUTION_FALLBACK_NOTE
+            )
+            return {"time_window": time_window, "note": note_text}
+
+    return {"time_window": CAUTION_FALLBACK_TIME, "note": CAUTION_FALLBACK_NOTE}
+
+
+def _build_remedies(planet: str, sign: str, theme: str) -> list[str]:
+    templates = remedy_templates_for_planet(planet)
+    theme_token = (theme or "day").strip().lower() or "day"
+    sign_token = (sign or "your sign").strip() or "your sign"
+    remedies: list[str] = []
+    seen: set[str] = set()
+    for template in templates:
+        text = template.format(sign=sign_token, theme=theme_token)
+        formatted = _ensure_sentence(_strip_dashes(text))
+        if formatted:
+            lowered = formatted.lower()
+            if lowered not in seen:
+                remedies.append(formatted)
+                seen.add(lowered)
+        if len(remedies) >= MAX_LIST_ITEMS:
+            break
+    if not remedies:
+        remedies.append(_ensure_sentence("Ground yourself with three steady breaths."))
+    return remedies
 
 
 def _env(templates_dir: Path) -> Environment:
@@ -186,13 +309,27 @@ def _append_variation_sentences(base: str, extras: Sequence[str]) -> str:
     extra_list = [text.strip() for text in extras if text and text.strip()]
     if not extra_list:
         return base
+    segments: list[str] = []
+    seen: set[str] = set()
+
+    def _append_segments(text: str) -> None:
+        for part in re.split(r"(?<=[.!?])\s+", text.strip()):
+            cleaned = part.strip()
+            if not cleaned:
+                continue
+            if cleaned[-1] not in ".!?":
+                cleaned = f"{cleaned}."
+            normalized = cleaned.lower()
+            if normalized not in seen:
+                segments.append(cleaned)
+                seen.add(normalized)
+
     base_clean = (base or "").strip()
-    if base_clean and base_clean[-1] not in ".!?":
-        base_clean = f"{base_clean}."
     if base_clean:
-        combined = " ".join([base_clean, *extra_list]).strip()
-    else:
-        combined = " ".join(extra_list).strip()
+        _append_segments(base_clean)
+    for sentence in extra_list:
+        _append_segments(sentence)
+    combined = " ".join(segments).strip()
     return fix_indefinite_articles(combined)
 
 
@@ -211,6 +348,8 @@ def build_context(option_b_json: dict[str, Any]) -> dict[str, Any]:
     tone_hints = {section: _section_tone(enriched_events, section) for section in SECTION_TAGS}
     top_classification = enriched_events[0]["classification"] if enriched_events else None
     area_summary = summarize_rankings(area_rankings)
+    caution_window = _build_caution_window_from_events(enriched_events)
+    remedy_lines = _build_remedies(dom_planet, dom_sign, option_b_json.get("theme", ""))
     selected_area_events: dict[str, dict[str, Any] | None] = {}
     for area, summary in area_summary.items():
         primary = summary.get("selected") if summary else None
@@ -402,6 +541,8 @@ def build_context(option_b_json: dict[str, Any]) -> dict[str, Any]:
             asset=general_asset,
             engine=general_engine,
         ),
+        "caution_window": caution_window,
+        "remedies": remedy_lines[:MAX_LIST_ITEMS],
         "lucky": lucky,
         "one_line_summary": build_one_line_summary(
             option_b_json.get("one_line_summary", ""), option_b_json.get("theme", ""), profile_name=profile_name

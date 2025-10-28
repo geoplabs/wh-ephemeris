@@ -167,6 +167,45 @@ def test_build_fallback_has_no_ellipses():
             continue
         assert "..." not in text
         assert "…" not in text
+        assert "—" not in text
+        assert "–" not in text
+
+
+def test_fallback_mantra_differs_from_affirmation():
+    payload = _sample_daily_payload()
+    fallback = _build_fallback(payload).model_dump(mode="python")
+    assert fallback["morning_mindset"]["mantra"]
+    assert fallback["morning_mindset"]["mantra"] != fallback["lucky"]["affirmation"]
+
+
+def test_fallback_mantra_replaces_matching_affirmation():
+    payload = _sample_daily_payload()
+    shared_text = "I stand steady — even when plans shift."
+    payload["lucky"]["affirmation"] = shared_text
+    payload["morning_mindset"] = {"mantra": shared_text}
+
+    fallback = _build_fallback(payload).model_dump(mode="python")
+
+    lucky_affirmation = fallback["lucky"]["affirmation"]
+    mantra = fallback["morning_mindset"]["mantra"]
+
+    assert "—" not in lucky_affirmation and "–" not in lucky_affirmation
+    assert "—" not in mantra and "–" not in mantra
+    assert lucky_affirmation.endswith("plans shift.")
+    assert mantra != lucky_affirmation
+
+
+def test_fallback_adds_caution_and_remedies():
+    fallback = _build_fallback(_sample_daily_payload()).model_dump(mode="python")
+    caution = fallback["caution_window"]
+    assert caution["time_window"]
+    assert caution["note"].endswith(".")
+    assert "—" not in caution["time_window"] and "–" not in caution["time_window"]
+    remedies = fallback["remedies"]
+    assert remedies and len(remedies) <= 4
+    for item in remedies:
+        assert item.endswith(".")
+        assert "—" not in item and "–" not in item
 
 
 def test_generate_daily_template_skips_llm_when_use_ai_false(monkeypatch):
