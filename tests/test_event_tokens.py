@@ -16,7 +16,7 @@ def test_event_phrase_includes_orb_and_phase():
 
     assert (
         phrase
-        == "Sun aligns with your Pluto in Scorpio—an applying exact conjunction at 0.39° orb"
+        == "Sun aligns with your Pluto in Scorpio—an applying conjunction at 0.39° orb"
     )
 
 
@@ -35,7 +35,7 @@ def test_event_phrase_uses_phase_from_note_when_flag_missing():
 
     assert (
         phrase
-        == "Sun aligns with your Pluto in Scorpio—an applying exact conjunction at 0.39° orb"
+        == "Sun aligns with your Pluto in Scorpio—an applying conjunction at 0.39° orb"
     )
 
 
@@ -54,7 +54,7 @@ def test_event_phrase_uses_value_after_label_in_note():
 
     assert (
         phrase
-        == "Venus presses on your Mars from Leo to Scorpio—an separating pressing square at 2.50° orb"
+        == "Venus presses on your Mars from Leo to Scorpio—a separating square alignment at 2.50° orb"
     )
 
 
@@ -73,7 +73,7 @@ def test_event_phrase_prefers_first_non_label_phase_reference():
 
     assert (
         phrase
-        == "Mars flows with your Moon from Sagittarius to Aries—an separating flowing trine at 1.10° orb"
+        == "Mars flows with your Moon from Sagittarius to Aries—a separating flowing trine at 1.10° orb"
     )
 
 
@@ -92,5 +92,5 @@ def test_event_phrase_notes_cross_sign_alignment():
 
     assert (
         phrase
-        == "Mercury aligns with your Saturn from Scorpio to Sagittarius—an applying exact conjunction at 1.73° orb"
+        == "Mercury aligns with your Saturn from Scorpio to Sagittarius—an applying conjunction at 1.73° orb"
     )
