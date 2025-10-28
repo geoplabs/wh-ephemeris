@@ -42,6 +42,27 @@ def _sanitize_lower(value: Any) -> str:
     return phrase.lower() if phrase else ""
 
 
+def _format_orb(value: Any) -> str:
+    try:
+        number = float(value)
+    except (TypeError, ValueError):
+        return ""
+    return f"{abs(number):.2f}° orb"
+
+
+def _aspect_phase(event: Mapping[str, Any]) -> str:
+    applying = event.get("applying")
+    if isinstance(applying, bool):
+        return "applying" if applying else "separating"
+    note = clean_token_phrase(event.get("note"))
+    lowered = note.lower()
+    if "applying" in lowered:
+        return "applying"
+    if "separating" in lowered:
+        return "separating"
+    return ""
+
+
 def _house_label(value: Any) -> str:
     try:
         number = int(value)
@@ -101,6 +122,8 @@ SAFE_DESCRIPTOR_WHITELIST: Mapping[str, Callable[[Mapping[str, Any]], str]] = {
     "aspect": lambda event: _sanitize_lower(event.get("aspect")),
     "aspect_verb": _aspect_verb,
     "aspect_family": lambda event: _aspect_details(event.get("aspect"))[1],
+    "aspect_phase": _aspect_phase,
+    "orb_text": lambda event: _format_orb(event.get("orb")),
     "natal_house_label": lambda event: _house_label(event.get("natal_house")),
     "event_focus": lambda event: _event_focus(
         event.get("focus_label")
@@ -172,6 +195,37 @@ def render_mini_template(templates: Sequence[MiniTemplate], tokens: Mapping[str,
 
 
 DEFAULT_EVENT_TEMPLATES: tuple[MiniTemplate, ...] = (
+    MiniTemplate(
+        "{transit_body} {aspect_verb} your {natal_body}—an {aspect_phase} {aspect_family} at {orb_text}",
+        (
+            "transit_body",
+            "aspect_verb",
+            "natal_body",
+            "aspect_phase",
+            "aspect_family",
+            "orb_text",
+        ),
+    ),
+    MiniTemplate(
+        "{transit_body} {aspect_verb} your {natal_body}—an {aspect_family} at {orb_text}",
+        (
+            "transit_body",
+            "aspect_verb",
+            "natal_body",
+            "aspect_family",
+            "orb_text",
+        ),
+    ),
+    MiniTemplate(
+        "{transit_body} {aspect_verb} your {natal_body}—an {aspect_phase} {aspect_family}",
+        (
+            "transit_body",
+            "aspect_verb",
+            "natal_body",
+            "aspect_phase",
+            "aspect_family",
+        ),
+    ),
     MiniTemplate(
         "{transit_body} {aspect_verb} your {natal_body} in the {natal_house_label}—a {aspect_family} influence",
         ("transit_body", "aspect_verb", "natal_body", "natal_house_label", "aspect_family"),
