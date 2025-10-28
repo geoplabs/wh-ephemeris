@@ -8,6 +8,20 @@ from typing import Any, Callable, Mapping, Sequence
 from .clean import clean_token_phrase
 
 
+_PHASE_WORD_RE = re.compile(r"\b(applying|separating)\b", re.I)
+_PHASE_LABEL_SEPARATOR = r"[:=\-\u2013\u2014]"
+_PHASE_LABEL_PATTERNS: tuple[re.Pattern[str], ...] = (
+    re.compile(
+        rf"\b(?:phase|status)\b\s*(?:{_PHASE_LABEL_SEPARATOR}|is|are)?\s*(applying|separating)\b",
+        re.I,
+    ),
+    re.compile(
+        rf"\bapplying\s*/\s*separating\b\s*(?:{_PHASE_LABEL_SEPARATOR}|is|are)?\s*(applying|separating)\b",
+        re.I,
+    ),
+)
+
+
 _ASPECT_STYLES: Mapping[str, tuple[str, str]] = {
     "conjunction": ("aligns with", "exact conjunction"),
     "sextile": ("supports", "supportive sextile"),
@@ -50,16 +64,42 @@ def _format_orb(value: Any) -> str:
     return f"{abs(number):.2f}° orb"
 
 
+def _phase_from_text(note: str) -> str:
+    for pattern in _PHASE_LABEL_PATTERNS:
+        match = pattern.search(note)
+        if match:
+            return match.group(1).lower()
+
+    matches: list[re.Match[str]] = []
+    for match in _PHASE_WORD_RE.finditer(note):
+        before = note[: match.start()]
+        after = note[match.end() :]
+        if re.match(r"\s*/", after):
+            continue
+        if before.rstrip().endswith("/"):
+            continue
+        matches.append(match)
+
+    if not matches:
+        return ""
+
+    first = matches[0].group(1).lower()
+    return first
+
+
 def _aspect_phase(event: Mapping[str, Any]) -> str:
     applying = event.get("applying")
     if isinstance(applying, bool):
         return "applying" if applying else "separating"
-    note = clean_token_phrase(event.get("note"))
-    lowered = note.lower()
-    if "applying" in lowered:
-        return "applying"
-    if "separating" in lowered:
-        return "separating"
+    note = event.get("note")
+    if isinstance(note, str):
+        phase = _phase_from_text(note)
+        if phase:
+            return phase
+        cleaned = clean_token_phrase(note)
+        phase = _phase_from_text(cleaned)
+        if phase:
+            return phase
     return ""
 
 
