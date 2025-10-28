@@ -191,10 +191,21 @@ def _cleanup_sentence(text: str) -> str:
         "conversations outer": "outer conversations",
         "outer conversations rituals": "outer rituals",
         "curious outer conversations": "curious outer rituals",
+        "drive support professional wins": "drive to support professional wins",
+        "drive tune body": "drive to tune your body",
+        "drive tune": "drive to tune",
+        "responsibility stabilize boundaries": "responsibility boundaries",
+        "responsibility finances boundaries": "responsibility boundaries",
+        "steady back relationship": "steady relationship",
+        "harmonizing emotional rhythms steps": "harmonizing emotional rhythms",
+        "growth rhythms intentions": "growth rhythms",
+        "tune your body care to protect your reserves": "tune your body",
     }
     cleaned = text
     for needle, replacement in replacements.items():
         cleaned = cleaned.replace(needle, replacement)
+    cleaned = re.sub(r"\b(\w+)\s+to\s+\1\b", r"\1", cleaned)
+    cleaned = re.sub(r"\bChoose radiant drive support\b", "Choose radiant drive to support", cleaned)
     cleaned = re.sub(r"\b(\w+)\s+\1\b", r"\1", cleaned)
     cleaned = re.sub(
         r"\bSet\s+([A-Za-z]+) priority\b",
@@ -263,6 +274,13 @@ def _format_phrase(words: list[str], mode: str = "do") -> str:
         "true",
         "truly",
         "scatters",
+        "when",
+        "need",
+        "needs",
+        "back",
+        "steps",
+        "stabilize",
+        "smart",
     }
     if tokens:
         tokens = [t for t in tokens if t not in filler_tokens]
@@ -360,7 +378,9 @@ def _format_phrase(words: list[str], mode: str = "do") -> str:
             if qualifier not in {"and", "or", "of"}:
                 tokens.pop(qualifier_idx)
                 singular = _singularize_token(qualifier)
-                tokens.insert(boundary_idx, singular)
+                if singular not in {"priority", "support", "professional"}:
+                    if singular and singular not in tokens[:boundary_idx]:
+                        tokens.insert(boundary_idx, singular)
     if "relationship" in tokens and "boundaries" in tokens:
         tokens = [w for w in tokens if w != "relationship"]
         idx = tokens.index("boundaries")

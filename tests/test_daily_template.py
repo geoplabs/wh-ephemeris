@@ -248,6 +248,47 @@ def test_fallback_adds_caution_and_remedies():
         assert "—" not in item and "–" not in item
 
 
+def test_sanitize_payload_preserves_caution_and_remedies():
+    payload = {
+        "profile_name": "Ethan",
+        "date": "2025-10-30",
+        "mood": "motivated",
+        "theme": "Radiant focus",
+        "opening_summary": "A focused day awaits.",
+        "morning_mindset": {"paragraph": "Stay steady.", "mantra": "I choose clarity."},
+        "career": {"paragraph": "Share progress.", "bullets": ["Send an update."]},
+        "love": {
+            "paragraph": "Listen closely.",
+            "attached": "Offer a kind word.",
+            "single": "Stay open to conversation.",
+        },
+        "health": {"paragraph": "Stretch mindfully.", "good_options": ["Hydrate well."]},
+        "finance": {"paragraph": "Review budgets.", "bullets": ["Check expenses."]},
+        "do_today": ["Outline priorities."],
+        "avoid_today": ["Skip impulsive decisions."],
+        "caution_window": {"time_window": "13:00-14:00", "note": "Double-check commitments."},
+        "remedies": ["Take three deep breaths.", "Review your calendar."],
+        "lucky": {
+            "color": "royal blue",
+            "time_window": "08:00-10:00",
+            "direction": "North",
+            "affirmation": "I act with purpose.",
+        },
+        "one_line_summary": "Lead with balance.",
+    }
+
+    sanitized = daily_template._sanitize_payload(payload)
+
+    assert sanitized["caution_window"] == {
+        "time_window": "13:00-14:00",
+        "note": "Double-check commitments.",
+    }
+    assert sanitized["remedies"] == [
+        "Take three deep breaths.",
+        "Review your calendar.",
+    ]
+
+
 def test_fallback_do_and_avoid_focus_are_distinct():
     fallback = _build_fallback(_sample_daily_payload()).model_dump(mode="python")
     do_roots = _root_tokens(fallback["do_today"])

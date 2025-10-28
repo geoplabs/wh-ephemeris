@@ -264,6 +264,8 @@ def _sanitize_payload(payload: Any) -> Dict[str, Any]:
     health = _sanitize_mapping(data.get("health"))
     finance = _sanitize_mapping(data.get("finance"))
     lucky = _sanitize_mapping(data.get("lucky"))
+    caution_window = _sanitize_mapping(data.get("caution_window"))
+    remedies = _sanitize_string_list(data.get("remedies"))
 
     sanitized_payload: Dict[str, Any] = {
         "profile_name": _coerce_string(data.get("profile_name")),
@@ -294,6 +296,11 @@ def _sanitize_payload(payload: Any) -> Dict[str, Any]:
         },
         "do_today": _sanitize_string_list(data.get("do_today")),
         "avoid_today": _sanitize_string_list(data.get("avoid_today")),
+        "caution_window": {
+            "time_window": _coerce_string(caution_window.get("time_window")),
+            "note": _coerce_string(caution_window.get("note")),
+        },
+        "remedies": remedies,
         "lucky": {
             "color": _coerce_string(lucky.get("color")),
             "time_window": _coerce_string(lucky.get("time_window")),
