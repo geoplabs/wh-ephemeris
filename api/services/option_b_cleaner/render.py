@@ -60,6 +60,56 @@ CAUTION_FALLBACK_NOTE = "Use this span for careful review and gentler pacing."
 MAX_LIST_ITEMS = 4
 
 
+_BULLET_STOPWORDS = {
+    "a",
+    "about",
+    "and",
+    "anchor",
+    "as",
+    "at",
+    "be",
+    "build",
+    "by",
+    "clarity",
+    "can",
+    "care",
+    "for",
+    "focus",
+    "from",
+    "if",
+    "in",
+    "into",
+    "keep",
+    "make",
+    "move",
+    "moves",
+    "need",
+    "note",
+    "of",
+    "on",
+    "plan",
+    "set",
+    "share",
+    "so",
+    "step",
+    "support",
+    "take",
+    "that",
+    "the",
+    "their",
+    "this",
+    "through",
+    "to",
+    "today",
+    "update",
+    "what",
+    "when",
+    "with",
+    "wins",
+    "your",
+}
+
+
 def _coerce_text(value: Any) -> str:
     if isinstance(value, str):
         return value.strip()
@@ -156,6 +206,54 @@ def _build_remedies(planet: str, sign: str, theme: str) -> list[str]:
     return remedies
 
 
+def _bullet_tail_key(sentence: str) -> str:
+    core = sentence.rstrip(".!?").strip().lower()
+    if not core:
+        return ""
+    parts = core.split()
+    if len(parts) <= 3:
+        return core
+    return " ".join(parts[-3:])
+
+
+def _bullet_root_tokens(sentence: str) -> set[str]:
+    tokens = re.findall(r"[A-Za-z]+", sentence.lower())
+    roots: set[str] = set()
+    for token in tokens:
+        if token in _BULLET_STOPWORDS:
+            continue
+        if len(token) <= 2:
+            continue
+        base = token
+        if base.endswith("ing") and len(base) > 4:
+            base = base[:-3]
+        elif base.endswith("ies") and len(base) > 4:
+            base = base[:-3] + "y"
+        elif base.endswith("s") and len(base) > 3:
+            base = base[:-1]
+        roots.add(base)
+    return roots
+
+
+def _collect_bullet_roots(sentences: Sequence[str]) -> set[str]:
+    combined: set[str] = set()
+    for sentence in sentences:
+        combined.update(_bullet_root_tokens(sentence))
+    return combined
+
+
+def _sanitize_value(value: Any) -> Any:
+    if isinstance(value, str):
+        cleaned = _strip_dashes(value)
+        cleaned = " ".join(cleaned.split())
+        return cleaned.strip()
+    if isinstance(value, list):
+        return [_sanitize_value(item) for item in value]
+    if isinstance(value, dict):
+        return {key: _sanitize_value(item) for key, item in value.items()}
+    return value
+
+
 def _env(templates_dir: Path) -> Environment:
     env = Environment(
         loader=FileSystemLoader(str(templates_dir)),
@@ -217,17 +315,17 @@ def normalize_bullets(
     area: str,
     asset: PhraseAsset | None = None,
     engine: VariationEngine | None = None,
+    forbidden_roots: Iterable[str] | None = None,
 ) -> list[str]:
-    ordered: Sequence[str] = bullets or []
-    if engine and ordered:
-        ordered = engine.permutation(f"{area}.bullets", ordered)
-    out: list[str] = []
-    for idx, raw in enumerate(ordered):
-        cleaned = to_you_pov(raw or "", profile_name)
-        bullet = imperative_bullet(cleaned, idx, area=area, asset=asset)
-        if bullet and bullet not in out:
-            out.append(bullet)
-    return out[:4]
+    return _normalize_bullet_list(
+        bullets,
+        profile_name,
+        area=area,
+        asset=asset,
+        engine=engine,
+        mode="do",
+        forbidden_roots=forbidden_roots,
+    )
 
 
 def normalize_avoid(
@@ -237,17 +335,104 @@ def normalize_avoid(
     area: str,
     asset: PhraseAsset | None = None,
     engine: VariationEngine | None = None,
+    forbidden_roots: Iterable[str] | None = None,
+) -> list[str]:
+    return _normalize_bullet_list(
+        bullets,
+        profile_name,
+        area=area,
+        asset=asset,
+        engine=engine,
+        mode="avoid",
+        forbidden_roots=forbidden_roots,
+    )
+
+
+def _normalize_bullet_list(
+    bullets: list[str],
+    profile_name: str,
+    *,
+    area: str,
+    asset: PhraseAsset | None,
+    engine: VariationEngine | None,
+    mode: str,
+    forbidden_roots: Iterable[str] | None,
 ) -> list[str]:
     ordered: Sequence[str] = bullets or []
     if engine and ordered:
-        ordered = engine.permutation(f"{area}.avoid", ordered)
+        tag = f"{area}.{'avoid' if mode == 'avoid' else 'bullets'}"
+        ordered = engine.permutation(tag, ordered)
     out: list[str] = []
+    used_tails: set[str] = set()
+    used_roots: set[str] = set(forbidden_roots or [])
     for idx, raw in enumerate(ordered):
         cleaned = to_you_pov(raw or "", profile_name)
-        bullet = imperative_bullet(cleaned, idx, mode="avoid", area=area, asset=asset)
-        if bullet and bullet not in out:
-            out.append(bullet)
+        candidate, tail, roots = _select_bullet_sentence(
+            cleaned,
+            base_order=idx,
+            area=area,
+            asset=asset,
+            mode=mode,
+            used_tails=used_tails,
+            used_roots=used_roots,
+        )
+        if not candidate:
+            continue
+        if roots and roots.intersection(used_roots):
+            continue
+        if candidate in out:
+            continue
+        out.append(candidate)
+        if tail:
+            used_tails.add(tail)
+        if roots:
+            used_roots.update(roots)
+        if len(out) >= MAX_LIST_ITEMS:
+            break
+    if mode == "avoid" and not out:
+        out.extend(
+            [
+                "Avoid overextending your energy today.",
+                "Skip reactive conversations when clarity is low.",
+                "Hold back from impulse spending until timing improves.",
+                "Delay tough calls so boundaries stay clear.",
+            ][: MAX_LIST_ITEMS]
+        )
     return out[:4]
+
+
+def _select_bullet_sentence(
+    text: str,
+    *,
+    base_order: int,
+    area: str,
+    asset: PhraseAsset | None,
+    mode: str,
+    used_tails: set[str],
+    used_roots: set[str],
+) -> tuple[str | None, str, set[str]]:
+    fallback: tuple[str | None, str, set[str]] = (None, "", set())
+    for offset in range(4):
+        order = base_order + offset
+        candidate = imperative_bullet(
+            text,
+            order,
+            mode=mode,
+            area=area,
+            asset=asset,
+        )
+        if not candidate:
+            continue
+        tail = _bullet_tail_key(candidate)
+        roots = _bullet_root_tokens(candidate)
+        if not fallback[0]:
+            fallback = (candidate, tail, roots)
+        if tail and tail in used_tails:
+            continue
+        if roots and roots.intersection(used_roots):
+            continue
+        return candidate, tail, roots
+    return fallback
 
 
 def _tone_from_tags(tags: Iterable[str]) -> str:
@@ -444,6 +629,87 @@ def build_context(option_b_json: dict[str, Any]) -> dict[str, Any]:
             "supporting": selected.get("supporting_event"),
         }
 
+    career_paragraph = build_career_paragraph(
+        career.get("paragraph", ""),
+        profile_name=profile_name,
+        tone_hint=tone_hints["career"],
+        clause=phrase_context.get("career", {}).get("clause"),
+        event=area_events.get("career", {}).get("primary"),
+        supporting_event=area_events.get("career", {}).get("supporting"),
+    )
+    career_bullets = normalize_bullets(
+        career.get("bullets", []),
+        profile_name,
+        area="career",
+        asset=phrase_context.get("career", {}).get("asset"),
+        engine=phrase_context.get("career", {}).get("engine"),
+    )
+    love_paragraph = build_love_paragraph(
+        love.get("paragraph", ""),
+        profile_name=profile_name,
+        tone_hint=tone_hints["love"],
+        clause=phrase_context.get("love", {}).get("clause"),
+        event=area_events.get("love", {}).get("primary"),
+        supporting_event=area_events.get("love", {}).get("supporting"),
+    )
+    love_attached = build_love_status(
+        love.get("attached", ""), "attached", profile_name=profile_name, tone_hint=tone_hints["love"]
+    )
+    love_single = build_love_status(
+        love.get("single", ""), "single", profile_name=profile_name, tone_hint=tone_hints["love"]
+    )
+    health_paragraph = build_health_paragraph(
+        health.get("paragraph", ""),
+        option_b_json.get("theme", ""),
+        profile_name=profile_name,
+        tone_hint=tone_hints["health"],
+        clause=phrase_context.get("health", {}).get("clause"),
+        event=area_events.get("health", {}).get("primary"),
+        supporting_event=area_events.get("health", {}).get("supporting"),
+    )
+    health_opts = normalize_bullets(
+        health.get("good_options", []),
+        profile_name,
+        area="health",
+        asset=phrase_context.get("health", {}).get("asset"),
+        engine=phrase_context.get("health", {}).get("engine"),
+    )
+    finance_paragraph = build_finance_paragraph(
+        finance.get("paragraph", ""),
+        option_b_json.get("theme", ""),
+        profile_name=profile_name,
+        tone_hint=tone_hints["finance"],
+        clause=phrase_context.get("finance", {}).get("clause"),
+        event=area_events.get("finance", {}).get("primary"),
+        supporting_event=area_events.get("finance", {}).get("supporting"),
+    )
+    finance_bullets = normalize_bullets(
+        finance.get("bullets", []),
+        profile_name,
+        area="finance",
+        asset=phrase_context.get("finance", {}).get("asset"),
+        engine=phrase_context.get("finance", {}).get("engine"),
+    )
+
+    general_do = normalize_bullets(
+        option_b_json.get("do_today", []),
+        profile_name,
+        area="general",
+        asset=general_asset,
+        engine=general_engine,
+    )
+    positive_roots = _collect_bullet_roots(
+        career_bullets + health_opts + finance_bullets + general_do
+    )
+    general_avoid = normalize_avoid(
+        option_b_json.get("avoid_today", []),
+        profile_name,
+        area="general",
+        asset=general_asset,
+        engine=general_engine,
+        forbidden_roots=positive_roots,
+    )
+
     ctx: dict[str, Any] = {
         "profile_name": profile_name,
         "date": date,
@@ -527,20 +793,8 @@ def build_context(option_b_json: dict[str, Any]) -> dict[str, Any]:
             asset=phrase_context.get("finance", {}).get("asset"),
             engine=phrase_context.get("finance", {}).get("engine"),
         ),
-        "do_today": normalize_bullets(
-            option_b_json.get("do_today", []),
-            profile_name,
-            area="general",
-            asset=general_asset,
-            engine=general_engine,
-        ),
-        "avoid_today": normalize_avoid(
-            option_b_json.get("avoid_today", []),
-            profile_name,
-            area="general",
-            asset=general_asset,
-            engine=general_engine,
-        ),
+       "do_today": general_do,
+        "avoid_today": general_avoid,
         "caution_window": caution_window,
         "remedies": remedy_lines[:MAX_LIST_ITEMS],
         "lucky": lucky,
@@ -586,7 +840,7 @@ def build_context(option_b_json: dict[str, Any]) -> dict[str, Any]:
             },
         },
     }
-    return ctx
+    return _sanitize_value(ctx)
 
 
 def render(option_b_json: dict[str, Any], templates_dir: str | None = None) -> str:

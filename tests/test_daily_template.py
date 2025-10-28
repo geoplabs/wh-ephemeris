@@ -1,5 +1,6 @@
 import importlib
 import json
+import re
 import sys
 import types
 
@@ -147,6 +148,45 @@ def _collect_strings(value):
     return []
 
 
+_ROOT_STOPWORDS = {
+    "avoid",
+    "clarity",
+    "choose",
+    "focus",
+    "hold",
+    "keep",
+    "momentum",
+    "note",
+    "plan",
+    "set",
+    "skip",
+    "stay",
+    "support",
+    "today",
+    "track",
+    "trust",
+    "with",
+    "your",
+}
+
+
+def _root_tokens(sentences):
+    tokens: set[str] = set()
+    for sentence in sentences:
+        for token in re.findall(r"[A-Za-z]+", sentence.lower()):
+            if token in _ROOT_STOPWORDS or len(token) <= 2:
+                continue
+            base = token
+            if base.endswith("ing") and len(base) > 4:
+                base = base[:-3]
+            elif base.endswith("ies") and len(base) > 4:
+                base = base[:-3] + "y"
+            elif base.endswith("s") and len(base) > 3:
+                base = base[:-1]
+            tokens.add(base)
+    return tokens
+
+
 def test_trim_for_display_avoids_ellipses():
     text = "One. Two sentences follow with extra detail that would have been clipped."
     trimmed = _trim_for_display(text, width=40, ensure_sentence=True)
@@ -206,6 +246,15 @@ def test_fallback_adds_caution_and_remedies():
     for item in remedies:
         assert item.endswith(".")
         assert "—" not in item and "–" not in item
+
+
+def test_fallback_do_and_avoid_focus_are_distinct():
+    fallback = _build_fallback(_sample_daily_payload()).model_dump(mode="python")
+    do_roots = _root_tokens(fallback["do_today"])
+    avoid_roots = _root_tokens(fallback["avoid_today"])
+    assert do_roots
+    assert avoid_roots
+    assert not do_roots.intersection(avoid_roots)
 
 
 def test_generate_daily_template_skips_llm_when_use_ai_false(monkeypatch):

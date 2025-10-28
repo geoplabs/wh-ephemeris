@@ -187,6 +187,10 @@ def _cleanup_sentence(text: str) -> str:
         "responsibility boundary": "responsibility boundaries",
         "public boundary": "public boundaries",
         "relationship boundary": "relationship boundaries",
+        "boundaries priorities": "boundaries",
+        "conversations outer": "outer conversations",
+        "outer conversations rituals": "outer rituals",
+        "curious outer conversations": "curious outer rituals",
     }
     cleaned = text
     for needle, replacement in replacements.items():
