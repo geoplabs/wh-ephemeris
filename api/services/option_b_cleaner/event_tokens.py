@@ -9,7 +9,7 @@ from .clean import clean_token_phrase
 
 
 _ASPECT_STYLES: Mapping[str, tuple[str, str]] = {
-    "conjunction": ("aligns with", "harmonizing conjunction"),
+    "conjunction": ("aligns with", "exact conjunction"),
     "sextile": ("supports", "supportive sextile"),
     "square": ("presses on", "pressing square"),
     "trine": ("flows with", "flowing trine"),
@@ -114,6 +114,20 @@ def _transit_influence(event: Mapping[str, Any]) -> str:
     return f"{body} influence"
 
 
+def _sign_clause(event: Mapping[str, Any]) -> str:
+    transit = _sanitize_name(event.get("transit_sign"))
+    natal = _sanitize_name(event.get("natal_sign"))
+    if transit and natal:
+        if transit == natal:
+            return f"in {transit}"
+        return f"from {transit} to {natal}"
+    if transit:
+        return f"in {transit}"
+    if natal:
+        return f"in {natal}"
+    return ""
+
+
 SAFE_DESCRIPTOR_WHITELIST: Mapping[str, Callable[[Mapping[str, Any]], str]] = {
     "transit_body": lambda event: _sanitize_name(event.get("transit_body")),
     "natal_body": lambda event: _sanitize_name(event.get("natal_body")),
@@ -124,6 +138,7 @@ SAFE_DESCRIPTOR_WHITELIST: Mapping[str, Callable[[Mapping[str, Any]], str]] = {
     "aspect_family": lambda event: _aspect_details(event.get("aspect"))[1],
     "aspect_phase": _aspect_phase,
     "orb_text": lambda event: _format_orb(event.get("orb")),
+    "sign_clause": _sign_clause,
     "natal_house_label": lambda event: _house_label(event.get("natal_house")),
     "event_focus": lambda event: _event_focus(
         event.get("focus_label")
@@ -195,6 +210,18 @@ def render_mini_template(templates: Sequence[MiniTemplate], tokens: Mapping[str,
 
 
 DEFAULT_EVENT_TEMPLATES: tuple[MiniTemplate, ...] = (
+    MiniTemplate(
+        "{transit_body} {aspect_verb} your {natal_body} {sign_clause}—an {aspect_phase} {aspect_family} at {orb_text}",
+        (
+            "transit_body",
+            "aspect_verb",
+            "natal_body",
+            "sign_clause",
+            "aspect_phase",
+            "aspect_family",
+            "orb_text",
+        ),
+    ),
     MiniTemplate(
         "{transit_body} {aspect_verb} your {natal_body}—an {aspect_phase} {aspect_family} at {orb_text}",
         (
