@@ -10,6 +10,10 @@ from .event_tokens import MiniTemplate, event_phrase, render_mini_template
 from src.content.storylets import storylet_pools
 
 
+_ARTICLE_PATTERN = re.compile(r"\b([Aa]n?)\s+([A-Za-z][\w-]*)")
+_SOFT_H_PREFIXES = ("hon", "hour", "heir")
+_HARD_VOWEL_PREFIXES = ("uni", "eu", "one")
+
 SIGN_DETAILS = {
     "Aries": ("Cardinal", "Fire"),
     "Taurus": ("Fixed", "Earth"),

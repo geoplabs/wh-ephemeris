@@ -11,9 +11,11 @@ RUN pip install --no-cache-dir fastapi uvicorn[standard] jinja2 weasyprint repor
 # App code
 COPY api/ /app/api/
 COPY data/ /app/data/
+COPY src/ /app/src/
 
 ENV PYTHONUNBUFFERED=1
 ENV EPHEMERIS_DIR=/app/data/ephemeris
+ENV PYTHONPATH=/app
 
 EXPOSE 8080
 CMD ["uvicorn", "api.app:app", "--host", "0.0.0.0", "--port", "8080", "--reload"]
