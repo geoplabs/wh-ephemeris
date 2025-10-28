@@ -31,18 +31,18 @@ PLANET_DIRECTIONS = {
 }
 
 PLANET_TIME_WINDOWS = {
-    "Sun": "09:00–11:00 (mid-morning)",
-    "Moon": "20:00–22:00 (night)",
-    "Mercury": "08:00–10:00 (early morning)",
-    "Venus": "17:00–19:00 (twilight)",
-    "Mars": "13:00–15:00 (afternoon)",
-    "Jupiter": "06:00–08:00 (dawn)",
-    "Saturn": "18:00–20:00 (evening)",
-    "Uranus": "15:00–17:00 (late afternoon)",
-    "Neptune": "21:00–23:00 (late night)",
-    "Pluto": "05:00–07:00 (pre-dawn)",
-    "TrueNode": "07:00–09:00 (early focus)",
-    "Chiron": "16:00–18:00 (reflective twilight)",
+    "Sun": "09:00-11:00 (mid-morning)",
+    "Moon": "20:00-22:00 (night)",
+    "Mercury": "08:00-10:00 (early morning)",
+    "Venus": "17:00-19:00 (twilight)",
+    "Mars": "13:00-15:00 (afternoon)",
+    "Jupiter": "06:00-08:00 (dawn)",
+    "Saturn": "18:00-20:00 (evening)",
+    "Uranus": "15:00-17:00 (late afternoon)",
+    "Neptune": "21:00-23:00 (late night)",
+    "Pluto": "05:00-07:00 (pre-dawn)",
+    "TrueNode": "07:00-09:00 (early focus)",
+    "Chiron": "16:00-18:00 (reflective twilight)",
 }
 
 PLANET_COLOR_ACCENTS = {
@@ -107,7 +107,7 @@ def _lucky_direction(transit_body: str) -> str:
 
 
 def _lucky_time_window(transit_body: str) -> str:
-    return PLANET_TIME_WINDOWS.get(transit_body, "12:00–14:00 (peak focus)")
+    return PLANET_TIME_WINDOWS.get(transit_body, "12:00-14:00 (peak focus)")
 
 
 def _lucky_affirmation(transit_body: str, natal_body: str, aspect: str) -> str:
@@ -123,7 +123,7 @@ def _build_lucky(top_event: Optional[Dict[str, Any]]) -> Dict[str, str]:
     if not top_event:
         return {
             "color": "grounding neutrals",
-            "time_window": "12:00–14:00 (steady focus)",
+            "time_window": "12:00-14:00 (steady focus)",
             "direction": "Center",
             "affirmation": "I move through the day with centered awareness.",
         }

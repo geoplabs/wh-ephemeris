@@ -68,6 +68,20 @@ def test_bullet_prunes_growth_intentions_tail():
     assert out.endswith("growth rhythms today.")
 
 
+def test_bullet_curiosity_sentence_gets_conversation_action():
+    asset = get_asset("Radiant Expansion", "steady", "career")
+    sentence = "Choose curious conversations energy to support professional wins."
+    out = imperative_bullet(sentence, order=0, area="career", asset=asset)
+    assert out == "Start one curious, open-ended conversation that advances a work goal."
+
+
+def test_bullet_priority_sentence_sets_two_priorities():
+    asset = get_asset("Radiant Expansion", "steady", "career")
+    sentence = "Set radiant drive personal power priorities that highlight your leadership."
+    out = imperative_bullet(sentence, order=0, area="career", asset=asset)
+    assert out == "Set two priorities that showcase your initiative."
+
+
 def test_health_bullet_retains_tune_phrase():
     asset = get_asset("Steady Integration", "steady", "health")
     sentence = "Focus on radiant drive to tune into your body."

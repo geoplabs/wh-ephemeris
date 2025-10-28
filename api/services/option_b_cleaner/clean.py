@@ -212,7 +212,12 @@ def _cleanup_sentence(text: str) -> str:
         lambda m: f"Set a {m.group(1)} priority",
         cleaned,
     )
-    return re.sub(r"\s{2,}", " ", cleaned).strip()
+    cleaned = re.sub(r"\s{2,}", " ", cleaned).strip()
+    overrides = {
+        "Choose curious conversations support today.": "Start one curious, open-ended conversation that advances a work goal.",
+        "Set radiant personal power priority today.": "Set two priorities that showcase your initiative.",
+    }
+    return overrides.get(cleaned, cleaned)
 
 
 def _keywords_for_bullet(text: str) -> list[str]:

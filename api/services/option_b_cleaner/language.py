@@ -11,6 +11,7 @@ from src.content.storylets import storylet_pools
 
 
 _ARTICLE_PATTERN = re.compile(r"\b([Aa]n?)\s+([A-Za-z][\w-]*)")
+_REPEATED_WORD_PATTERN = re.compile(r"\b(\w+)(\s+\1\b)+", re.IGNORECASE)
 _SOFT_H_PREFIXES = ("hon", "hour", "heir")
 _HARD_VOWEL_PREFIXES = ("uni", "eu", "one")
 
@@ -444,10 +445,15 @@ def fix_indefinite_articles(text: str) -> str:
     return _ARTICLE_PATTERN.sub(repl, text)
 
 
+def _collapse_repeated_words(text: str) -> str:
+    return _REPEATED_WORD_PATTERN.sub(lambda m: m.group(1), text)
+
+
 def _ensure_sentence(text: str) -> str:
     cleaned = (text or "").strip()
     if not cleaned:
         return ""
+    cleaned = _collapse_repeated_words(cleaned)
     if cleaned[-1] not in ".!?":
         cleaned = f"{cleaned}."
     return cleaned
