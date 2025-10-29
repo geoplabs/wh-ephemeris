@@ -84,3 +84,6 @@ new-task-def-clean.json
 
 # Docker deployment documentation
 DOCKER_DEPLOYMENT_GUIDE.md
+# Phase documentation (keep local only)
+PHASE_*.md
+NARRATIVE_GRAMMAR_ANALYSIS.md
