@@ -571,7 +571,8 @@ def build_context(option_b_json: dict[str, Any]) -> dict[str, Any]:
     annotated_events, area_rankings = rank_events_by_area(events)
     dom_planet, dom_sign = derive_dominant(annotated_events)
     dominant_signs = top_two_signs(annotated_events)
-    lucky = lucky_from_dominant(dom_planet, dom_sign)
+    # Pass events to lucky calculation for exact time window
+    lucky = lucky_from_dominant(dom_planet, dom_sign, events=annotated_events)
 
     enriched_events = _enrich_events(annotated_events)
     tone_hints = {section: _section_tone(enriched_events, section) for section in SECTION_TAGS}
