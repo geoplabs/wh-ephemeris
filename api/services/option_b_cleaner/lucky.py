@@ -97,11 +97,37 @@ def _find_best_supportive_event(events: Sequence[Mapping[str, Any]]) -> Mapping[
     return None
 
 
+def _parse_window_times(time_window_str: str) -> tuple[int, int] | None:
+    """Parse time window string like '12:35-16:35 UTC' into minute offsets from midnight."""
+    import re
+    match = re.search(r'(\d+):(\d+)[-–](\d+):(\d+)', time_window_str)
+    if match:
+        start_min = int(match.group(1)) * 60 + int(match.group(2))
+        end_min = int(match.group(3)) * 60 + int(match.group(4))
+        return (start_min, end_min)
+    return None
+
+
+def _windows_overlap(window1_str: str, window2_str: str) -> bool:
+    """Check if two time windows overlap."""
+    w1 = _parse_window_times(window1_str)
+    w2 = _parse_window_times(window2_str)
+    if not w1 or not w2:
+        return False
+    
+    s1, e1 = w1
+    s2, e2 = w2
+    
+    # Check for any overlap
+    return (s1 <= s2 < e1) or (s1 < e2 <= e1) or (s2 <= s1 < e2) or (s2 < e1 <= e2)
+
+
 def lucky_from_dominant(
     dominant_planet: str, 
     dominant_sign: str, 
     time_window: str | None = None,
-    events: Sequence[Mapping[str, Any]] | None = None
+    events: Sequence[Mapping[str, Any]] | None = None,
+    caution_window_str: str | None = None
 ):
     """Calculate lucky attributes from dominant transit and events.
     
@@ -110,6 +136,7 @@ def lucky_from_dominant(
         dominant_sign: The dominant sign
         time_window: Optional pre-calculated time window
         events: Optional list of transit events to find exact lucky time
+        caution_window_str: Optional caution window to avoid overlap with
         
     Returns:
         Dict with color, time_window, direction, and affirmation
@@ -120,12 +147,43 @@ def lucky_from_dominant(
     # Calculate time window from supportive events if available
     calculated_window = None
     if events and not time_window:
-        best_event = _find_best_supportive_event(events)
-        if best_event:
-            exact_time = best_event.get("exact_hit_time_utc")
-            transit_planet = best_event.get("transit_body", dominant_planet)
-            if exact_time:
-                calculated_window = _calculate_lucky_window_from_exact_time(exact_time, transit_planet)
+        # Try all supportive events, picking first that doesn't overlap with caution
+        supportive_aspects = {"trine", "sextile"}
+        benefic_bodies = {"venus", "jupiter"}
+        
+        candidates = []
+        for event in events:
+            if not isinstance(event, Mapping):
+                continue
+            
+            exact_time = event.get("exact_hit_time_utc")
+            if not exact_time or exact_time is None:
+                continue
+            
+            aspect = (event.get("aspect") or "").lower()
+            transit_body = (event.get("transit_body") or "").lower()
+            score = float(event.get("score", 0))
+            
+            is_supportive = aspect in supportive_aspects or (aspect == "conjunction" and transit_body in benefic_bodies)
+            if is_supportive:
+                candidates.append((abs(score), event))
+        
+        # Sort by score and try each candidate
+        candidates.sort(key=lambda x: x[0], reverse=True)
+        
+        for _, event in candidates:
+            exact_time = event.get("exact_hit_time_utc")
+            transit_planet = event.get("transit_body", dominant_planet)
+            test_window = _calculate_lucky_window_from_exact_time(exact_time, transit_planet)
+            
+            if test_window:
+                # Check if it overlaps with caution window
+                if caution_window_str and _windows_overlap(test_window, caution_window_str):
+                    continue  # Try next candidate
+                
+                # Found a non-overlapping window!
+                calculated_window = test_window
+                break
     
     window = time_window or calculated_window or DEFAULT_TIME_WINDOW
     

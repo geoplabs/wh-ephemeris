@@ -571,14 +571,18 @@ def build_context(option_b_json: dict[str, Any]) -> dict[str, Any]:
     annotated_events, area_rankings = rank_events_by_area(events)
     dom_planet, dom_sign = derive_dominant(annotated_events)
     dominant_signs = top_two_signs(annotated_events)
-    # Pass events to lucky calculation for exact time window
-    lucky = lucky_from_dominant(dom_planet, dom_sign, events=annotated_events)
-
+    
     enriched_events = _enrich_events(annotated_events)
     tone_hints = {section: _section_tone(enriched_events, section) for section in SECTION_TAGS}
     top_classification = enriched_events[0]["classification"] if enriched_events else None
     area_summary = summarize_rankings(area_rankings)
+    
+    # Calculate caution window first
     caution_window = _build_caution_window_from_events(enriched_events)
+    
+    # Pass events AND caution window to lucky calculation to avoid overlap
+    caution_time_str = caution_window.get("time_window") if caution_window else None
+    lucky = lucky_from_dominant(dom_planet, dom_sign, events=annotated_events, caution_window_str=caution_time_str)
     remedy_lines = _build_remedies(dom_planet, dom_sign, option_b_json.get("theme", ""))
     selected_area_events: dict[str, dict[str, Any] | None] = {}
     for area, summary in area_summary.items():
