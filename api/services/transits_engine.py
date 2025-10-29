@@ -133,16 +133,29 @@ def _calculate_exact_hit_time(
     if abs(transit_speed) < 0.01:  # Too slow to calculate precise time
         return None
     
-    # Calculate angular distance to exact aspect
-    current_angle = (transit_lon - natal_lon) % 360
-    target_angle = aspect_angle % 360
+    # Calculate angular separation using shortest arc
+    # This gives us the "aspect-like" separation (0-180°)
+    diff = (transit_lon - natal_lon) % 360
+    if diff > 180:
+        diff = 360 - diff
     
-    # Find shortest angular distance considering wrap-around
-    delta = target_angle - current_angle
-    if delta > 180:
-        delta -= 360
-    elif delta < -180:
-        delta += 360
+    # How far are we from the exact aspect angle?
+    orb = diff - aspect_angle
+    
+    # To determine direction (applying vs separating), simulate planet position in 1 hour
+    future_lon = transit_lon + (transit_speed / 24.0)
+    future_diff = (future_lon - natal_lon) % 360
+    if future_diff > 180:
+        future_diff = 360 - future_diff
+    
+    # If future separation is smaller, we're applying (negative delta)
+    # If future separation is larger, we're separating (positive delta)
+    if abs(future_diff - aspect_angle) < abs(orb):
+        # Applying - we haven't hit exact yet
+        delta = -orb
+    else:
+        # Separating - we've passed exact
+        delta = orb
     
     # Calculate hours to exact aspect
     hours_to_exact = delta / (transit_speed / 24.0) if transit_speed != 0 else None
