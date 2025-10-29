@@ -4,34 +4,89 @@
       "openers": {
         "support": [
           "You move with {descriptor} confidence through today's {focus}.",
-          "Your {descriptor} rhythm keeps today's {focus} flowing forward."
+          "Your {descriptor} rhythm keeps today's {focus} flowing forward.",
+          "You channel {descriptor} momentum into today's {focus}.",
+          "Your {descriptor} clarity opens today's {focus} with ease.",
+          "You anchor {descriptor} strength within today's {focus}.",
+          "Your {descriptor} vision illuminates today's {focus} path.",
+          "You carry {descriptor} grace through today's {focus}.",
+          "Your {descriptor} presence uplifts today's {focus}.",
+          "You guide {descriptor} flow into today's {focus}.",
+          "Your {descriptor} energy supports today's {focus} naturally."
         ],
         "challenge": [
           "You steady {descriptor} turbulence inside today's {focus}.",
-          "Your {descriptor} resolve helps you navigate today's {focus} demands."
+          "Your {descriptor} resolve helps you navigate today's {focus} demands.",
+          "You soften {descriptor} friction within today's {focus}.",
+          "Your {descriptor} patience eases today's {focus} pressure.",
+          "You transform {descriptor} resistance in today's {focus}.",
+          "Your {descriptor} grit steadies today's {focus} challenges.",
+          "You hold {descriptor} ground through today's {focus} tension.",
+          "Your {descriptor} resilience carries today's {focus} weight.",
+          "You navigate {descriptor} strain inside today's {focus}.",
+          "Your {descriptor} courage faces today's {focus} obstacles."
         ],
         "neutral": [
           "You bring {descriptor} awareness to today's {focus}.",
-          "Your {descriptor} pace sets the tone for today's {focus}."
+          "Your {descriptor} pace sets the tone for today's {focus}.",
+          "You organize {descriptor} attention around today's {focus}.",
+          "Your {descriptor} presence shapes today's {focus}.",
+          "You hold {descriptor} space for today's {focus}.",
+          "Your {descriptor} intention guides today's {focus}.",
+          "You anchor {descriptor} focus within today's {focus}.",
+          "Your {descriptor} rhythm moves today's {focus}.",
+          "You invite {descriptor} clarity into today's {focus}.",
+          "Your {descriptor} approach frames today's {focus}."
         ]
       },
       "coaching": [
         "Name the step that matters most so you stay anchored.",
         "Pause for one breath to notice what still feels aligned.",
-        "Document a small win so progress remains tangible."
+        "Document a small win so progress remains tangible.",
+        "Check in with your body before making the next move.",
+        "Ask yourself what would make this feel easier.",
+        "Identify one thing you can delegate or release.",
+        "Notice which part of this feels most urgent—start there.",
+        "Write down three priorities to clarify your direction.",
+        "Take a five-minute break to reset your perspective.",
+        "Review what's working before changing course."
       ],
       "closers": {
         "support": [
           "Keep trusting the {descriptor} rituals that support your {focus}.",
-          "Let {descriptor} choices guide your {focus} forward."
+          "Let {descriptor} choices guide your {focus} forward.",
+          "Follow the {descriptor} patterns that serve your {focus}.",
+          "Trust the {descriptor} wisdom within your {focus}.",
+          "Honor the {descriptor} momentum building in your {focus}.",
+          "Lean into {descriptor} ease that supports your {focus}.",
+          "Celebrate the {descriptor} progress in your {focus}.",
+          "Let {descriptor} wins affirm your {focus} direction.",
+          "Stay open to {descriptor} opportunities in your {focus}.",
+          "Keep building on {descriptor} foundations for your {focus}."
         ],
         "challenge": [
           "Protect your {descriptor} bandwidth so {focus} pressure stays manageable.",
-          "Move through {focus} demands with {descriptor} pacing—you're allowed to adjust."
+          "Move through {focus} demands with {descriptor} pacing—you're allowed to adjust.",
+          "Filter {focus} decisions through {descriptor} clarity before committing.",
+          "Hold {descriptor} boundaries to keep your {focus} sustainable.",
+          "Pace your {focus} efforts with {descriptor} intention.",
+          "Give {descriptor} space for your {focus} to find balance.",
+          "Release {focus} expectations that feel too {descriptor}.",
+          "Protect {descriptor} energy so your {focus} stays intact.",
+          "Let {focus} challenges reveal {descriptor} priorities.",
+          "Keep {descriptor} adjustments small within your {focus}."
         ],
         "neutral": [
           "Return to the {descriptor} practices that anchor your {focus}.",
-          "Stay with your {focus} process, one {descriptor} choice at a time."
+          "Stay with your {focus} process, one {descriptor} choice at a time.",
+          "Keep your {focus} aligned with what feels {descriptor}.",
+          "Let {descriptor} routines support your {focus} consistency.",
+          "Notice which {focus} patterns feel {descriptor} and sustainable.",
+          "Maintain {descriptor} pace through your {focus} evolution.",
+          "Track how {descriptor} choices shape your {focus} outcomes.",
+          "Stay curious about what makes your {focus} feel {descriptor}.",
+          "Honor the {descriptor} rhythm that keeps your {focus} balanced.",
+          "Let {focus} progress unfold at a {descriptor} pace."
         ]
       }
     },
@@ -39,34 +94,89 @@
       "openers": {
         "support": [
           "You channel {descriptor} drive into today's {focus}.",
-          "Your {descriptor} ambition steadies today's {focus}."
+          "Your {descriptor} ambition steadies today's {focus}.",
+          "You leverage {descriptor} momentum for today's {focus}.",
+          "Your {descriptor} strategy advances today's {focus}.",
+          "You direct {descriptor} vision toward today's {focus}.",
+          "Your {descriptor} leadership shapes today's {focus}.",
+          "You activate {descriptor} potential within today's {focus}.",
+          "Your {descriptor} expertise elevates today's {focus}.",
+          "You align {descriptor} resources with today's {focus}.",
+          "Your {descriptor} innovation drives today's {focus}."
         ],
         "challenge": [
           "You steady {descriptor} pressure across today's {focus}.",
-          "Your {descriptor} grit keeps today's {focus} in motion."
+          "Your {descriptor} grit keeps today's {focus} in motion.",
+          "You navigate {descriptor} obstacles within today's {focus}.",
+          "Your {descriptor} resilience sustains today's {focus}.",
+          "You transform {descriptor} friction in today's {focus}.",
+          "Your {descriptor} patience stabilizes today's {focus}.",
+          "You manage {descriptor} complexity across today's {focus}.",
+          "Your {descriptor} discipline anchors today's {focus}.",
+          "You buffer {descriptor} tension within today's {focus}.",
+          "Your {descriptor} composure steadies today's {focus}."
         ],
         "neutral": [
           "You organize {descriptor} focus around today's {focus}.",
-          "Your {descriptor} pace sets an intentional tone for today's {focus}."
+          "Your {descriptor} pace sets an intentional tone for today's {focus}.",
+          "You structure {descriptor} priorities within today's {focus}.",
+          "Your {descriptor} approach shapes today's {focus}.",
+          "You coordinate {descriptor} efforts across today's {focus}.",
+          "Your {descriptor} planning guides today's {focus}.",
+          "You maintain {descriptor} standards in today's {focus}.",
+          "Your {descriptor} method moves today's {focus}.",
+          "You position {descriptor} initiatives for today's {focus}.",
+          "Your {descriptor} framework supports today's {focus}."
         ]
       },
       "coaching": [
         "Break the workload into deliberate moves you can trust.",
         "Map the moving pieces before you commit to the next milestone.",
-        "Share an update that keeps collaborators aligned."
+        "Share an update that keeps collaborators aligned.",
+        "Clarify your win condition before diving into execution.",
+        "Block focused time to protect your deepest work.",
+        "Review which tasks can wait until next week.",
+        "Document decisions so your future self remembers the context.",
+        "Ask for input from someone whose judgment you trust.",
+        "Identify the bottleneck and address it first.",
+        "Schedule a checkpoint to assess progress mid-week."
       ],
       "closers": {
         "support": [
           "Let {descriptor} wins show the {focus} momentum you're building.",
-          "Lean into allies who reinforce your {descriptor} vision for {focus}."
+          "Lean into allies who reinforce your {descriptor} vision for {focus}.",
+          "Celebrate {descriptor} progress that validates your {focus}.",
+          "Trust the {descriptor} trajectory of your {focus}.",
+          "Let {focus} success reflect your {descriptor} contributions.",
+          "Build on {descriptor} foundations strengthening your {focus}.",
+          "Welcome {focus} opportunities that match your {descriptor} goals.",
+          "Stay connected to {descriptor} purpose driving your {focus}.",
+          "Let {focus} achievements affirm your {descriptor} direction.",
+          "Keep amplifying {descriptor} strategies that advance your {focus}."
         ],
         "challenge": [
           "Keep {descriptor} pacing through your {focus} so pressure doesn't dominate.",
-          "Protect your {focus} bandwidth with {descriptor} boundaries."
+          "Protect your {focus} bandwidth with {descriptor} boundaries.",
+          "Filter {focus} demands through {descriptor} priorities.",
+          "Hold {descriptor} standards without overextending your {focus}.",
+          "Pace {focus} projects with {descriptor} realism.",
+          "Let {descriptor} strategy temper {focus} urgency.",
+          "Keep {focus} expectations aligned with {descriptor} capacity.",
+          "Protect {descriptor} quality in your {focus} deliverables.",
+          "Let {focus} pressure inform, not dictate, {descriptor} choices.",
+          "Maintain {descriptor} sustainability across your {focus}."
         ],
         "neutral": [
           "Stay with the {descriptor} process that makes your {focus} repeatable.",
-          "Keep your {focus} workflow anchored to what feels {descriptor}."
+          "Keep your {focus} workflow anchored to what feels {descriptor}.",
+          "Let {descriptor} methods shape your {focus} consistency.",
+          "Maintain {focus} standards that feel {descriptor}.",
+          "Trust the {descriptor} systems supporting your {focus}.",
+          "Keep {focus} routines aligned with {descriptor} efficiency.",
+          "Let {descriptor} planning guide your {focus} evolution.",
+          "Stay mindful of which {focus} patterns feel {descriptor}.",
+          "Honor the {descriptor} pace that keeps your {focus} sustainable.",
+          "Let {focus} progress unfold through {descriptor} iteration."
         ]
       }
     },
@@ -74,34 +184,89 @@
       "openers": {
         "support": [
           "You bring {descriptor} care into today's {focus}.",
-          "Your {descriptor} presence softens today's {focus}."
+          "Your {descriptor} presence softens today's {focus}.",
+          "You offer {descriptor} warmth within today's {focus}.",
+          "Your {descriptor} tenderness opens today's {focus}.",
+          "You extend {descriptor} compassion through today's {focus}.",
+          "Your {descriptor} affection nourishes today's {focus}.",
+          "You share {descriptor} vulnerability in today's {focus}.",
+          "Your {descriptor} generosity enriches today's {focus}.",
+          "You create {descriptor} safety for today's {focus}.",
+          "Your {descriptor} attunement deepens today's {focus}."
         ],
         "challenge": [
           "You ease {descriptor} tension inside today's {focus}.",
-          "Your {descriptor} honesty steadies today's {focus} conversations."
+          "Your {descriptor} honesty steadies today's {focus} conversations.",
+          "You navigate {descriptor} friction within today's {focus}.",
+          "Your {descriptor} courage addresses today's {focus} needs.",
+          "You soften {descriptor} resistance in today's {focus}.",
+          "Your {descriptor} patience allows today's {focus} to heal.",
+          "You hold {descriptor} space through today's {focus} difficulty.",
+          "Your {descriptor} resilience sustains today's {focus}.",
+          "You bridge {descriptor} distance within today's {focus}.",
+          "Your {descriptor} authenticity clarifies today's {focus}."
         ],
         "neutral": [
           "You invite {descriptor} attention into today's {focus}.",
-          "Your {descriptor} pace keeps today's {focus} sincere."
+          "Your {descriptor} pace keeps today's {focus} sincere.",
+          "You maintain {descriptor} presence within today's {focus}.",
+          "Your {descriptor} awareness guides today's {focus}.",
+          "You hold {descriptor} curiosity for today's {focus}.",
+          "Your {descriptor} openness shapes today's {focus}.",
+          "You offer {descriptor} listening to today's {focus}.",
+          "Your {descriptor} intention frames today's {focus}.",
+          "You bring {descriptor} mindfulness into today's {focus}.",
+          "Your {descriptor} engagement enriches today's {focus}."
         ]
       },
       "coaching": [
         "Ask one curious question so connection feels mutual.",
         "Share how your body feels when a moment lands right.",
-        "Let listening lead before you decide the next move."
+        "Let listening lead before you decide the next move.",
+        "Notice where you're holding tension during conversations.",
+        "Express one need clearly instead of hinting around it.",
+        "Check if you're present or planning your next response.",
+        "Offer appreciation for something small but meaningful.",
+        "Ask for what you need instead of hoping they'll guess.",
+        "Notice whether this interaction energizes or depletes you.",
+        "Share one honest feeling without editing for approval."
       ],
       "closers": {
         "support": [
           "Follow the {descriptor} conversations that nourish your {focus}.",
-          "Let {descriptor} rituals remind you your {focus} is supported."
+          "Let {descriptor} rituals remind you your {focus} is supported.",
+          "Cherish the {descriptor} moments that deepen your {focus}.",
+          "Trust the {descriptor} connection growing in your {focus}.",
+          "Welcome {descriptor} intimacy that feels safe for your {focus}.",
+          "Let {focus} joy affirm your {descriptor} choices.",
+          "Stay open to {descriptor} affection within your {focus}.",
+          "Honor the {descriptor} love strengthening your {focus}.",
+          "Let {focus} warmth reflect your {descriptor} presence.",
+          "Keep nurturing {descriptor} bonds that support your {focus}."
         ],
         "challenge": [
           "Keep {descriptor} boundaries so your {focus} can restore.",
-          "Name what your {focus} needs while staying {descriptor}."
+          "Name what your {focus} needs while staying {descriptor}.",
+          "Protect {descriptor} capacity within your {focus}.",
+          "Let {focus} honesty guide {descriptor} conversations.",
+          "Hold {descriptor} standards for your {focus} wellbeing.",
+          "Give {focus} space when {descriptor} clarity is needed.",
+          "Honor {descriptor} limits that protect your {focus}.",
+          "Let {focus} truth emerge through {descriptor} courage.",
+          "Keep {descriptor} compassion centered in your {focus}.",
+          "Trust {focus} discomfort to reveal {descriptor} needs."
         ],
         "neutral": [
           "Let your {focus} pace stay {descriptor}—no need to force answers.",
-          "Stay tuned to the {descriptor} gestures within your {focus}."
+          "Stay tuned to the {descriptor} gestures within your {focus}.",
+          "Notice which {focus} interactions feel {descriptor} and genuine.",
+          "Keep {descriptor} communication flowing in your {focus}.",
+          "Let {focus} connection evolve at a {descriptor} pace.",
+          "Honor the {descriptor} rhythm of your {focus}.",
+          "Stay present with {descriptor} signals in your {focus}.",
+          "Let {focus} dynamics unfold with {descriptor} awareness.",
+          "Trust the {descriptor} timing of your {focus}.",
+          "Keep {focus} engagement aligned with what feels {descriptor}."
         ]
       }
     },
@@ -109,34 +274,89 @@
       "openers": {
         "support": [
           "You honor {descriptor} rhythms through today's {focus}.",
-          "Your {descriptor} awareness protects today's {focus} rituals."
+          "Your {descriptor} awareness protects today's {focus} rituals.",
+          "You nourish {descriptor} vitality within today's {focus}.",
+          "Your {descriptor} care strengthens today's {focus}.",
+          "You support {descriptor} wellbeing through today's {focus}.",
+          "Your {descriptor} attention restores today's {focus}.",
+          "You cultivate {descriptor} energy for today's {focus}.",
+          "Your {descriptor} practices sustain today's {focus}.",
+          "You honor {descriptor} needs within today's {focus}.",
+          "Your {descriptor} consistency builds today's {focus}."
         ],
         "challenge": [
           "You soften {descriptor} strain across today's {focus}.",
-          "Your {descriptor} pacing defuses today's {focus} demands."
+          "Your {descriptor} pacing defuses today's {focus} demands.",
+          "You ease {descriptor} tension within today's {focus}.",
+          "Your {descriptor} rest balances today's {focus}.",
+          "You manage {descriptor} fatigue in today's {focus}.",
+          "Your {descriptor} adjustments support today's {focus}.",
+          "You gentle {descriptor} discomfort across today's {focus}.",
+          "Your {descriptor} recovery protects today's {focus}.",
+          "You navigate {descriptor} limits within today's {focus}.",
+          "Your {descriptor} compassion guides today's {focus}."
         ],
         "neutral": [
           "You honor {descriptor} rhythms within today's {focus}.",
-          "Your {descriptor} presence steadies today's {focus} routines."
+          "Your {descriptor} presence steadies today's {focus} routines.",
+          "You maintain {descriptor} awareness for today's {focus}.",
+          "Your {descriptor} attention guides today's {focus}.",
+          "You track {descriptor} signals within today's {focus}.",
+          "Your {descriptor} intention shapes today's {focus}.",
+          "You notice {descriptor} patterns in today's {focus}.",
+          "Your {descriptor} mindfulness supports today's {focus}.",
+          "You listen to {descriptor} feedback from today's {focus}.",
+          "Your {descriptor} presence grounds today's {focus}."
         ]
       },
       "coaching": [
         "Schedule breathers so your body feels consulted.",
         "Hydrate and stretch before momentum carries you away.",
-        "Track one ritual that keeps your system grounded."
+        "Track one ritual that keeps your system grounded.",
+        "Notice what your body needs before pushing through.",
+        "Build in a rest day that doesn't require justification.",
+        "Check your posture and release unnecessary tension.",
+        "Set a timer for movement every hour you're seated.",
+        "Honor your energy dips instead of forcing through them.",
+        "Ask yourself if this choice supports or depletes you.",
+        "Document how different foods or activities make you feel."
       ],
       "closers": {
         "support": [
           "Let {descriptor} structure support your {focus} wellbeing.",
-          "Stay loyal to the {descriptor} practices that replenish your {focus}."
+          "Stay loyal to the {descriptor} practices that replenish your {focus}.",
+          "Trust the {descriptor} rhythms that sustain your {focus}.",
+          "Honor {descriptor} routines that strengthen your {focus}.",
+          "Let {focus} vitality reflect your {descriptor} care.",
+          "Keep building {descriptor} habits for your {focus}.",
+          "Celebrate {descriptor} progress in your {focus} journey.",
+          "Let {focus} wellness affirm your {descriptor} choices.",
+          "Stay consistent with {descriptor} practices supporting your {focus}.",
+          "Trust {descriptor} wisdom guiding your {focus}."
         ],
         "challenge": [
           "Keep {descriptor} adjustments responsive so your {focus} recovery stays on track.",
-          "Trust the {descriptor} feedback your {focus} keeps sharing."
+          "Trust the {descriptor} feedback your {focus} keeps sharing.",
+          "Listen to {descriptor} signals that protect your {focus}.",
+          "Honor {focus} limits with {descriptor} compassion.",
+          "Let {descriptor} rest support your {focus} healing.",
+          "Give {focus} space for {descriptor} recovery.",
+          "Pace {descriptor} effort to sustain your {focus}.",
+          "Protect {focus} wellbeing with {descriptor} boundaries.",
+          "Let {descriptor} self-care stabilize your {focus}.",
+          "Keep {focus} demands aligned with {descriptor} capacity."
         ],
         "neutral": [
           "Balance {descriptor} effort with rest so your {focus} can reset.",
-          "Stay present with the {descriptor} signals that guide your {focus}."
+          "Stay present with the {descriptor} signals that guide your {focus}.",
+          "Notice which {focus} practices feel {descriptor} and sustainable.",
+          "Let {descriptor} awareness guide your {focus} choices.",
+          "Keep {focus} routines aligned with {descriptor} needs.",
+          "Track how {descriptor} habits shape your {focus}.",
+          "Trust the {descriptor} feedback from your {focus}.",
+          "Let {focus} wellbeing evolve at a {descriptor} pace.",
+          "Honor the {descriptor} rhythm that keeps your {focus} balanced.",
+          "Stay curious about what makes your {focus} feel {descriptor}."
         ]
       }
     },
@@ -144,36 +364,92 @@
       "openers": {
         "support": [
           "You guide {descriptor} awareness through today's {focus}.",
-          "Your {descriptor} clarity shapes today's {focus} choices."
+          "Your {descriptor} clarity shapes today's {focus} choices.",
+          "You leverage {descriptor} wisdom for today's {focus}.",
+          "Your {descriptor} strategy strengthens today's {focus}.",
+          "You align {descriptor} values with today's {focus}.",
+          "Your {descriptor} planning secures today's {focus}.",
+          "You direct {descriptor} resources toward today's {focus}.",
+          "Your {descriptor} foresight supports today's {focus}.",
+          "You optimize {descriptor} decisions for today's {focus}.",
+          "Your {descriptor} stewardship guides today's {focus}."
         ],
         "challenge": [
           "You bring {descriptor} patience to today's {focus} decisions.",
-          "Your {descriptor} caution steadies today's {focus} review."
+          "Your {descriptor} caution steadies today's {focus} review.",
+          "You temper {descriptor} impulses within today's {focus}.",
+          "Your {descriptor} restraint protects today's {focus}.",
+          "You navigate {descriptor} uncertainty in today's {focus}.",
+          "Your {descriptor} prudence guides today's {focus}.",
+          "You manage {descriptor} concerns across today's {focus}.",
+          "Your {descriptor} diligence safeguards today's {focus}.",
+          "You moderate {descriptor} risk within today's {focus}.",
+          "Your {descriptor} discipline anchors today's {focus}."
         ],
         "neutral": [
           "You organize {descriptor} strategy around today's {focus}.",
-          "Your {descriptor} pacing makes today's {focus} sustainable."
+          "Your {descriptor} pacing makes today's {focus} sustainable.",
+          "You structure {descriptor} priorities for today's {focus}.",
+          "Your {descriptor} approach shapes today's {focus}.",
+          "You coordinate {descriptor} planning with today's {focus}.",
+          "Your {descriptor} method guides today's {focus}.",
+          "You review {descriptor} options within today's {focus}.",
+          "Your {descriptor} analysis informs today's {focus}.",
+          "You track {descriptor} patterns in today's {focus}.",
+          "Your {descriptor} awareness frames today's {focus}."
         ]
       },
       "coaching": [
         "Check the numbers twice before you commit.",
         "Match each expense to the feeling it delivers.",
-        "Journal one win that proves your plan is working."
+        "Journal one win that proves your plan is working.",
+        "Review your priorities before making discretionary purchases.",
+        "Ask if this expense aligns with your three-month goals.",
+        "Sleep on decisions over a certain threshold.",
+        "Track spending patterns to reveal unconscious habits.",
+        "Identify one subscription or expense you can eliminate.",
+        "Calculate the true cost including maintenance and time.",
+        "Consult someone whose financial judgment you trust."
       ],
       "closers": {
         "support": [
           "Let {descriptor} choices build your {focus} long game.",
-          "Trust the {descriptor} budget that keeps your {focus} breathing room intact."
+          "Trust the {descriptor} budget that keeps your {focus} breathing room intact.",
+          "Celebrate {descriptor} wins that strengthen your {focus}.",
+          "Let {focus} security reflect your {descriptor} planning.",
+          "Build on {descriptor} foundations supporting your {focus}.",
+          "Trust the {descriptor} strategy guiding your {focus}.",
+          "Let {focus} abundance flow from {descriptor} decisions.",
+          "Stay aligned with {descriptor} values shaping your {focus}.",
+          "Keep investing in {descriptor} choices for your {focus}.",
+          "Let {focus} prosperity affirm your {descriptor} stewardship."
         ],
         "challenge": [
           "Keep {descriptor} moves on hold until your {focus} math confirms it.",
-          "Protect your {focus} resources by filtering decisions through {descriptor} calm."
+          "Protect your {focus} resources by filtering decisions through {descriptor} calm.",
+          "Let {descriptor} caution temper {focus} impulses.",
+          "Hold {focus} spending aligned with {descriptor} priorities.",
+          "Give {descriptor} time before committing {focus} resources.",
+          "Protect {focus} stability with {descriptor} boundaries.",
+          "Let {descriptor} prudence guide your {focus} decisions.",
+          "Keep {focus} risk manageable through {descriptor} planning.",
+          "Honor {descriptor} limits that protect your {focus}.",
+          "Let {focus} security outweigh {descriptor} temptation."
         ],
         "neutral": [
           "Stay curious about where your {descriptor} attention is funding {focus} momentum.",
-          "Let {descriptor} pacing make each {focus} decision easier to trust."
+          "Let {descriptor} pacing make each {focus} decision easier to trust.",
+          "Notice which {focus} strategies feel {descriptor} and sustainable.",
+          "Keep {descriptor} tracking systems supporting your {focus}.",
+          "Let {focus} planning evolve with {descriptor} awareness.",
+          "Trust the {descriptor} patterns in your {focus} behavior.",
+          "Stay mindful of how {descriptor} choices shape your {focus}.",
+          "Let {focus} progress unfold through {descriptor} consistency.",
+          "Honor the {descriptor} rhythm that keeps your {focus} balanced.",
+          "Keep {focus} decisions aligned with what feels {descriptor}."
         ]
       }
     }
   }
 }
+
