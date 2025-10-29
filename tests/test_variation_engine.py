@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from src.content.variation import VariationEngine, VariationGroup
+from src.content.variation import VariationEngine, VariationGroup, VariationItem
 
 
 def test_permutation_is_seeded():
@@ -23,18 +23,22 @@ def test_variation_context_tokens_and_subset():
         "clauses": VariationGroup(
             name="clauses",
             mode="permutation",
-            items=("one", "two", "three"),
+            items=(
+                VariationItem(text="one"),
+                VariationItem(text="two"),
+                VariationItem(text="three"),
+            ),
         ),
         "adjective": VariationGroup(
             name="adjective",
             mode="choice",
-            items=("radiant", "steady"),
+            items=(VariationItem(text="radiant"), VariationItem(text="steady")),
             pick=1,
         ),
         "optional_sentences": VariationGroup(
             name="optional_sentences",
             mode="subset",
-            items=("Carry a {adjective} note forward",),
+            items=(VariationItem(text="Carry a {adjective} note forward"),),
             minimum=1,
             maximum=1,
         ),

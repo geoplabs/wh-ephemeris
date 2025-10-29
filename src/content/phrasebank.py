@@ -7,11 +7,30 @@ from hashlib import blake2b
 from pathlib import Path
 from typing import Iterable, Mapping
 
-from .variation import VariationContext, VariationEngine, VariationGroup
+from .variation import (
+    VariationContext,
+    VariationEngine,
+    VariationGroup,
+    VariationItem,
+    VariationResult,
+)
 
 
 DATA_ROOT = Path(__file__).resolve().parents[2] / "data" / "phrasebank"
 PHRASES_PATH = DATA_ROOT / "phrases.json"
+
+
+_TONE_LIBRARY: dict[str, dict[str, tuple[str, ...]]] = {}
+_ACTION_OVERRIDES: dict[str, str] = {
+    "allow": "allowing space for",
+    "lean toward": "leaning toward",
+    "keep": "keeping to",
+    "tend": "tending to",
+    "commit": "committing to",
+    "drive": "driving toward",
+    "push": "pushing toward",
+    "ship": "shipping",
+}
 
 ARCHETYPES: tuple[str, ...] = (
     "Radiant Expansion",
@@ -27,13 +46,135 @@ INTENSITIES: tuple[str, ...] = ("background", "gentle", "steady", "strong", "sur
 AREAS: tuple[str, ...] = ("general", "career", "love", "health", "finance")
 
 
-@dataclass(frozen=True)
-class PhraseRequirements:
-    """Requirements for phrase grammatical transformations."""
-    expected_types: tuple[str, ...]  # e.g., ("gerund", "noun")
-    fallback: str  # Fallback phrase if transformation fails
-    lowercase: bool = False
-    add_article: bool = False
+def _normalize_word(value: object) -> str:
+    text = str(value or "").strip()
+    return text
+
+
+def _initialize_tone(config: Mapping[str, object] | None) -> None:
+    global _TONE_LIBRARY
+    _TONE_LIBRARY = {}
+    if not config:
+        return
+    adjectives = config.get("adjectives") if isinstance(config, Mapping) else None
+    verbs = config.get("verbs") if isinstance(config, Mapping) else None
+    adjective_map = adjectives if isinstance(adjectives, Mapping) else {}
+    verb_map = verbs if isinstance(verbs, Mapping) else {}
+    intensities = set(adjective_map) | set(verb_map)
+    tone: dict[str, dict[str, tuple[str, ...]]] = {}
+    for intensity in intensities:
+        adj_values = tuple(
+            _normalize_word(word)
+            for word in (adjective_map.get(intensity) or ())
+            if _normalize_word(word)
+        )
+        verb_values = tuple(
+            _normalize_word(word)
+            for word in (verb_map.get(intensity) or ())
+            if _normalize_word(word)
+        )
+        tone[str(intensity)] = {
+            "adjectives": adj_values,
+            "verbs": verb_values,
+        }
+    _TONE_LIBRARY = tone
+
+
+def _gerund_word(word: str) -> str:
+    lower = word.lower()
+    if not lower:
+        return ""
+    if lower in {"be", "see"}:
+        return f"{lower}ing"
+    if lower.endswith("ie"):
+        return f"{lower[:-2]}ying"
+    if lower in {"commit", "ship"}:
+        return f"{lower}{lower[-1]}ing"
+    if lower.endswith("e") and not lower.endswith("ee"):
+        return f"{lower[:-1]}ing"
+    vowels = "aeiou"
+    if (
+        len(lower) >= 3
+        and lower[-1] not in "aeiouwxy"
+        and lower[-2] in vowels
+        and lower[-3] not in vowels
+    ):
+        return f"{lower}{lower[-1]}ing"
+    return f"{lower}ing"
+
+
+def _tone_action(verb: str) -> str:
+    lower = verb.strip().lower()
+    if not lower:
+        return ""
+    override = _ACTION_OVERRIDES.get(lower)
+    if override:
+        return override
+    pieces = lower.split()
+    head, *tail = pieces
+    gerund = _gerund_word(head)
+    if not gerund:
+        return ""
+    return " ".join([gerund, *tail]).strip()
+
+
+def _tone_defaults(intensity: str) -> dict[str, str]:
+    palette = _tone_palette(intensity)
+    adjectives = palette.get("adjectives", ())
+    verbs = palette.get("verbs", ())
+    defaults: dict[str, str] = {}
+    if adjectives:
+        defaults["tone_adjective"] = adjectives[0]
+    if verbs:
+        verb = verbs[0]
+        defaults["tone_verb"] = verb
+        action = _tone_action(verb)
+        if action:
+            defaults["tone_action"] = action
+        defaults["tone_directive"] = verb.capitalize()
+    return defaults
+
+
+def _tone_variations(engine: VariationEngine, intensity: str) -> dict[str, VariationResult]:
+    palette = _tone_palette(intensity)
+    if not palette:
+        return {}
+    results: dict[str, VariationResult] = {}
+    adjectives = palette.get("adjectives", ())
+    if adjectives:
+        selection = engine.choice(f"tone_adjective:{intensity}", adjectives, pick=1)
+        if selection:
+            results["tone_adjective"] = VariationResult(
+                name="tone_adjective", selections=selection, mode="choice"
+            )
+    verbs = palette.get("verbs", ())
+    if verbs:
+        selection = engine.choice(f"tone_verb:{intensity}", verbs, pick=1)
+        if selection:
+            verb = selection[0]
+            results["tone_verb"] = VariationResult(
+                name="tone_verb", selections=(verb,), mode="choice"
+            )
+            action = _tone_action(verb)
+            if action:
+                results["tone_action"] = VariationResult(
+                    name="tone_action", selections=(action,), mode="choice"
+                )
+            results["tone_directive"] = VariationResult(
+                name="tone_directive",
+                selections=(verb.capitalize(),),
+                mode="choice",
+            )
+    return results
+
+
+def _tone_palette(intensity: str) -> dict[str, tuple[str, ...]]:
+    palette = _TONE_LIBRARY.get(intensity)
+    if palette:
+        return palette
+    if intensity == "surge":
+        return _TONE_LIBRARY.get("strong", {})
+    return {}
 
 
 @dataclass(frozen=True)
@@ -57,7 +198,11 @@ class PhraseAsset:
         if seed is None:
             return VariationContext()
         engine = VariationEngine(seed)
-        return engine.evaluate(self.variation_groups)
+        base_context = engine.evaluate(self.variation_groups)
+        results = {name: base_context[name] for name in base_context}
+        for key, result in _tone_variations(engine, self.intensity).items():
+            results.setdefault(key, result)
+        return VariationContext(results)
 
 
 def _load_raw() -> Mapping[str, object]:
@@ -68,6 +213,7 @@ def _load_raw() -> Mapping[str, object]:
 @lru_cache(maxsize=1)
 def _asset_map() -> Mapping[tuple[str, str, str], PhraseAsset]:
     payload = _load_raw()
+    _initialize_tone(payload.get("tone"))
     entries = payload.get("entries", [])
     assets: dict[tuple[str, str, str], PhraseAsset] = {}
     for entry in entries:
@@ -81,35 +227,28 @@ def _asset_map() -> Mapping[tuple[str, str, str], PhraseAsset]:
         }
         variation_groups = {}
         for name, config in (entry.get("variation_groups") or {}).items():
-            mode = str(config.get("mode", "choice"))
             raw_items = config.get("items") or []
-            
-            # Parse items - can be strings or {text, weight} objects for weighted_choice
-            items_list = []
-            weights_list = []
-            
+            parsed_items: list[VariationItem] = []
             for item in raw_items:
-                if isinstance(item, dict):
-                    # Weighted item: {text: "...", weight: 1.0}
-                    text = str(item.get("text", "")).strip()
-                    weight = float(item.get("weight", 1.0))
-                    if text:
-                        items_list.append(text)
-                        weights_list.append(weight)
-                elif isinstance(item, str):
-                    # Simple string item
-                    text = item.strip()
-                    if text:
-                        items_list.append(text)
-                        weights_list.append(1.0)  # Default weight
-            
-            items = tuple(items_list)
-            weights = tuple(weights_list) if mode == "weighted_choice" and weights_list else None
-            
+                if isinstance(item, Mapping):
+                    text = _normalize_word(item.get("text"))
+                    if not text:
+                        continue
+                    weight_value = item.get("weight", 1)
+                    try:
+                        weight = float(weight_value)
+                    except (TypeError, ValueError):
+                        weight = 1.0
+                    parsed_items.append(VariationItem(text=text, weight=weight))
+                else:
+                    text = _normalize_word(item)
+                    if not text:
+                        continue
+                    parsed_items.append(VariationItem(text=text))
             variation_groups[str(name)] = VariationGroup(
                 name=str(name),
-                mode=mode,
-                items=items,
+                mode=str(config.get("mode", "choice")),
+                items=tuple(parsed_items),
                 pick=(config.get("pick") if config.get("pick") is not None else None),
                 minimum=(config.get("minimum") if config.get("minimum") is not None else None),
                 maximum=(config.get("maximum") if config.get("maximum") is not None else None),
@@ -175,16 +314,22 @@ def select_clause(archetype: str, intensity: str, area: str, *, seed: int | None
     if not clauses:
         return ""
     if seed is None:
-        return clauses[0]
+        tokens = _tone_defaults(asset.intensity)
+        tokens.setdefault("area", area)
+        return clauses[0].format_map(_FormatTokens(tokens))
     context = asset.variations(seed)
     tokens = context.tokens()
     tokens.setdefault("area", area)
+    for key, value in _tone_defaults(asset.intensity).items():
+        tokens.setdefault(key, value)
     clause_template = context.first("clauses", clauses[0]) if "clauses" in context else None
     if clause_template:
         return clause_template.format_map(_FormatTokens(tokens))
     engine = VariationEngine(seed)
     selection = engine.choice("clauses", clauses, pick=1)
-    return selection[0] if selection else ""
+    if not selection:
+        return ""
+    return selection[0].format_map(_FormatTokens(tokens))
 
 
 class _FormatTokens(dict[str, str]):
