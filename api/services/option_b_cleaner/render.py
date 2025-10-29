@@ -21,6 +21,7 @@ from .language import (
 )
 from ..remedy_templates import remedy_templates_for_planet
 from src.content import compute_caution_windows
+from src.content.window_resolver import resolve_windows_with_netting
 from src.content.archetype_router import classify_event
 from src.content.area_selector import rank_events_by_area, summarize_rankings
 from src.content.phrasebank import (
@@ -577,12 +578,41 @@ def build_context(option_b_json: dict[str, Any]) -> dict[str, Any]:
     top_classification = enriched_events[0]["classification"] if enriched_events else None
     area_summary = summarize_rankings(area_rankings)
     
-    # Calculate caution window first
-    caution_window = _build_caution_window_from_events(enriched_events)
+    # Extract raw events for window resolution
+    raw_events: list[Mapping[str, Any]] = []
+    for item in enriched_events:
+        if not isinstance(item, Mapping):
+            continue
+        event = item.get("event") if isinstance(item, Mapping) else None
+        if isinstance(event, Mapping):
+            raw_events.append(event)
     
-    # Pass events AND caution window to lucky calculation to avoid overlap
-    caution_time_str = caution_window.get("time_window") if caution_window else None
-    lucky = lucky_from_dominant(dom_planet, dom_sign, events=annotated_events, caution_window_str=caution_time_str)
+    # Apply netting strategy to resolve caution and lucky windows
+    windows_result = resolve_windows_with_netting(raw_events) if raw_events else {
+        "caution_window": None,
+        "lucky_window": None
+    }
+    
+    caution_window = windows_result.get("caution_window")
+    lucky_window_from_netting = windows_result.get("lucky_window")
+    
+    # Fallback to traditional lucky calculation if no lucky window from netting
+    if lucky_window_from_netting:
+        # Convert to lucky format (just time window, no note)
+        lucky = lucky_from_dominant(
+            dom_planet, 
+            dom_sign, 
+            time_window=lucky_window_from_netting.get("time_window", "")
+        )
+    else:
+        # Use traditional lucky calculation with events
+        caution_time_str = caution_window.get("time_window") if caution_window else None
+        lucky = lucky_from_dominant(dom_planet, dom_sign, events=annotated_events, caution_window_str=caution_time_str)
+    
+    # Fallback caution window if netting didn't produce one
+    if not caution_window:
+        caution_window = _build_caution_window_from_events(enriched_events)
+    
     remedy_lines = _build_remedies(dom_planet, dom_sign, option_b_json.get("theme", ""))
     selected_area_events: dict[str, dict[str, Any] | None] = {}
     for area, summary in area_summary.items():
