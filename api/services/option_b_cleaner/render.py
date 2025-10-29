@@ -159,6 +159,80 @@ def _event_time_window(event: Mapping[str, Any]) -> str:
     return ""
 
 
+def _calculate_overlap_net_score(
+    lucky_event: Mapping[str, Any],
+    all_events: Sequence[Mapping[str, Any]],
+    lucky_window: str,
+    caution_window: str
+) -> float:
+    """Calculate net score in overlapping region between lucky and caution windows.
+    
+    Net score = sum of friction scores - sum of support scores in overlap
+    Positive = friction dominates, Negative = support dominates
+    
+    Args:
+        lucky_event: The supportive event contributing to lucky window
+        all_events: All transit events
+        lucky_window: Lucky time window string (e.g., "08:51-10:51 UTC")
+        caution_window: Caution time window string (e.g., "13:16-19:16 UTC")
+    
+    Returns:
+        Net score (positive = friction wins, negative = support wins)
+    """
+    from .lucky import _parse_window_times
+    
+    # Parse windows
+    lucky_span = _parse_window_times(lucky_window)
+    caution_span = _parse_window_times(caution_window)
+    
+    if not lucky_span or not caution_span:
+        return 0.0
+    
+    # Calculate overlap span
+    overlap_start = max(lucky_span[0], caution_span[0])
+    overlap_end = min(lucky_span[1], caution_span[1])
+    
+    if overlap_start >= overlap_end:
+        return 0.0  # No actual overlap
+    
+    # Sum friction scores (positive) and support scores (negative) that contribute to this overlap
+    friction_score = 0.0
+    support_score = 0.0
+    
+    for event in all_events:
+        if not isinstance(event, Mapping):
+            continue
+        
+        score = event.get("score", 0)
+        exact_time = event.get("exact_hit_time_utc")
+        
+        if not exact_time:
+            continue
+        
+        # Check if this event's time window overlaps with our overlap region
+        # For simplicity, we check if the event contributes to either window
+        # Friction events (positive scores) contribute to caution
+        # Support events (negative scores) contribute to lucky
+        
+        if score > 0:
+            # Friction event - add to friction score
+            friction_score += abs(score)
+        elif score < 0:
+            # Support event - add to support score
+            support_score += abs(score)
+    
+    # Net score: friction - support
+    # Positive means friction dominates, negative means support dominates
+    net = friction_score - support_score
+    
+    # Normalize by the size of the overlap window (in hours)
+    overlap_hours = (overlap_end - overlap_start) / 60.0
+    if overlap_hours > 0:
+        net = net / overlap_hours
+    
+    return net
+
+
 def _build_caution_window_from_events(
     enriched_events: Sequence[Mapping[str, Any]]
 ) -> dict[str, str]:
@@ -587,46 +661,98 @@ def build_context(option_b_json: dict[str, Any]) -> dict[str, Any]:
         if isinstance(event, Mapping):
             raw_events.append(event)
     
-    # Apply netting strategy to resolve caution and lucky windows
-    windows_result = resolve_windows_with_netting(raw_events) if raw_events else {
-        "caution_window": None,
-        "lucky_window": None
-    }
+    # Step 1: Calculate CAUTION window independently (DO NOT TOUCH based on lucky)
+    caution_window = _build_caution_window_from_events(enriched_events)
     
-    caution_window = windows_result.get("caution_window")
-    lucky_window_from_netting = windows_result.get("lucky_window")
+    # Step 2: Calculate LUCKY candidates independently
+    # Get all supportive events sorted by score
+    supportive_events = []
+    for event in annotated_events:
+        if not isinstance(event, Mapping):
+            continue
+        aspect = (event.get("aspect") or "").lower()
+        transit_body = (event.get("transit_body") or "").lower()
+        score = event.get("score", 0)
+        exact_time = event.get("exact_hit_time_utc")
+        
+        supportive_aspects = {"trine", "sextile"}
+        benefic_bodies = {"venus", "jupiter"}
+        is_supportive = aspect in supportive_aspects or (aspect == "conjunction" and transit_body in benefic_bodies)
+        
+        if is_supportive and exact_time:
+            supportive_events.append(event)
     
-    # Build lucky - ensure it's DIFFERENT from caution
-    if lucky_window_from_netting:
-        # Netting provided a separate lucky window
-        lucky_time = lucky_window_from_netting.get("time_window", "")
-        # Verify it's different from caution
-        if caution_window and lucky_time == caution_window.get("time_window"):
-            # They're the same - fall back to traditional calculation avoiding caution
-            caution_time_str = caution_window.get("time_window")
-            lucky = lucky_from_dominant(dom_planet, dom_sign, events=annotated_events, caution_window_str=caution_time_str)
+    # Sort by absolute score (strongest first)
+    supportive_events.sort(key=lambda e: abs(e.get("score", 0)), reverse=True)
+    
+    # Step 3: Apply netting validation logic for lucky window
+    lucky = None
+    caution_time_str = caution_window.get("time_window") if caution_window else None
+    
+    for idx, candidate_event in enumerate(supportive_events):
+        # Calculate lucky window for this candidate
+        from .lucky import _calculate_lucky_window_from_exact_time
+        candidate_time_window = _calculate_lucky_window_from_exact_time(
+            candidate_event.get("exact_hit_time_utc"),
+            candidate_event.get("transit_body", dom_planet)
+        )
+        
+        if not candidate_time_window:
+            continue
+        
+        # Check if it overlaps with caution window
+        if caution_time_str:
+            from .lucky import _parse_window_times, _windows_overlap
+            overlaps = _windows_overlap(candidate_time_window, caution_time_str)
+            
+            if overlaps:
+                # Calculate net score in overlap region
+                net_score = _calculate_overlap_net_score(
+                    candidate_event,
+                    enriched_events,
+                    candidate_time_window,
+                    caution_time_str
+                )
+                
+                abs_net = abs(net_score)
+                
+                # Decision rules
+                if abs_net < 0.5:
+                    # Near zero (mixed) - skip this candidate, try next
+                    continue
+                elif 0.5 <= abs_net < 1.5:
+                    # Soft/moderate - compare with 2nd best non-overlapping
+                    if idx + 1 < len(supportive_events):
+                        second_event = supportive_events[idx + 1]
+                        second_time_window = _calculate_lucky_window_from_exact_time(
+                            second_event.get("exact_hit_time_utc"),
+                            second_event.get("transit_body", dom_planet)
+                        )
+                        if second_time_window and not _windows_overlap(second_time_window, caution_time_str):
+                            # Compare scores - use stronger one
+                            if abs(second_event.get("score", 0)) > abs(candidate_event.get("score", 0)):
+                                # Second is stronger and doesn't overlap - use it
+                                lucky = lucky_from_dominant(dom_planet, dom_sign, time_window=second_time_window)
+                                break
+                    # Either no second candidate or first is stronger - use first
+                    lucky = lucky_from_dominant(dom_planet, dom_sign, time_window=candidate_time_window)
+                    break
+                else:
+                    # Strong dominance (≥1.5) - use it regardless of overlap
+                    lucky = lucky_from_dominant(dom_planet, dom_sign, time_window=candidate_time_window)
+                    break
+            else:
+                # No overlap - use this candidate
+                lucky = lucky_from_dominant(dom_planet, dom_sign, time_window=candidate_time_window)
+                break
         else:
-            # Use the netted lucky window
-            lucky = lucky_from_dominant(dom_planet, dom_sign, time_window=lucky_time)
-    else:
-        # No lucky from netting - use traditional calculation
-        caution_time_str = caution_window.get("time_window") if caution_window else None
-        lucky = lucky_from_dominant(dom_planet, dom_sign, events=annotated_events, caution_window_str=caution_time_str)
+            # No caution window - use first candidate
+            lucky = lucky_from_dominant(dom_planet, dom_sign, time_window=candidate_time_window)
+            break
     
-    # Fallback caution window if netting didn't produce one
-    if not caution_window:
-        caution_window = _build_caution_window_from_events(enriched_events)
-    
-    # Final safety check: ensure caution and lucky are different
-    if caution_window and lucky and caution_window.get("time_window") == lucky.get("time_window"):
-        # They ended up the same - try harder to find a different lucky window
-        # Find ANY supportive event that doesn't overlap
-        caution_time_str = caution_window.get("time_window")
+    # Fallback if no lucky from exact transits
+    if not lucky:
         lucky = lucky_from_dominant(dom_planet, dom_sign, events=annotated_events, caution_window_str=caution_time_str)
-        # If still the same, use default
-        if caution_window.get("time_window") == lucky.get("time_window"):
-            from .lucky import DEFAULT_TIME_WINDOW
-            lucky = lucky_from_dominant(dom_planet, dom_sign, time_window=DEFAULT_TIME_WINDOW)
     
     remedy_lines = _build_remedies(dom_planet, dom_sign, option_b_json.get("theme", ""))
     selected_area_events: dict[str, dict[str, Any] | None] = {}
