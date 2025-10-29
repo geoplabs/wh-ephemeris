@@ -7,7 +7,7 @@ from typing import Any, Iterable, Mapping, Sequence
 
 from .clean import de_jargon, to_you_pov
 from .event_tokens import MiniTemplate, event_phrase, render_mini_template
-from src.content.storylets import storylet_pools
+from src.content.storylets import storylet_pools, is_phase3_enabled, get_transit_opener
 
 
 _ARTICLE_PATTERN = re.compile(r"\b([Aa]n?)\s+([A-Za-z][\w-]*)")
@@ -374,7 +374,34 @@ def _story_seed(*parts: Any) -> int:
     return int(digest[:8], 16)
 
 
-def _storylet_pool(area: str, section: str, tone: str) -> Sequence[str]:
+def _storylet_pool(area: str, section: str, tone: str, event: Mapping[str, Any] | None = None) -> Sequence[str]:
+    # Phase 3: Use transit-specific templates for openers if enabled
+    if section == "openers" and event and is_phase3_enabled():
+        transit_body = (event.get("transit_body") or "").lower()
+        if transit_body:
+            # Get standard fallback templates first
+            tone_key = tone if tone in {"support", "challenge", "neutral"} else "neutral"
+            area_pool = STORYLETS.get(area, {})
+            fallback_options: Sequence[str] = ()
+            target = area_pool.get(section)
+            if isinstance(target, Mapping):
+                fallback_options = target.get(tone_key) or target.get("neutral", ())
+            elif isinstance(target, Sequence):
+                fallback_options = target
+            if not fallback_options:
+                default_pool = STORYLETS.get("default", {})
+                fallback = default_pool.get(section)
+                if isinstance(fallback, Mapping):
+                    fallback_options = fallback.get(tone_key) or fallback.get("neutral", ()) or ()
+                elif isinstance(fallback, Sequence):
+                    fallback_options = fallback
+            
+            # Try to get transit-specific templates
+            transit_templates = get_transit_opener(transit_body, fallback_options)
+            if transit_templates and transit_templates != tuple(fallback_options):
+                return transit_templates
+    
+    # Standard Phase 2 logic (or Phase 3 fallback)
     tone_key = tone if tone in {"support", "challenge", "neutral"} else "neutral"
     area_pool = STORYLETS.get(area, {})
     options: Sequence[str] = ()
@@ -409,8 +436,9 @@ def _render_storylet(
     *,
     tokens: Mapping[str, Any],
     default: str = "",
+    event: Mapping[str, Any] | None = None,
 ) -> str:
-    options = _storylet_pool(area, section, tone)
+    options = _storylet_pool(area, section, tone, event)
     template = _deterministic_choice(options, seed, default)
     if not template:
         return default
@@ -610,6 +638,7 @@ def _build_story_paragraph(
             base_seed,
             tokens=tokens,
             default=opener_default_text,
+            event=event,  # Pass event for Phase 3 transit-specific templates
         )
     evidence = list(
         _event_evidence_sentences(

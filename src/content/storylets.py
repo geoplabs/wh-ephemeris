@@ -12,7 +12,7 @@ DATA_PATH = Path(__file__).resolve().parents[2] / "data" / "phrasebank" / "story
 
 def is_phase3_enabled() -> bool:
     """Check if Phase 3 (transit-specific templates) is enabled via environment variable."""
-    env_value = os.getenv("ENABLE_PHASE3", "false").strip().lower()
+    env_value = os.getenv("ENABLE_PHASE3", "true").strip().lower()
     return env_value in {"true", "1", "yes", "on"}
 
 
