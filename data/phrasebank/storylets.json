@@ -22,16 +22,16 @@
       ],
       "closers": {
         "support": [
-          "Keep trusting the rituals that already work.",
-          "Let steady choices show you the path forward."
+          "Keep trusting the {descriptor} rituals that support your {focus}.",
+          "Let {descriptor} choices guide your {focus} forward."
         ],
         "challenge": [
-          "Protect your bandwidth so pressure can't run the day.",
-          "Move gently but deliberately—you're allowed to pace yourself."
+          "Protect your {descriptor} bandwidth so {focus} pressure stays manageable.",
+          "Move through {focus} demands with {descriptor} pacing—you're allowed to adjust."
         ],
         "neutral": [
-          "Return to the practices that remind you why you're doing this.",
-          "Stay with the process, one grounded choice at a time."
+          "Return to the {descriptor} practices that anchor your {focus}.",
+          "Stay with your {focus} process, one {descriptor} choice at a time."
         ]
       }
     },
@@ -57,16 +57,16 @@
       ],
       "closers": {
         "support": [
-          "Let steady wins show the momentum you're building.",
-          "Lean into allies who reinforce your vision."
+          "Let {descriptor} wins show the {focus} momentum you're building.",
+          "Lean into allies who reinforce your {descriptor} vision for {focus}."
         ],
         "challenge": [
-          "Keep pacing yourself so the pressure doesn't run the show.",
-          "Protect your bandwidth with clear boundaries."
+          "Keep {descriptor} pacing through your {focus} so pressure doesn't dominate.",
+          "Protect your {focus} bandwidth with {descriptor} boundaries."
         ],
         "neutral": [
-          "Stay with the process that makes results repeatable.",
-          "Keep your workflow anchored to what truly matters."
+          "Stay with the {descriptor} process that makes your {focus} repeatable.",
+          "Keep your {focus} workflow anchored to what feels {descriptor}."
         ]
       }
     },
@@ -92,16 +92,16 @@
       ],
       "closers": {
         "support": [
-          "Follow the conversations that feel nourishing.",
-          "Let shared rituals remind you you're supported."
+          "Follow the {descriptor} conversations that nourish your {focus}.",
+          "Let {descriptor} rituals remind you your {focus} is supported."
         ],
         "challenge": [
-          "Keep soft boundaries so tenderness can return.",
-          "Name what you need while staying receptive."
+          "Keep {descriptor} boundaries so your {focus} can restore.",
+          "Name what your {focus} needs while staying {descriptor}."
         ],
         "neutral": [
-          "Let the pace stay human—no need to force answers.",
-          "Stay tuned to the gestures that feel genuine."
+          "Let your {focus} pace stay {descriptor}—no need to force answers.",
+          "Stay tuned to the {descriptor} gestures within your {focus}."
         ]
       }
     },
@@ -127,16 +127,16 @@
       ],
       "closers": {
         "support": [
-          "Let gentle structure support your wellbeing.",
-          "Stay loyal to the practices that replenish you."
+          "Let {descriptor} structure support your {focus} wellbeing.",
+          "Stay loyal to the {descriptor} practices that replenish your {focus}."
         ],
         "challenge": [
-          "Keep adjustments responsive so recovery stays on track.",
-          "Trust the feedback your body keeps sharing."
+          "Keep {descriptor} adjustments responsive so your {focus} recovery stays on track.",
+          "Trust the {descriptor} feedback your {focus} keeps sharing."
         ],
         "neutral": [
-          "Balance effort with rest so your energy can reset.",
-          "Stay present with the signals that guide your care."
+          "Balance {descriptor} effort with rest so your {focus} can reset.",
+          "Stay present with the {descriptor} signals that guide your {focus}."
         ]
       }
     },
@@ -162,16 +162,16 @@
       ],
       "closers": {
         "support": [
-          "Let aligned choices build your long game.",
-          "Trust the budget that keeps breathing room intact."
+          "Let {descriptor} choices build your {focus} long game.",
+          "Trust the {descriptor} budget that keeps your {focus} breathing room intact."
         ],
         "challenge": [
-          "Keep big moves on hold until the math confirms it.",
-          "Protect resources by filtering decisions through calm."
+          "Keep {descriptor} moves on hold until your {focus} math confirms it.",
+          "Protect your {focus} resources by filtering decisions through {descriptor} calm."
         ],
         "neutral": [
-          "Stay curious about where your focus is funding momentum.",
-          "Let steady pacing make each decision easier to trust."
+          "Stay curious about where your {descriptor} attention is funding {focus} momentum.",
+          "Let {descriptor} pacing make each {focus} decision easier to trust."
         ]
       }
     }
