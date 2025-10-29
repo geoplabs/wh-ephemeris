@@ -2,7 +2,15 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from hashlib import blake2b
-from typing import Iterable, Iterator, Mapping, MutableMapping, Sequence, Tuple, TypeVar
+from typing import Iterable, Iterator, Mapping, MutableMapping, Sequence, TypeVar
+
+
+@dataclass(frozen=True)
+class VariationItem:
+    """Single selectable option for a variation group."""
+
+    text: str
+    weight: float = 1.0
 
 
 T = TypeVar("T")
@@ -22,7 +30,7 @@ class VariationGroup:
 
     name: str
     mode: VariationMode
-    items: tuple[str, ...]
+    items: tuple[VariationItem, ...]
     pick: int | None = None
     minimum: int | None = None
     maximum: int | None = None
@@ -33,10 +41,17 @@ class VariationGroup:
         maximum = self.maximum if self.maximum is not None else None
         if maximum is not None and maximum < minimum:
             maximum = minimum
+        normalized_items: tuple[VariationItem, ...] = tuple(
+            VariationItem(text=item.text.strip(), weight=float(item.weight or 0))
+            for item in self.items
+            if item.text.strip()
+        )
+        if self.mode == "weighted_choice":
+            normalized_items = tuple(item for item in normalized_items if item.weight > 0)
         return VariationGroup(
             name=self.name,
             mode=self.mode,
-            items=tuple(self.items),
+            items=normalized_items,
             pick=pick,
             minimum=minimum,
             maximum=maximum,
@@ -141,6 +156,38 @@ class VariationEngine:
             return tuple()
         return tuple(rng.sample(values, count))
 
+    def weighted_choice(
+        self, key: str, items: Sequence[VariationItem], *, pick: int = 1
+    ) -> tuple[str, ...]:
+        if not items:
+            return tuple()
+        import random
+
+        rng = random.Random(_hashed_seed(self.seed, key))
+        candidates = [
+            (item.text, max(float(item.weight), 0.0)) for item in items if item.text
+        ]
+        positive = [(text, weight) for text, weight in candidates if weight > 0]
+        working = positive or [(text, 1.0) for text, _ in candidates]
+        if not working:
+            return tuple()
+        max_pick = min(max(int(pick), 1), len(working))
+        selections: list[str] = []
+        pool = working.copy()
+        for _ in range(max_pick):
+            total = sum(weight for _, weight in pool)
+            if total <= 0:
+                break
+            target = rng.random() * total
+            cumulative = 0.0
+            for index, (text, weight) in enumerate(pool):
+                cumulative += weight
+                if target <= cumulative:
+                    selections.append(text)
+                    del pool[index]
+                    break
+        return tuple(selections)
+
     def evaluate(self, groups: Mapping[str, VariationGroup] | None) -> VariationContext:
         if not groups:
             return VariationContext()
@@ -148,15 +195,25 @@ class VariationEngine:
         for name, group in groups.items():
             normalized = group.normalized()
             if normalized.mode == "permutation":
-                selections = self.permutation(name, normalized.items)
+                selections = self.permutation(
+                    name, tuple(item.text for item in normalized.items)
+                )
             elif normalized.mode == "choice":
-                selections = self.choice(name, normalized.items, pick=normalized.pick or 1)
+                selections = self.choice(
+                    name,
+                    tuple(item.text for item in normalized.items),
+                    pick=normalized.pick or 1,
+                )
             elif normalized.mode == "subset":
                 selections = self.subset(
                     name,
-                    normalized.items,
+                    tuple(item.text for item in normalized.items),
                     minimum=normalized.minimum or 0,
                     maximum=normalized.maximum,
+                )
+            elif normalized.mode == "weighted_choice":
+                selections = self.weighted_choice(
+                    name, normalized.items, pick=normalized.pick or 1
                 )
             else:
                 raise ValueError(f"Unsupported variation mode '{normalized.mode}' for {name}")
@@ -167,6 +224,7 @@ class VariationEngine:
 __all__ = [
     "VariationContext",
     "VariationEngine",
+    "VariationItem",
     "VariationGroup",
     "VariationResult",
 ]
