@@ -4,7 +4,14 @@ from . import ephem, aspects as aspects_svc, houses as houses_svc
 from .transit_math import is_applying
 from .constants import sign_name_from_lon
 
-ASPECT_WEIGHTS = {"conjunction":5, "opposition":4, "square":3, "trine":2, "sextile":1}
+ASPECT_WEIGHTS = {
+    "conjunction": 5,
+    "opposition": 4,
+    "square": 3,
+    "trine": 2,
+    "sextile": 1,
+    "quincunx": 3,
+}
 PLANET_WEIGHTS = {"Saturn":3,"Jupiter":2,"Mars":2,"Sun":1,"Venus":1,"Mercury":1,"Moon":0.5,
                   "Uranus":3,"Neptune":3,"Pluto":3,"TrueNode":1,"Chiron":1}
 
@@ -31,6 +38,7 @@ ASPECT_PHRASES = {
     "square": "challenges around",
     "trine": "period for",
     "sextile": "opportunity for",
+    "quincunx": "adjustments in",
 }
 
 ASPECT_GUIDANCE = {
@@ -39,6 +47,7 @@ ASPECT_GUIDANCE = {
     "square": "Take decisive steps to work through the friction.",
     "trine": "Trust the momentum and share your gifts.",
     "sextile": "Say yes to supportive openings as they arise.",
+    "quincunx": "Make thoughtful adjustments to keep the pieces aligned.",
 }
 
 def _intensity_adverb(score: float) -> str:
@@ -110,7 +119,15 @@ def compute_transits(chart_input: Dict[str,Any], opts: Dict[str,Any]) -> List[Di
     transit_bodies = set(opts.get("transit_bodies") or ["Sun","Mars","Jupiter","Saturn"])
     policy = opts.get("aspects") or {}
     orb_limit = float(policy.get("orb_deg", 3.0))
-    aspect_types = policy.get("types", ["conjunction","opposition","square","trine","sextile"])
+    aspect_types = policy.get(
+        "types",
+        ["conjunction", "opposition", "square", "trine", "sextile", "quincunx"],
+    )
+    requested_aspects = {
+        aspects_svc.canonical_aspect(name)
+        for name in aspect_types
+        if aspects_svc.canonical_aspect(name) in aspects_svc.MAJOR
+    }
 
     natal_map = _natal_positions(chart_input)
     natal_targets = list((opts.get("natal_targets") or list(natal_map.keys())))
@@ -131,7 +148,7 @@ def compute_transits(chart_input: Dict[str,Any], opts: Dict[str,Any]) -> List[Di
                 d = aspects_svc._angle_diff(t_pos["lon"], n_pos["lon"])
                 # find best aspect match
                 for a_name, a_exact in aspects_svc.MAJOR.items():
-                    if a_name not in aspect_types:
+                    if a_name not in requested_aspects:
                         continue
                     if abs(d - a_exact) <= orb_limit:
                         orb = round(abs(d - a_exact), 2)

@@ -37,6 +37,7 @@ CAUTION_ASPECTS = {
     "square",
     "opposition",
     "quincunx",
+    "inconjunct",
     "retrograde",
     "semi-square",
     "sesquisquare",
@@ -55,7 +56,9 @@ CAUTION_KEYWORDS = {
     "pushback",
 }
 
-CAUTION_FALLBACK_TIME = "14:00-16:00 (afternoon)"
+_REPEATED_WORD_PATTERN = re.compile(r"\b(\w+)(\s+\1\b)+", re.IGNORECASE)
+
+CAUTION_FALLBACK_TIME = "All day (general caution)"
 CAUTION_FALLBACK_NOTE = "Use this span for careful review and gentler pacing."
 MAX_LIST_ITEMS = 4
 
@@ -126,6 +129,7 @@ def _ensure_sentence(text: str) -> str:
     cleaned = " ".join(text.split())
     if not cleaned:
         return ""
+    cleaned = _REPEATED_WORD_PATTERN.sub(lambda m: m.group(1), cleaned)
     if cleaned[-1] not in ".!?":
         cleaned = f"{cleaned}."
     return cleaned
@@ -183,6 +187,17 @@ def _build_caution_window_from_events(
             return {"time_window": time_window, "note": note_text}
 
     return {"time_window": CAUTION_FALLBACK_TIME, "note": CAUTION_FALLBACK_NOTE}
+
+
+def _is_mercury_chiron_quincunx(event: Mapping[str, Any] | None) -> bool:
+    if not isinstance(event, Mapping):
+        return False
+    transit = _coerce_text(event.get("transit_body")).lower()
+    natal = _coerce_text(event.get("natal_body")).lower()
+    aspect = _coerce_text(event.get("aspect")).lower()
+    if transit != "mercury" or natal != "chiron":
+        return False
+    return aspect in {"quincunx", "inconjunct"}
 
 
 def _build_remedies(planet: str, sign: str, theme: str) -> list[str]:
@@ -673,6 +688,14 @@ def build_context(option_b_json: dict[str, Any]) -> dict[str, Any]:
         event=area_events.get("health", {}).get("primary"),
         supporting_event=area_events.get("health", {}).get("supporting"),
     )
+    health_events = area_events.get("health", {})
+    if _is_mercury_chiron_quincunx(health_events.get("primary")) or _is_mercury_chiron_quincunx(
+        health_events.get("supporting")
+    ):
+        adjustment_sentence = (
+            "Subtle Mercury-Chiron tension calls for micro-adjustments: notice discomfort, then tweak routine rather than pushing through."
+        )
+        health_paragraph = _append_variation_sentences(health_paragraph, (adjustment_sentence,))
     health_opts = normalize_bullets(
         health.get("good_options", []),
         profile_name,
