@@ -596,22 +596,37 @@ def build_context(option_b_json: dict[str, Any]) -> dict[str, Any]:
     caution_window = windows_result.get("caution_window")
     lucky_window_from_netting = windows_result.get("lucky_window")
     
-    # Fallback to traditional lucky calculation if no lucky window from netting
+    # Build lucky - ensure it's DIFFERENT from caution
     if lucky_window_from_netting:
-        # Convert to lucky format (just time window, no note)
-        lucky = lucky_from_dominant(
-            dom_planet, 
-            dom_sign, 
-            time_window=lucky_window_from_netting.get("time_window", "")
-        )
+        # Netting provided a separate lucky window
+        lucky_time = lucky_window_from_netting.get("time_window", "")
+        # Verify it's different from caution
+        if caution_window and lucky_time == caution_window.get("time_window"):
+            # They're the same - fall back to traditional calculation avoiding caution
+            caution_time_str = caution_window.get("time_window")
+            lucky = lucky_from_dominant(dom_planet, dom_sign, events=annotated_events, caution_window_str=caution_time_str)
+        else:
+            # Use the netted lucky window
+            lucky = lucky_from_dominant(dom_planet, dom_sign, time_window=lucky_time)
     else:
-        # Use traditional lucky calculation with events
+        # No lucky from netting - use traditional calculation
         caution_time_str = caution_window.get("time_window") if caution_window else None
         lucky = lucky_from_dominant(dom_planet, dom_sign, events=annotated_events, caution_window_str=caution_time_str)
     
     # Fallback caution window if netting didn't produce one
     if not caution_window:
         caution_window = _build_caution_window_from_events(enriched_events)
+    
+    # Final safety check: ensure caution and lucky are different
+    if caution_window and lucky and caution_window.get("time_window") == lucky.get("time_window"):
+        # They ended up the same - try harder to find a different lucky window
+        # Find ANY supportive event that doesn't overlap
+        caution_time_str = caution_window.get("time_window")
+        lucky = lucky_from_dominant(dom_planet, dom_sign, events=annotated_events, caution_window_str=caution_time_str)
+        # If still the same, use default
+        if caution_window.get("time_window") == lucky.get("time_window"):
+            from .lucky import DEFAULT_TIME_WINDOW
+            lucky = lucky_from_dominant(dom_planet, dom_sign, time_window=DEFAULT_TIME_WINDOW)
     
     remedy_lines = _build_remedies(dom_planet, dom_sign, option_b_json.get("theme", ""))
     selected_area_events: dict[str, dict[str, Any] | None] = {}

@@ -142,51 +142,51 @@ def resolve_windows_with_netting(
     result_windows.sort(key=lambda w: abs(w.get("net_score", w.get("score", 0))), reverse=True)
     top_windows = result_windows[:2]
     
-    # Assign to caution and lucky (each window goes to ONE output only)
+    # Assign to caution and lucky (MUST be different windows)
     caution_window = None
     lucky_window = None
+    used_indices = set()
     
-    for window in top_windows:
+    # First pass: assign by preferred labels
+    for idx, window in enumerate(top_windows):
         label = window.get("label", "")
         score = window.get("net_score", window.get("score", 0))
         
-        # Assign based on label first, then score
-        if label in {"Caution", "High Caution", "Gentle Note"}:
-            if caution_window is None:
-                caution_window = {
-                    "time_window": window.get("time_window", ""),
-                    "note": window.get("note", ""),
-                }
-        elif label == "Mixed":
-            # Mixed can go to either - use score to decide
-            if score >= 0 and caution_window is None:
-                caution_window = {
-                    "time_window": window.get("time_window", ""),
-                    "note": window.get("note", ""),
-                }
-            elif score < 0 and lucky_window is None:
-                lucky_window = {
-                    "time_window": window.get("time_window", ""),
-                    "note": window.get("note", ""),
-                }
-        elif label in {"Support", "Insight"}:
-            if lucky_window is None:
-                lucky_window = {
-                    "time_window": window.get("time_window", ""),
-                    "note": window.get("note", ""),
-                }
-        else:
-            # Fallback: use score
-            if score > 0 and caution_window is None:
-                caution_window = {
-                    "time_window": window.get("time_window", ""),
-                    "note": window.get("note", ""),
-                }
-            elif score < 0 and lucky_window is None:
-                lucky_window = {
-                    "time_window": window.get("time_window", ""),
-                    "note": window.get("note", ""),
-                }
+        # Assign caution windows
+        if caution_window is None and label in {"Caution", "High Caution", "Gentle Note"}:
+            caution_window = {
+                "time_window": window.get("time_window", ""),
+                "note": window.get("note", ""),
+            }
+            used_indices.add(idx)
+        # Assign support windows
+        elif lucky_window is None and label in {"Support", "Insight"}:
+            lucky_window = {
+                "time_window": window.get("time_window", ""),
+                "note": window.get("note", ""),
+            }
+            used_indices.add(idx)
+    
+    # Second pass: fill remaining slots with unused windows
+    for idx, window in enumerate(top_windows):
+        if idx in used_indices:
+            continue  # Already used
+            
+        label = window.get("label", "")
+        score = window.get("net_score", window.get("score", 0))
+        
+        if caution_window is None and score >= 0:
+            caution_window = {
+                "time_window": window.get("time_window", ""),
+                "note": window.get("note", ""),
+            }
+            used_indices.add(idx)
+        elif lucky_window is None and score < 0:
+            lucky_window = {
+                "time_window": window.get("time_window", ""),
+                "note": window.get("note", ""),
+            }
+            used_indices.add(idx)
     
     return {
         "caution_window": caution_window,
