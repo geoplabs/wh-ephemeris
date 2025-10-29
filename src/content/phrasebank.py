@@ -81,18 +81,39 @@ def _asset_map() -> Mapping[tuple[str, str, str], PhraseAsset]:
         }
         variation_groups = {}
         for name, config in (entry.get("variation_groups") or {}).items():
-            items = tuple(
-                str(item).strip()
-                for item in (config.get("items") or [])
-                if str(item or "").strip()
-            )
+            mode = str(config.get("mode", "choice"))
+            raw_items = config.get("items") or []
+            
+            # Parse items - can be strings or {text, weight} objects for weighted_choice
+            items_list = []
+            weights_list = []
+            
+            for item in raw_items:
+                if isinstance(item, dict):
+                    # Weighted item: {text: "...", weight: 1.0}
+                    text = str(item.get("text", "")).strip()
+                    weight = float(item.get("weight", 1.0))
+                    if text:
+                        items_list.append(text)
+                        weights_list.append(weight)
+                elif isinstance(item, str):
+                    # Simple string item
+                    text = item.strip()
+                    if text:
+                        items_list.append(text)
+                        weights_list.append(1.0)  # Default weight
+            
+            items = tuple(items_list)
+            weights = tuple(weights_list) if mode == "weighted_choice" and weights_list else None
+            
             variation_groups[str(name)] = VariationGroup(
                 name=str(name),
-                mode=str(config.get("mode", "choice")),
+                mode=mode,
                 items=items,
                 pick=(config.get("pick") if config.get("pick") is not None else None),
                 minimum=(config.get("minimum") if config.get("minimum") is not None else None),
                 maximum=(config.get("maximum") if config.get("maximum") is not None else None),
+                weights=weights,
             )
         
         # Parse phrase_requirements if present

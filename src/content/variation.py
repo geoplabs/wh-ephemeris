@@ -26,6 +26,7 @@ class VariationGroup:
     pick: int | None = None
     minimum: int | None = None
     maximum: int | None = None
+    weights: tuple[float, ...] | None = None  # For weighted_choice mode
 
     def normalized(self) -> "VariationGroup":
         pick = self.pick if (self.pick or 0) > 0 else None
@@ -141,6 +142,69 @@ class VariationEngine:
             return tuple()
         return tuple(rng.sample(values, count))
 
+    def weighted_choice(
+        self,
+        key: str,
+        items: Sequence[T],
+        weights: Sequence[float] | None = None,
+        *,
+        pick: int = 1
+    ) -> tuple[T, ...]:
+        """Select items using weighted random sampling.
+        
+        Args:
+            key: Deterministic seed key
+            items: Items to choose from
+            weights: Weight for each item (higher = more likely)
+            pick: Number of items to select
+            
+        Returns:
+            Tuple of selected items
+        """
+        values = list(dict.fromkeys(items))
+        if not values:
+            return tuple()
+        
+        # Use uniform weights if not provided
+        if weights is None or len(weights) != len(values):
+            weights = [1.0] * len(values)
+        else:
+            weights = list(weights)
+        
+        # Normalize weights to ensure they're positive
+        weights = [max(w, 0.0) for w in weights]
+        total_weight = sum(weights)
+        
+        # If all weights are zero, use uniform
+        if total_weight == 0:
+            weights = [1.0] * len(values)
+            total_weight = float(len(values))
+        
+        import random
+        rng = random.Random(_hashed_seed(self.seed, key))
+        
+        pick = min(max(int(pick), 1), len(values))
+        
+        # Use weighted sampling
+        selected = []
+        remaining_items = list(values)
+        remaining_weights = list(weights)
+        
+        for _ in range(pick):
+            if not remaining_items:
+                break
+            
+            # Weighted random selection
+            chosen_item = rng.choices(remaining_items, weights=remaining_weights, k=1)[0]
+            selected.append(chosen_item)
+            
+            # Remove selected item to avoid duplicates
+            idx = remaining_items.index(chosen_item)
+            remaining_items.pop(idx)
+            remaining_weights.pop(idx)
+        
+        return tuple(selected)
+
     def evaluate(self, groups: Mapping[str, VariationGroup] | None) -> VariationContext:
         if not groups:
             return VariationContext()
@@ -151,6 +215,13 @@ class VariationEngine:
                 selections = self.permutation(name, normalized.items)
             elif normalized.mode == "choice":
                 selections = self.choice(name, normalized.items, pick=normalized.pick or 1)
+            elif normalized.mode == "weighted_choice":
+                selections = self.weighted_choice(
+                    name,
+                    normalized.items,
+                    weights=normalized.weights,
+                    pick=normalized.pick or 1
+                )
             elif normalized.mode == "subset":
                 selections = self.subset(
                     name,

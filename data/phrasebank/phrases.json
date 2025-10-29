@@ -25,11 +25,18 @@
       },
       "variation_groups": {
         "clauses": {
-          "mode": "permutation",
+          "mode": "weighted_choice",
           "items": [
-            "Subtle radiant energy supports your day flow.",
-            "Momentum guides your day choices with calm focus."
-          ]
+            {"text": "Keep decisions simple and steady today.", "weight": 1.5},
+            {"text": "Let clear steps set a relaxed pace.", "weight": 1.2},
+            {"text": "Small, consistent actions carry you forward.", "weight": 1.3},
+            {"text": "Subtle radiant energy supports your day flow.", "weight": 1.0},
+            {"text": "Momentum guides your day choices with calm focus.", "weight": 0.5},
+            {"text": "Today favors intentional over automatic.", "weight": 1.1},
+            {"text": "Progress flows when you trust the rhythm.", "weight": 1.0},
+            {"text": "Balance guides each choice with quiet confidence.", "weight": 1.2}
+          ],
+          "pick": 1
         },
         "adjective": {
           "mode": "choice",
@@ -84,11 +91,18 @@
       },
       "variation_groups": {
         "clauses": {
-          "mode": "permutation",
+          "mode": "weighted_choice",
           "items": [
-            "Subtle radiant energy supports your career progress with grounded follow-through.",
-            "Momentum guides your career moves with grounded clarity."
-          ]
+            {"text": "Keep deliverables clear and scope realistic.", "weight": 1.4},
+            {"text": "Professional wins build through steady execution.", "weight": 1.3},
+            {"text": "Status updates keep momentum transparent and grounded.", "weight": 1.2},
+            {"text": "Strategic focus guides your next career move.", "weight": 1.1},
+            {"text": "Subtle radiant energy supports your career progress with grounded follow-through.", "weight": 0.7},
+            {"text": "Momentum guides your career moves with grounded clarity.", "weight": 0.6},
+            {"text": "Align your workflow with what drives results.", "weight": 1.2},
+            {"text": "Let priorities reflect your leadership strengths.", "weight": 1.0}
+          ],
+          "pick": 1
         },
         "adjective": {
           "mode": "choice",
