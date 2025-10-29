@@ -40,6 +40,8 @@ def test_support_dominant_stack_outputs_support_window():
     assert window["severity"] == "Insight"
     assert window["score"] < 0
     assert "inner work" in window["note"].lower()
+    assert window["start_utc"].endswith("Z")
+    assert window["time_window_utc"].endswith("UTC")
 
 
 def test_friction_with_support_offsets_but_remains_caution():

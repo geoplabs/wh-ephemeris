@@ -6,7 +6,7 @@ from datetime import date, datetime, time, timedelta, timezone
 from typing import Any, Mapping, Sequence
 
 
-IST = timezone(timedelta(hours=5, minutes=30))
+UTC = timezone.utc
 
 MAX_ORB_DEGREES = {
     "conjunction": 8.0,
@@ -78,7 +78,7 @@ class EventRecord:
     score: float
     start: datetime | None
     end: datetime | None
-    exact_ist: datetime | None
+    exact_utc: datetime | None
     local_date: datetime.date | None
     orb: float
     aspect: str
@@ -216,9 +216,9 @@ def _parse_event_date(value: str | None) -> date | None:
         except ValueError:
             return None
     if dt.tzinfo is not None:
-        dt = dt.astimezone(IST)
+        dt = dt.astimezone(UTC)
     else:
-        dt = dt.replace(tzinfo=IST)
+        dt = dt.replace(tzinfo=UTC)
     return dt.date()
 
 
@@ -226,7 +226,7 @@ def _infer_window(event: Mapping[str, Any], exact_utc: datetime | None) -> tuple
     transit_body = _normalize_body_lower(event.get("transit_body"))
     date_str = (event.get("date") or "").strip()
     if exact_utc is not None:
-        center = exact_utc.astimezone(IST)
+        center = exact_utc.astimezone(UTC)
         if transit_body == "moon":
             delta = timedelta(minutes=90)
         elif transit_body in {"mercury", "venus", "sun"}:
@@ -253,9 +253,9 @@ def _infer_window(event: Mapping[str, Any], exact_utc: datetime | None) -> tuple
         except ValueError:
             return None
     if day.tzinfo is None:
-        day = day.replace(tzinfo=IST)
+        day = day.replace(tzinfo=UTC)
     else:
-        day = day.astimezone(IST)
+        day = day.astimezone(UTC)
 
     if transit_body == "moon":
         start_time = time(10, 0)
@@ -263,8 +263,8 @@ def _infer_window(event: Mapping[str, Any], exact_utc: datetime | None) -> tuple
     else:
         start_time = time(12, 0)
         end_time = time(16, 0)
-    start = datetime.combine(day.date(), start_time, IST)
-    end = datetime.combine(day.date(), end_time, IST)
+    start = datetime.combine(day.date(), start_time, UTC)
+    end = datetime.combine(day.date(), end_time, UTC)
     return start, end
 
 
@@ -400,11 +400,11 @@ def _event_record(event: Mapping[str, Any]) -> EventRecord | None:
 
     exact = _parse_iso_utc(event.get("exact_hit_time_utc"))
     start_end = _infer_window(event, exact)
-    exact_ist = exact.astimezone(IST) if exact is not None else None
+    exact_utc = exact.astimezone(UTC) if exact is not None else None
     if start_end:
         local_date = start_end[0].date()
-    elif exact_ist is not None:
-        local_date = exact_ist.date()
+    elif exact_utc is not None:
+        local_date = exact_utc.date()
     else:
         local_date = _parse_event_date(event.get("date"))
 
@@ -413,7 +413,7 @@ def _event_record(event: Mapping[str, Any]) -> EventRecord | None:
         score=score,
         start=start_end[0] if start_end else None,
         end=start_end[1] if start_end else None,
-        exact_ist=exact_ist,
+        exact_utc=exact_utc,
         local_date=local_date,
         orb=orb,
         aspect=aspect,
@@ -449,6 +449,12 @@ def _cap_score(score: float) -> float:
     return max(min(score, 3.5), -3.5)
 
 
+def _format_time_window(start: datetime, end: datetime) -> str:
+    start_utc = start.astimezone(UTC)
+    end_utc = end.astimezone(UTC)
+    return f"{start_utc.strftime('%H:%M')}-{end_utc.strftime('%H:%M')} UTC"
+
+
 def compute_caution_windows(events: Sequence[Mapping[str, Any]]) -> list[dict[str, Any]]:
     """Compute caution/support windows from transit events."""
 
@@ -480,13 +486,13 @@ def compute_caution_windows(events: Sequence[Mapping[str, Any]]) -> list[dict[st
     # Attach slow/background events with exact timings to nearby windows.
     attached_background: list[EventRecord] = []
     for record in list(background):
-        if record.exact_ist is None:
+        if record.exact_utc is None:
             continue
         best_window: WindowRecord | None = None
         best_distance = timedelta.max
         for window in merged:
             center = _window_center(window)
-            distance = abs(center - record.exact_ist)
+            distance = abs(center - record.exact_utc)
             if distance <= timedelta(hours=12) and distance < best_distance:
                 best_distance = distance
                 best_window = window
@@ -549,10 +555,14 @@ def compute_caution_windows(events: Sequence[Mapping[str, Any]]) -> list[dict[st
 
         pro_notes = _pro_notes(contributors)
 
+        start_utc = window.start.astimezone(UTC)
+        end_utc = window.end.astimezone(UTC)
+
         results.append(
             {
-                "start_ist": window.start.astimezone(IST).isoformat(),
-                "end_ist": window.end.astimezone(IST).isoformat(),
+                "start_utc": start_utc.isoformat().replace("+00:00", "Z"),
+                "end_utc": end_utc.isoformat().replace("+00:00", "Z"),
+                "time_window_utc": _format_time_window(start_utc, end_utc),
                 "severity": severity,
                 "score": round(adjusted_score, 2),
                 "drivers": drivers,
