@@ -450,6 +450,60 @@
         ]
       }
     }
+  },
+  "phase3_enabled": false,
+  "phase3_templates": {
+    "transit_openers": {
+      "moon": [
+        "Your emotional {descriptor} guides today's {focus} with instinctive wisdom.",
+        "You attune to {descriptor} feelings that shape today's {focus}.",
+        "Your {descriptor} intuition illuminates today's {focus}.",
+        "You honor {descriptor} sensitivity within today's {focus}.",
+        "Your emotional {descriptor} rhythms flow through today's {focus}."
+      ],
+      "mercury": [
+        "Your {descriptor} thinking clarifies today's {focus}.",
+        "You communicate {descriptor} insights for today's {focus}.",
+        "Your mental {descriptor} agility navigates today's {focus}.",
+        "You process {descriptor} information within today's {focus}.",
+        "Your {descriptor} curiosity guides today's {focus}."
+      ],
+      "venus": [
+        "Your {descriptor} values harmonize today's {focus}.",
+        "You appreciate {descriptor} beauty within today's {focus}.",
+        "Your {descriptor} affection shapes today's {focus}.",
+        "You attract {descriptor} connections for today's {focus}.",
+        "Your relational {descriptor} grace enriches today's {focus}."
+      ],
+      "sun": [
+        "Your {descriptor} vitality powers today's {focus}.",
+        "You radiate {descriptor} confidence through today's {focus}.",
+        "Your core {descriptor} identity shines in today's {focus}.",
+        "You express {descriptor} authenticity within today's {focus}.",
+        "Your {descriptor} purpose illuminates today's {focus}."
+      ],
+      "mars": [
+        "Your {descriptor} drive activates today's {focus}.",
+        "You assert {descriptor} will through today's {focus}.",
+        "Your {descriptor} courage propels today's {focus}.",
+        "You direct {descriptor} energy into today's {focus}.",
+        "Your {descriptor} initiative shapes today's {focus}."
+      ],
+      "jupiter": [
+        "Your {descriptor} optimism expands today's {focus}.",
+        "You explore {descriptor} possibilities within today's {focus}.",
+        "Your {descriptor} wisdom guides today's {focus}.",
+        "You cultivate {descriptor} growth through today's {focus}.",
+        "Your philosophical {descriptor} vision enriches today's {focus}."
+      ],
+      "saturn": [
+        "Your {descriptor} discipline structures today's {focus}.",
+        "You build {descriptor} foundations for today's {focus}.",
+        "Your {descriptor} responsibility anchors today's {focus}.",
+        "You master {descriptor} challenges within today's {focus}.",
+        "Your {descriptor} maturity guides today's {focus}."
+      ]
+    }
   }
 }
 
