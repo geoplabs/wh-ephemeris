@@ -1,6 +1,7 @@
 import re
 
 from src.content.phrasebank import PhraseAsset, bullet_templates_for
+from src.content.inflection import safe_phrase_for_template, transform_phrase
 
 _ORB = re.compile(r"\b\d+(\.\d+)?°\b")
 _APPLYING_SEP = re.compile(r"\b(Applying|Separating)\b[^.]*\.?")
@@ -678,10 +679,21 @@ def imperative_bullet(s: str, order: int = 0, mode: str = "do", *, area: str | N
     templates = _resolve_templates(area, mode, asset)
     best_candidate: str | None = None
     template_count = len(templates)
+    
+    # Get phrase requirements from asset if available
+    fallback_phrase = "focused progress" if mode == "do" else "reactive moves"
+    if asset and asset.phrase_requirements:
+        fallback_phrase = asset.phrase_requirements.fallback
+    
     for offset in range(template_count):
         template = templates[(order + offset) % template_count]
         for cut in range(len(phrase_words), 0, -1):
-            phrase = _format_phrase(phrase_words[:cut], mode)
+            # Use old format_phrase for backwards compatibility, but try smart transformation
+            raw_phrase = _format_phrase(phrase_words[:cut], mode)
+            
+            # Apply grammatically safe transformation based on template
+            phrase = safe_phrase_for_template(raw_phrase, template, fallback=fallback_phrase)
+            
             candidate = template.format(phrase=phrase)
             word_count = len(candidate.rstrip(".").split())
             if 3 <= word_count <= 10:
@@ -690,8 +702,11 @@ def imperative_bullet(s: str, order: int = 0, mode: str = "do", *, area: str | N
                 best_candidate = candidate
     if best_candidate:
         return _cleanup_sentence(best_candidate)
-    phrase = _format_phrase([words[0]], mode)
+    
+    # Fallback: use first word with safe transformation
+    raw_phrase = _format_phrase([words[0]], mode)
     template = templates[order % template_count]
+    phrase = safe_phrase_for_template(raw_phrase, template, fallback=fallback_phrase)
     return _cleanup_sentence(template.format(phrase=phrase))
 
 

@@ -50,6 +50,14 @@
           "minimum": 0,
           "maximum": 2
         }
+      },
+      "phrase_requirements": {
+        "expected_types": ["noun", "adjective_noun"],
+        "fallback": "focused progress",
+        "transform": {
+          "lowercase": true,
+          "add_article": false
+        }
       }
     },
     {

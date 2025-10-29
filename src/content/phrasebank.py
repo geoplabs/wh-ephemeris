@@ -28,6 +28,15 @@ AREAS: tuple[str, ...] = ("general", "career", "love", "health", "finance")
 
 
 @dataclass(frozen=True)
+class PhraseRequirements:
+    """Requirements for phrase grammatical transformations."""
+    expected_types: tuple[str, ...]  # e.g., ("gerund", "noun")
+    fallback: str  # Fallback phrase if transformation fails
+    lowercase: bool = False
+    add_article: bool = False
+
+
+@dataclass(frozen=True)
 class PhraseAsset:
     archetype: str
     intensity: str
@@ -35,6 +44,7 @@ class PhraseAsset:
     clause_variants: tuple[str, ...]
     bullet_templates: Mapping[str, tuple[str, ...]]
     variation_groups: Mapping[str, VariationGroup]
+    phrase_requirements: PhraseRequirements | None = None
 
     def clause_cycle(self) -> tuple[str, ...]:
         return tuple(c.strip() for c in self.clause_variants if c and c.strip())
@@ -84,6 +94,23 @@ def _asset_map() -> Mapping[tuple[str, str, str], PhraseAsset]:
                 minimum=(config.get("minimum") if config.get("minimum") is not None else None),
                 maximum=(config.get("maximum") if config.get("maximum") is not None else None),
             )
+        
+        # Parse phrase_requirements if present
+        phrase_requirements = None
+        if "phrase_requirements" in entry:
+            req_data = entry["phrase_requirements"]
+            expected_types = tuple(req_data.get("expected_types", ["noun"]))
+            fallback = str(req_data.get("fallback", "focused progress"))
+            transform = req_data.get("transform", {})
+            lowercase = bool(transform.get("lowercase", False))
+            add_article = bool(transform.get("add_article", False))
+            phrase_requirements = PhraseRequirements(
+                expected_types=expected_types,
+                fallback=fallback,
+                lowercase=lowercase,
+                add_article=add_article,
+            )
+        
         asset = PhraseAsset(
             archetype=archetype,
             intensity=intensity,
@@ -91,6 +118,7 @@ def _asset_map() -> Mapping[tuple[str, str, str], PhraseAsset]:
             clause_variants=clause_variants,
             bullet_templates=bullet_templates,
             variation_groups=variation_groups,
+            phrase_requirements=phrase_requirements,
         )
         assets[(archetype, intensity, area)] = asset
     return assets

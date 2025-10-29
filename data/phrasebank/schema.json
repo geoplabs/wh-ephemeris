@@ -75,6 +75,36 @@
               "avoid"
             ],
             "additionalProperties": false
+          },
+          "phrase_requirements": {
+            "type": "object",
+            "properties": {
+              "expected_types": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "enum": ["gerund", "adjective_noun", "noun"]
+                },
+                "minItems": 1
+              },
+              "fallback": {
+                "type": "string"
+              },
+              "transform": {
+                "type": "object",
+                "properties": {
+                  "lowercase": {
+                    "type": "boolean"
+                  },
+                  "add_article": {
+                    "type": "boolean"
+                  }
+                },
+                "additionalProperties": false
+              }
+            },
+            "required": ["expected_types", "fallback"],
+            "additionalProperties": false
           }
         },
         "required": [
