@@ -147,7 +147,8 @@ def _calculate_exact_hit_time(
     # Calculate hours to exact aspect
     hours_to_exact = delta / (transit_speed / 24.0) if transit_speed != 0 else None
     
-    if hours_to_exact is None or abs(hours_to_exact) > 24:  # More than 1 day away
+    # Allow ±72 hours to capture aspects that are active today even if exact hit was recent or upcoming
+    if hours_to_exact is None or abs(hours_to_exact) > 72:  # More than 3 days away
         return None
     
     exact_time = base_date + timedelta(hours=hours_to_exact)

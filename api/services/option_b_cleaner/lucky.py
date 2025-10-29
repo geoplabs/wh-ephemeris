@@ -71,7 +71,8 @@ def _find_best_supportive_event(events: Sequence[Mapping[str, Any]]) -> Mapping[
             continue
         
         # Check if event has exact hit time
-        if "exact_hit_time_utc" not in event:
+        exact_time = event.get("exact_hit_time_utc")
+        if not exact_time or exact_time is None:
             continue
         
         aspect = (event.get("aspect") or "").lower()

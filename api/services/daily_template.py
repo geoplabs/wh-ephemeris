@@ -916,7 +916,7 @@ def _build_fallback(daily: Dict[str, Any]) -> DailyTemplatedResponse:
             "avoid_today": avoid_today_story[:SANITIZED_LIST_LIMIT],
             "caution_window": ctx.get("caution_window") or fallback_caution,
             "remedies": (ctx.get("remedies") or fallback_remedies)[:SANITIZED_LIST_LIMIT],
-            "lucky": fallback_lucky,
+            "lucky": ctx.get("lucky") or fallback_lucky,
             "one_line_summary": ctx.get("one_line_summary", summary_for_opening),
         }
         return DailyTemplatedResponse.model_validate(storylet_payload)

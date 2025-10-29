@@ -75,6 +75,9 @@ class ForecastEvent(BaseModel):
     transit_sign: Optional[str] = None
     natal_sign: Optional[str] = None
     zodiac: Optional[str] = None
+    exact_hit_time_utc: Optional[str] = None
+    transit_motion: Optional[str] = None
+    natal_point_type: Optional[str] = None
 
 
 class YearlyForecastRequest(BaseModel):
