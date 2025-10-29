@@ -183,3 +183,26 @@ def test_paragraphs_embed_event_details():
     assert "Mars aligns with your Mercury" in ctx["health_paragraph"]
     assert re.search(r"Jupiter (supports|boosts|opens|facilitates) your Venus", ctx["finance_paragraph"])
     assert "Saturn presses on your Sun" in ctx["morning_paragraph"]
+
+
+def test_caution_window_prefers_computed_time_window():
+    option_b = _base_option_b()
+    option_b["events"] = [
+        {
+            "date": "2025-10-29",
+            "transit_body": "Moon",
+            "natal_body": "Mars",
+            "aspect": "square",
+            "orb": 1.5,
+            "phase": "applying",
+            "transit_sign": "Cancer",
+            "natal_sign": "Aries",
+            "exact_hit_time_utc": "2025-10-29T08:30:00Z",
+        }
+    ]
+
+    ctx = build_context(option_b)
+    caution_window = ctx["caution_window"]
+
+    assert caution_window["time_window"] == "07:00-10:00 UTC"
+    assert caution_window["note"].startswith("Expect bumps")

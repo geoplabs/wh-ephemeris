@@ -20,6 +20,7 @@ from .language import (
     fix_indefinite_articles,
 )
 from ..remedy_templates import remedy_templates_for_planet
+from src.content import compute_caution_windows
 from src.content.archetype_router import classify_event
 from src.content.area_selector import rank_events_by_area, summarize_rankings
 from src.content.phrasebank import (
@@ -160,6 +161,28 @@ def _event_time_window(event: Mapping[str, Any]) -> str:
 def _build_caution_window_from_events(
     enriched_events: Sequence[Mapping[str, Any]]
 ) -> dict[str, str]:
+    raw_events: list[Mapping[str, Any]] = []
+    for item in enriched_events:
+        if not isinstance(item, Mapping):
+            continue
+        event = item.get("event") if isinstance(item, Mapping) else None
+        if isinstance(event, Mapping):
+            raw_events.append(event)
+
+    if raw_events:
+        windows = compute_caution_windows(raw_events)
+        for window in windows:
+            severity = window.get("severity")
+            if severity not in {"Gentle Note", "Caution", "High Caution"}:
+                continue
+            time_window = window.get("time_window_utc")
+            note_text = window.get("note") or CAUTION_FALLBACK_NOTE
+            if time_window:
+                return {
+                    "time_window": time_window,
+                    "note": _ensure_sentence(note_text),
+                }
+
     for item in enriched_events:
         event = item.get("event") if isinstance(item, Mapping) else None
         if not isinstance(event, Mapping):
