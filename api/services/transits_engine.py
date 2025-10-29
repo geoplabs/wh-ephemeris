@@ -1,5 +1,5 @@
 from datetime import datetime, timedelta, timezone
-from typing import Dict, Any, List
+from typing import Dict, Any, List, Optional
 from . import ephem, aspects as aspects_svc, houses as houses_svc
 from .transit_math import is_applying
 from .constants import sign_name_from_lon
@@ -14,6 +14,11 @@ ASPECT_WEIGHTS = {
 }
 PLANET_WEIGHTS = {"Saturn":3,"Jupiter":2,"Mars":2,"Sun":1,"Venus":1,"Mercury":1,"Moon":0.5,
                   "Uranus":3,"Neptune":3,"Pluto":3,"TrueNode":1,"Chiron":1}
+
+# Fast-moving planets for exact time calculation and prioritization
+FAST_MOVING_PLANETS = {"Moon", "Mercury", "Venus", "Sun", "Mars"}
+SLOW_MOVING_PLANETS = {"Saturn", "Jupiter", "Uranus", "Neptune", "Pluto", "Chiron", "TrueNode"}
+ANGLE_POINTS = {"Ascendant", "Midheaven", "Descendant", "IC"}
 
 PLANET_EXPRESSIONS: Dict[str, Dict[str, str]] = {
     "Sun": {"descriptor": "Radiant", "theme": "self-expression"},
@@ -105,6 +110,49 @@ def _natal_positions(chart_input: Dict[str,Any]) -> Dict[str,Dict[str,float]]:
         out["Midheaven"] = {"lon": hs["mc"],  "speed_lon": 0.0}
     return out
 
+def _natal_point_type(natal_name: str) -> str:
+    """Determine if natal point is planet, angle, or house cusp."""
+    if natal_name in ANGLE_POINTS or natal_name in {"Ascendant", "Midheaven"}:
+        return "angle"
+    if natal_name.startswith("House"):
+        return "house_cusp"
+    return "planet"
+
+def _calculate_exact_hit_time(
+    transit_lon: float,
+    transit_speed: float,
+    natal_lon: float,
+    aspect_angle: float,
+    base_date: datetime,
+) -> Optional[str]:
+    """Calculate exact UTC time when aspect becomes perfect.
+    
+    Only calculates for fast-moving planets with reasonable daily motion.
+    Returns ISO format string with UTC timezone.
+    """
+    if abs(transit_speed) < 0.01:  # Too slow to calculate precise time
+        return None
+    
+    # Calculate angular distance to exact aspect
+    current_angle = (transit_lon - natal_lon) % 360
+    target_angle = aspect_angle % 360
+    
+    # Find shortest angular distance considering wrap-around
+    delta = target_angle - current_angle
+    if delta > 180:
+        delta -= 360
+    elif delta < -180:
+        delta += 360
+    
+    # Calculate hours to exact aspect
+    hours_to_exact = delta / (transit_speed / 24.0) if transit_speed != 0 else None
+    
+    if hours_to_exact is None or abs(hours_to_exact) > 24:  # More than 1 day away
+        return None
+    
+    exact_time = base_date + timedelta(hours=hours_to_exact)
+    return exact_time.isoformat().replace("+00:00", "Z")
+
 def _transit_positions(dt: datetime, system: str, ayan: str|None) -> Dict[str,Dict[str,float]]:
     # compute positions at UTC noon on that date
     jd = ephem.to_jd_utc(dt.date().isoformat(), "12:00:00", "UTC")
@@ -116,7 +164,9 @@ def compute_transits(chart_input: Dict[str,Any], opts: Dict[str,Any]) -> List[Di
     # options
     obs_from = opts["from_date"]; obs_to = opts["to_date"]
     step = int(opts.get("step_days",1))
-    transit_bodies = set(opts.get("transit_bodies") or ["Sun","Mars","Jupiter","Saturn"])
+    # Default: prioritize fast-moving planets for better caution window calculation
+    default_bodies = ["Moon", "Mercury", "Venus", "Sun", "Mars", "Jupiter", "Saturn"]
+    transit_bodies = set(opts.get("transit_bodies") or default_bodies)
     policy = opts.get("aspects") or {}
     orb_limit = float(policy.get("orb_deg", 3.0))
     aspect_types = policy.get(
@@ -160,29 +210,67 @@ def compute_transits(chart_input: Dict[str,Any], opts: Dict[str,Any]) -> List[Di
                             n_pos["speed_lon"],
                             a_exact,
                         )
-                        phase = "Applying" if applying else "Separating"
+                        phase = "applying" if applying else "separating"
+                        phase_cap = "Applying" if applying else "Separating"
                         transit_sign = sign_name_from_lon(t_pos["lon"])
                         natal_sign = sign_name_from_lon(n_pos["lon"])
                         zodiac_mode = "sidereal" if sidereal else "tropical"
                         note = (
                             f"{_interpretive_note(t_name, n_name, a_name, score)} "
-                            f"{phase} {a_name} at {orb:.2f}° orb. "
+                            f"{phase_cap} {a_name} at {orb:.2f}° orb. "
                             f"{t_name} (transit, {zodiac_mode}) in {transit_sign}; "
                             f"{n_name} (natal, {zodiac_mode}) in {natal_sign}."
                         )
-                        events.append({
+                        
+                        # Calculate exact hit time for fast-moving planets
+                        exact_hit_time_utc = None
+                        if t_name in FAST_MOVING_PLANETS and abs(t_pos["speed_lon"]) > 0.01:
+                            exact_hit_time_utc = _calculate_exact_hit_time(
+                                t_pos["lon"],
+                                t_pos["speed_lon"],
+                                n_pos["lon"],
+                                a_exact,
+                                dt,
+                            )
+                        
+                        # Determine transit motion (retrograde/direct)
+                        transit_motion = "retrograde" if t_pos["speed_lon"] < 0 else "direct"
+                        
+                        # Determine natal point type
+                        natal_point_type = _natal_point_type(n_name)
+                        
+                        # Build event dict
+                        event = {
                             "date": dt.date().isoformat(),
                             "transit_body": t_name,
                             "natal_body": n_name,
                             "aspect": a_name,
                             "orb": orb,
                             "applying": applying,
+                            "phase": phase,  # lowercase for caution window compatibility
                             "score": score,
                             "note": note,
                             "transit_sign": transit_sign,
                             "natal_sign": natal_sign,
                             "zodiac": zodiac_mode,
-                        })
-    # Sort: date then score desc
-    events.sort(key=lambda e: (e["date"], -e["score"]))
+                            "transit_motion": transit_motion,
+                            "natal_point_type": natal_point_type,
+                        }
+                        
+                        # Add exact_hit_time_utc if calculated
+                        if exact_hit_time_utc:
+                            event["exact_hit_time_utc"] = exact_hit_time_utc
+                        
+                        events.append(event)
+    
+    # Sort: Prioritize fast-moving planets, then by date, then by score
+    # Priority order: fast planets with exact_hit_time > fast planets without > slow planets
+    def _sort_key(e: Dict[str, Any]) -> tuple:
+        is_fast = e["transit_body"] in FAST_MOVING_PLANETS
+        has_exact_time = "exact_hit_time_utc" in e
+        # Priority: fast with time (0), fast without time (1), slow (2)
+        priority = 0 if (is_fast and has_exact_time) else (1 if is_fast else 2)
+        return (e["date"], priority, -e["score"])
+    
+    events.sort(key=_sort_key)
     return events
