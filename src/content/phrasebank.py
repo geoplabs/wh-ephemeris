@@ -22,6 +22,8 @@ PHRASES_PATH = DATA_ROOT / "phrases.json"
 
 _TONE_LIBRARY: dict[str, dict[str, tuple[str, ...]]] = {}
 _AREA_LEXICON: dict[str, dict[str, tuple[str, ...]]] = {}
+_CONSTRAINTS: dict[str, object] = {}
+_RECENT_SELECTIONS: list[str] = []  # Track recent clause selections for deduplication
 _ACTION_OVERRIDES: dict[str, str] = {
     "allow": "allowing space for",
     "lean toward": "leaning toward",
@@ -98,6 +100,14 @@ def _initialize_area_lexicon(config: Mapping[str, object] | None) -> None:
                 )
         lexicon[str(area)] = area_dict
     _AREA_LEXICON = lexicon
+
+
+def _initialize_constraints(config: Mapping[str, object] | None) -> None:
+    global _CONSTRAINTS
+    _CONSTRAINTS = {}
+    if not config:
+        return
+    _CONSTRAINTS = dict(config)
 
 
 def _gerund_word(word: str) -> str:
@@ -230,6 +240,118 @@ def _area_lexicon_for(area: str) -> dict[str, tuple[str, ...]]:
     return _AREA_LEXICON.get(area, _AREA_LEXICON.get("general", {}))
 
 
+def _contains_banned_content(text: str) -> bool:
+    """Check if text contains banned bigrams or phrases."""
+    if not _CONSTRAINTS:
+        return False
+    
+    # Check banned bigrams (case-insensitive)
+    banned_bigrams = _CONSTRAINTS.get("banned_bigrams", [])
+    for bigram in banned_bigrams:
+        if isinstance(bigram, str) and bigram.lower() in text.lower():
+            return True
+    
+    # Check banned phrases (case-insensitive)
+    banned_phrases = _CONSTRAINTS.get("banned_phrases", [])
+    for phrase in banned_phrases:
+        if isinstance(phrase, str) and phrase.lower() in text.lower():
+            return True
+    
+    return False
+
+
+def _is_recent_duplicate(text: str) -> bool:
+    """Check if text was recently selected (within dedupe_window)."""
+    if not _CONSTRAINTS:
+        return False
+    
+    dedupe_window = _CONSTRAINTS.get("dedupe_window", 0)
+    if not isinstance(dedupe_window, int) or dedupe_window <= 0:
+        return False
+    
+    # Check last N selections
+    recent = _RECENT_SELECTIONS[-dedupe_window:] if len(_RECENT_SELECTIONS) >= dedupe_window else _RECENT_SELECTIONS
+    return text.strip().lower() in [s.strip().lower() for s in recent]
+
+
+def _validate_sentence(text: str) -> bool:
+    """Validate sentence against constraints."""
+    if not text or not text.strip():
+        return False
+    
+    if not _CONSTRAINTS:
+        return True
+    
+    # Check max word count
+    max_word_count = _CONSTRAINTS.get("max_word_count")
+    if isinstance(max_word_count, int) and max_word_count > 0:
+        word_count = len(text.split())
+        if word_count > max_word_count:
+            return False
+    
+    # Check max sentence length (in words, not characters)
+    max_sentence_length = _CONSTRAINTS.get("max_sentence_length")
+    if isinstance(max_sentence_length, int) and max_sentence_length > 0:
+        word_count = len(text.split())
+        if word_count > max_sentence_length:
+            return False
+    
+    # Check min sentence length
+    min_sentence_length = _CONSTRAINTS.get("min_sentence_length", 3)
+    if isinstance(min_sentence_length, int) and min_sentence_length > 0:
+        word_count = len(text.split())
+        if word_count < min_sentence_length:
+            return False
+    
+    # Check banned content
+    if _contains_banned_content(text):
+        return False
+    
+    # Check for recent duplicates
+    if _is_recent_duplicate(text):
+        return False
+    
+    return True
+
+
+def _apply_constraints(text: str) -> str:
+    """Apply formatting constraints to text."""
+    if not text or not _CONSTRAINTS:
+        return text
+    
+    result = text.strip()
+    
+    # Capitalize first letter
+    capitalize_first = _CONSTRAINTS.get("capitalize_first", True)
+    if capitalize_first and result:
+        result = result[0].upper() + result[1:] if len(result) > 1 else result.upper()
+    
+    # End with period
+    end_with_period = _CONSTRAINTS.get("end_with_period", True)
+    if end_with_period and result and not result.endswith((".", "!", "?")):
+        result = result + "."
+    
+    return result
+
+
+def _record_selection(text: str) -> None:
+    """Record a selection for deduplication tracking."""
+    global _RECENT_SELECTIONS
+    if not text:
+        return
+    
+    dedupe_window = _CONSTRAINTS.get("dedupe_window", 0)
+    if not isinstance(dedupe_window, int) or dedupe_window <= 0:
+        return
+    
+    _RECENT_SELECTIONS.append(text.strip())
+    
+    # Keep only the last (dedupe_window * 2) items to avoid unbounded growth
+    max_history = max(dedupe_window * 2, 10)
+    if len(_RECENT_SELECTIONS) > max_history:
+        _RECENT_SELECTIONS = _RECENT_SELECTIONS[-max_history:]
+
+
 @dataclass(frozen=True)
 class PhraseRequirements:
     """Grammatical requirements for phrase placeholders in templates."""
@@ -279,6 +401,7 @@ def _asset_map() -> Mapping[tuple[str, str, str], PhraseAsset]:
     payload = _load_raw()
     _initialize_tone(payload.get("tone"))
     _initialize_area_lexicon(payload.get("area_lexicon"))
+    _initialize_constraints(payload.get("constraints"))
     entries = payload.get("entries", [])
     assets: dict[tuple[str, str, str], PhraseAsset] = {}
     for entry in entries:
@@ -385,20 +508,44 @@ def select_clause(archetype: str, intensity: str, area: str, *, seed: int | None
     if seed is None:
         tokens = _tone_defaults(asset.intensity)
         tokens.setdefault("area", area)
-        return clauses[0].format_map(_FormatTokens(tokens))
+        result = clauses[0].format_map(_FormatTokens(tokens))
+        result = _apply_constraints(result)
+        _record_selection(result)
+        return result
+    
     context = asset.variations(seed)
     tokens = context.tokens()
     tokens.setdefault("area", area)
     for key, value in _tone_defaults(asset.intensity).items():
         tokens.setdefault(key, value)
+    
+    # Try to get clause from variation context
     clause_template = context.first("clauses", clauses[0]) if "clauses" in context else None
     if clause_template:
-        return clause_template.format_map(_FormatTokens(tokens))
+        result = clause_template.format_map(_FormatTokens(tokens))
+        # Validate against constraints
+        if _validate_sentence(result):
+            result = _apply_constraints(result)
+            _record_selection(result)
+            return result
+    
+    # Fallback: try clauses in order until one passes validation
     engine = VariationEngine(seed)
-    selection = engine.choice("clauses", clauses, pick=1)
-    if not selection:
-        return ""
-    return selection[0].format_map(_FormatTokens(tokens))
+    for attempt in range(len(clauses)):
+        selection = engine.choice(f"clauses_attempt_{attempt}", clauses, pick=1)
+        if not selection:
+            continue
+        result = selection[0].format_map(_FormatTokens(tokens))
+        if _validate_sentence(result):
+            result = _apply_constraints(result)
+            _record_selection(result)
+            return result
+    
+    # Last resort: use first clause with constraints applied
+    result = clauses[0].format_map(_FormatTokens(tokens))
+    result = _apply_constraints(result)
+    _record_selection(result)
+    return result
 
 
 class _FormatTokens(dict[str, str]):

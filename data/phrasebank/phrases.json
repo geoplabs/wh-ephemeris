@@ -10709,5 +10709,25 @@
         "between commitments"
       ]
     }
+  },
+  "constraints": {
+    "max_sentence_length": 22,
+    "max_word_count": 14,
+    "banned_bigrams": [
+      "Momentum guides",
+      "radiant energy",
+      "energy guides",
+      "guides your",
+      "your momentum"
+    ],
+    "banned_phrases": [
+      "Momentum guides your",
+      "radiant energy flows"
+    ],
+    "dedupe_window": 3,
+    "capitalize_first": true,
+    "end_with_period": true,
+    "min_sentence_length": 3,
+    "avoid_repetition": true
   }
 }
