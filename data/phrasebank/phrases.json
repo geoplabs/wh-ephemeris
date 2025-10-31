@@ -10769,6 +10769,31 @@
       "disclaimer_probability": 0
     }
   },
+  "qa_linting": {
+    "max_average_sentence_length": 18,
+    "min_average_sentence_length": 12,
+    "cliche_map": {
+      "supports your": ["aids your", "helps your", "strengthens your", "backs your"],
+      "guides your": ["shapes your", "informs your", "directs your", "steers your"],
+      "Momentum guides": ["Energy flows through", "Focus shifts to", "Clarity arrives in", "Rhythm builds around"],
+      "feels aligned": ["feels right", "feels true", "resonates", "fits well"],
+      "stay grounded": ["stay practical", "stay clear", "stay focused", "keep perspective"],
+      "move forward": ["take steps", "make progress", "advance", "proceed"],
+      "trust the process": ["trust your pace", "trust the timing", "stay patient", "allow unfolding"],
+      "lean into": ["embrace", "welcome", "allow", "engage with"],
+      "honor your": ["respect your", "acknowledge your", "tend to your", "value your"],
+      "tap into": ["access", "draw on", "use", "engage"],
+      "harness the": ["use the", "channel the", "work with the", "direct the"],
+      "unlock your": ["reveal your", "access your", "free your", "express your"]
+    },
+    "repeated_stems": {
+      "support": ["aid", "help", "strengthen", "back", "bolster"],
+      "guide": ["shape", "inform", "direct", "steer", "lead"],
+      "align": ["match", "fit", "suit", "harmonize", "sync"],
+      "ground": ["anchor", "stabilize", "center", "root", "steady"],
+      "empower": ["enable", "strengthen", "equip", "fuel", "energize"]
+    }
+  },
   "driver_tags": [
     {
       "key": "drive_boost",

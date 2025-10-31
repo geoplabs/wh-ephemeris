@@ -25,6 +25,7 @@ _AREA_LEXICON: dict[str, dict[str, tuple[str, ...]]] = {}
 _CONSTRAINTS: dict[str, object] = {}
 _GUARDRAILS: dict[str, dict[str, object]] = {}
 _DRIVER_TAGS: list[dict[str, object]] = []  # Maps astro patterns to microcopy
+_QA_LINTING: dict[str, object] = {}  # QA rules for readability and clichés
 _RECENT_SELECTIONS: list[str] = []  # Track recent clause selections for deduplication
 _ACTION_OVERRIDES: dict[str, str] = {
     "allow": "allowing space for",
@@ -130,6 +131,14 @@ def _initialize_driver_tags(config: list[object] | None) -> None:
     for tag in config:
         if isinstance(tag, Mapping):
             _DRIVER_TAGS.append(dict(tag))
+
+
+def _initialize_qa_linting(config: Mapping[str, object] | None) -> None:
+    global _QA_LINTING
+    _QA_LINTING = {}
+    if not config:
+        return
+    _QA_LINTING = dict(config)
 
 
 def _gerund_word(word: str) -> str:
@@ -354,6 +363,76 @@ def _get_driver_microcopy_for_events(events: Iterable[Mapping[str, object]] | No
     return ""
 
 
+def _check_average_sentence_length(text: str) -> bool:
+    """Check if text meets average sentence length requirements."""
+    if not text or not _QA_LINTING:
+        return True
+    
+    import re
+    # Split into sentences
+    sentences = re.split(r'[.!?]+', text.strip())
+    sentences = [s.strip() for s in sentences if s.strip()]
+    
+    if not sentences:
+        return True
+    
+    # Calculate average word count
+    total_words = sum(len(s.split()) for s in sentences)
+    avg_length = total_words / len(sentences) if sentences else 0
+    
+    min_avg = _QA_LINTING.get("min_average_sentence_length", 0)
+    max_avg = _QA_LINTING.get("max_average_sentence_length", 999)
+    
+    if isinstance(min_avg, (int, float)) and avg_length < min_avg:
+        return False
+    if isinstance(max_avg, (int, float)) and avg_length > max_avg:
+        return False
+    
+    return True
+
+
+def _replace_cliches(text: str, *, seed: int | None = None) -> str:
+    """Replace clichés with alternatives from cliche_map (case-insensitive)."""
+    if not text or not _QA_LINTING:
+        return text
+    
+    cliche_map = _QA_LINTING.get("cliche_map", {})
+    if not isinstance(cliche_map, Mapping):
+        return text
+    
+    result = text
+    import random
+    import re
+    
+    # Replace each cliché with a random alternative (case-insensitive)
+    for cliche, alternatives in cliche_map.items():
+        if not isinstance(alternatives, list) or not alternatives:
+            continue
+        
+        # Use regex for case-insensitive replacement
+        pattern = re.compile(re.escape(cliche), re.IGNORECASE)
+        matches = pattern.findall(result)
+        
+        if matches:
+            # Use seed for deterministic selection
+            if seed is not None:
+                rng = random.Random(seed + hash(cliche))
+                replacement = rng.choice(alternatives)
+            else:
+                replacement = alternatives[0]
+            
+            # Preserve case of first letter if original was capitalized
+            for match in matches:
+                if match[0].isupper() and replacement[0].islower():
+                    case_preserved = replacement[0].upper() + replacement[1:]
+                else:
+                    case_preserved = replacement
+                
+                result = result.replace(match, case_preserved, 1)
+    
+    return result
+
+
 def _contains_banned_content(text: str) -> bool:
     """Check if text contains banned bigrams or phrases."""
     if not _CONSTRAINTS:
@@ -389,7 +468,7 @@ def _is_recent_duplicate(text: str) -> bool:
 
 
 def _validate_sentence(text: str, area: str = "general") -> bool:
-    """Validate sentence against constraints and guardrails."""
+    """Validate sentence against constraints, guardrails, and QA linting."""
     if not text or not text.strip():
         return False
     
@@ -427,6 +506,10 @@ def _validate_sentence(text: str, area: str = "general") -> bool:
     
     # Check area-specific banned verbs
     if _contains_banned_verbs(text, area):
+        return False
+    
+    # Check average sentence length (QA linting)
+    if not _check_average_sentence_length(text):
         return False
     
     return True
@@ -489,12 +572,17 @@ def _contains_banned_verbs(text: str, area: str) -> bool:
 
 
 def _apply_guardrails(text: str, area: str, *, seed: int | None = None) -> str:
-    """Apply area-specific guardrails (softening, disclaimers)."""
-    if not text or not _GUARDRAILS or area not in _GUARDRAILS:
-        return text
+    """Apply area-specific guardrails (softening, disclaimers) and QA linting."""
+    result = text
+    
+    # First, replace clichés (QA linting)
+    result = _replace_cliches(result, seed=seed)
+    
+    # Then apply area-specific guardrails
+    if not result or not _GUARDRAILS or area not in _GUARDRAILS:
+        return result
     
     rules = _GUARDRAILS[area]
-    result = text
     
     # Add disclaimer suffix (probabilistically)
     disclaimer_suffix = rules.get("disclaimer_suffix")
@@ -569,6 +657,7 @@ def _asset_map() -> Mapping[tuple[str, str, str], PhraseAsset]:
     _initialize_constraints(payload.get("constraints"))
     _initialize_guardrails(payload.get("guardrails"))
     _initialize_driver_tags(payload.get("driver_tags"))
+    _initialize_qa_linting(payload.get("qa_linting"))
     entries = payload.get("entries", [])
     assets: dict[tuple[str, str, str], PhraseAsset] = {}
     for entry in entries:
@@ -773,6 +862,57 @@ def get_driver_microcopy(events: Iterable[Mapping[str, object]] | None) -> str:
     return _get_driver_microcopy_for_events(events)
 
 
+def get_qa_metrics(text: str) -> dict[str, object]:
+    """
+    Calculate QA metrics for a given text.
+    
+    Returns: {
+        "avg_sentence_length": float,
+        "sentence_count": int,
+        "word_count": int,
+        "passes_avg_check": bool,
+        "cliches_found": list[str],
+        "cliches_replaced": str
+    }
+    """
+    import re
+    
+    # Split into sentences
+    sentences = re.split(r'[.!?]+', text.strip())
+    sentences = [s.strip() for s in sentences if s.strip()]
+    
+    # Calculate metrics
+    sentence_count = len(sentences)
+    total_words = sum(len(s.split()) for s in sentences)
+    avg_length = total_words / sentence_count if sentence_count > 0 else 0
+    
+    # Check if it passes the average check
+    passes_avg = _check_average_sentence_length(text)
+    
+    # Find clichés (case-insensitive)
+    cliches_found = []
+    if _QA_LINTING:
+        cliche_map = _QA_LINTING.get("cliche_map", {})
+        if isinstance(cliche_map, Mapping):
+            import re
+            text_lower = text.lower()
+            for cliche in cliche_map.keys():
+                if cliche.lower() in text_lower:
+                    cliches_found.append(cliche)
+    
+    # Get replaced version
+    cliches_replaced = _replace_cliches(text, seed=0)
+    
+    return {
+        "avg_sentence_length": round(avg_length, 2),
+        "sentence_count": sentence_count,
+        "word_count": total_words,
+        "passes_avg_check": passes_avg,
+        "cliches_found": cliches_found,
+        "cliches_replaced": cliches_replaced
+    }
+
+
 def coverage_matrix(areas: Iterable[str] | None = None) -> set[tuple[str, str, str]]:
     target_areas = tuple(areas) if areas else AREAS
     combos = set()
@@ -796,4 +936,5 @@ __all__ = [
     "seed_from_event",
     "coverage_matrix",
     "get_driver_microcopy",
+    "get_qa_metrics",
 ]
