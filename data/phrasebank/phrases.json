@@ -54,7 +54,8 @@
           "items": [
             {"text": "Keep a {tone_adjective} pace by {tone_action} each step.", "tag": "pacing"},
             {"text": "Note one {tone_adjective} choice that comes from {tone_action} your priorities.", "tag": "reflection"},
-            {"text": "Share a {tone_adjective} insight after {tone_action} what felt aligned.", "tag": "social"}
+            {"text": "Share a {tone_adjective} insight after {tone_action} what felt aligned.", "tag": "social"},
+            {"text": "{driver_microcopy}", "tag": "astro_context"}
           ],
           "minimum": 0,
           "maximum": 2,
@@ -10767,5 +10768,57 @@
       "disclaimer_suffix": null,
       "disclaimer_probability": 0
     }
-  }
+  },
+  "driver_tags": [
+    {
+      "key": "drive_boost",
+      "aliases": ["Sun_conj_Mars", "Sun_trine_Mars", "Mars_conj_ASC"],
+      "microcopy": "Energy peaks—tackle a meaty task."
+    },
+    {
+      "key": "talk_flow",
+      "aliases": ["Mercury_sextile_ASC", "Mercury_trine_ASC", "Mercury_conj_ASC"],
+      "microcopy": "Conversations open doors—start one."
+    },
+    {
+      "key": "public_friction",
+      "aliases": ["Moon_square_MC", "Sun_square_MC", "Saturn_square_MC"],
+      "microcopy": "Keep public commitments light."
+    },
+    {
+      "key": "emotional_depth",
+      "aliases": ["Moon_conj_Pluto", "Moon_trine_Pluto", "Venus_conj_Pluto"],
+      "microcopy": "Feelings run deep—honor what surfaces."
+    },
+    {
+      "key": "expansion_window",
+      "aliases": ["Jupiter_trine_Sun", "Jupiter_sextile_ASC", "Jupiter_trine_Venus"],
+      "microcopy": "Growth opportunities emerge—say yes."
+    },
+    {
+      "key": "boundary_check",
+      "aliases": ["Saturn_square_Sun", "Saturn_conj_ASC", "Saturn_square_Moon"],
+      "microcopy": "Limits clarify—respect what's real."
+    },
+    {
+      "key": "relationship_ease",
+      "aliases": ["Venus_trine_Moon", "Venus_sextile_ASC", "Venus_conj_Moon"],
+      "microcopy": "Connection feels natural—lean in."
+    },
+    {
+      "key": "mental_clarity",
+      "aliases": ["Mercury_trine_Sun", "Mercury_sextile_Jupiter", "Mercury_trine_Saturn"],
+      "microcopy": "Thoughts crystallize—capture insights."
+    },
+    {
+      "key": "creative_spark",
+      "aliases": ["Sun_sextile_Uranus", "Venus_trine_Uranus", "Moon_trine_Neptune"],
+      "microcopy": "Innovation flows—try something new."
+    },
+    {
+      "key": "grounding_needed",
+      "aliases": ["Moon_square_Neptune", "Sun_square_Neptune", "Venus_square_Saturn"],
+      "microcopy": "Reality checks help—stay practical."
+    }
+  ]
 }

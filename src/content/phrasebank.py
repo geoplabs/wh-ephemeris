@@ -24,6 +24,7 @@ _TONE_LIBRARY: dict[str, dict[str, tuple[str, ...]]] = {}
 _AREA_LEXICON: dict[str, dict[str, tuple[str, ...]]] = {}
 _CONSTRAINTS: dict[str, object] = {}
 _GUARDRAILS: dict[str, dict[str, object]] = {}
+_DRIVER_TAGS: list[dict[str, object]] = []  # Maps astro patterns to microcopy
 _RECENT_SELECTIONS: list[str] = []  # Track recent clause selections for deduplication
 _ACTION_OVERRIDES: dict[str, str] = {
     "allow": "allowing space for",
@@ -119,6 +120,16 @@ def _initialize_guardrails(config: Mapping[str, object] | None) -> None:
     for area, rules in config.items():
         if isinstance(rules, Mapping):
             _GUARDRAILS[str(area)] = dict(rules)
+
+
+def _initialize_driver_tags(config: list[object] | None) -> None:
+    global _DRIVER_TAGS
+    _DRIVER_TAGS = []
+    if not config or not isinstance(config, list):
+        return
+    for tag in config:
+        if isinstance(tag, Mapping):
+            _DRIVER_TAGS.append(dict(tag))
 
 
 def _gerund_word(word: str) -> str:
@@ -237,6 +248,21 @@ def _area_lexicon_variations(engine: VariationEngine, area: str) -> dict[str, Va
     return results
 
 
+def _driver_variations(events: Iterable[Mapping[str, object]] | None) -> dict[str, VariationResult]:
+    """Generate driver microcopy from events."""
+    microcopy = _get_driver_microcopy_for_events(events)
+    if not microcopy:
+        return {}
+    
+    return {
+        "driver_microcopy": VariationResult(
+            name="driver_microcopy",
+            selections=(microcopy,),
+            mode="choice"
+        )
+    }
+
+
 def _tone_palette(intensity: str) -> dict[str, tuple[str, ...]]:
     palette = _TONE_LIBRARY.get(intensity)
     if palette:
@@ -249,6 +275,83 @@ def _tone_palette(intensity: str) -> dict[str, tuple[str, ...]]:
 def _area_lexicon_for(area: str) -> dict[str, tuple[str, ...]]:
     """Get lexicon entries for a specific area."""
     return _AREA_LEXICON.get(area, _AREA_LEXICON.get("general", {}))
+
+
+def _build_driver_pattern(event: Mapping[str, object] | None) -> str | None:
+    """Build a driver pattern string from an event (e.g., 'Sun_conj_Mars')."""
+    if not event:
+        return None
+    
+    transit_body = event.get("transit_body")
+    natal_body = event.get("natal_body")
+    natal_point = event.get("natal_point")
+    aspect = event.get("aspect")
+    
+    if not transit_body or not aspect:
+        return None
+    
+    # Normalize aspect names
+    aspect_map = {
+        "conjunction": "conj",
+        "sextile": "sextile",
+        "square": "square",
+        "trine": "trine",
+        "opposition": "opposition"
+    }
+    aspect_str = aspect_map.get(str(aspect).lower(), str(aspect))
+    
+    # Use natal_body or natal_point
+    target = natal_body or natal_point
+    if not target:
+        return None
+    
+    # Normalize natal point names
+    point_map = {
+        "Ascendant": "ASC",
+        "MC": "MC",
+        "Midheaven": "MC",
+        "Descendant": "DSC",
+        "IC": "IC"
+    }
+    target_str = point_map.get(str(target), str(target))
+    
+    return f"{transit_body}_{aspect_str}_{target_str}"
+
+
+def _match_driver_microcopy(event: Mapping[str, object] | None) -> str | None:
+    """Match an event to a driver tag and return microcopy."""
+    if not event or not _DRIVER_TAGS:
+        return None
+    
+    pattern = _build_driver_pattern(event)
+    if not pattern:
+        return None
+    
+    # Try to match pattern against all driver tag aliases
+    for tag in _DRIVER_TAGS:
+        aliases = tag.get("aliases", [])
+        if not isinstance(aliases, list):
+            continue
+        
+        for alias in aliases:
+            if isinstance(alias, str) and alias.lower() == pattern.lower():
+                microcopy = tag.get("microcopy")
+                return str(microcopy) if microcopy else None
+    
+    return None
+
+
+def _get_driver_microcopy_for_events(events: Iterable[Mapping[str, object]] | None) -> str:
+    """Get driver microcopy from the first matching event."""
+    if not events:
+        return ""
+    
+    for event in events:
+        microcopy = _match_driver_microcopy(event)
+        if microcopy:
+            return microcopy
+    
+    return ""
 
 
 def _contains_banned_content(text: str) -> bool:
@@ -438,7 +541,7 @@ class PhraseAsset:
         templates = self.bullet_templates.get(mode, ())
         return tuple(t.strip() for t in templates if t and t.strip())
 
-    def variations(self, seed: int | None) -> VariationContext:
+    def variations(self, seed: int | None, events: Iterable[Mapping[str, object]] | None = None) -> VariationContext:
         if seed is None:
             return VariationContext()
         engine = VariationEngine(seed)
@@ -447,6 +550,8 @@ class PhraseAsset:
         for key, result in _tone_variations(engine, self.intensity).items():
             results.setdefault(key, result)
         for key, result in _area_lexicon_variations(engine, self.area).items():
+            results.setdefault(key, result)
+        for key, result in _driver_variations(events).items():
             results.setdefault(key, result)
         return VariationContext(results)
 
@@ -463,6 +568,7 @@ def _asset_map() -> Mapping[tuple[str, str, str], PhraseAsset]:
     _initialize_area_lexicon(payload.get("area_lexicon"))
     _initialize_constraints(payload.get("constraints"))
     _initialize_guardrails(payload.get("guardrails"))
+    _initialize_driver_tags(payload.get("driver_tags"))
     entries = payload.get("entries", [])
     assets: dict[tuple[str, str, str], PhraseAsset] = {}
     for entry in entries:
@@ -652,6 +758,21 @@ def seed_from_event(area: str, event: Mapping[str, object] | None, *, salt: str 
     return int.from_bytes(digest.digest(), "big")
 
 
+def get_driver_microcopy(events: Iterable[Mapping[str, object]] | None) -> str:
+    """Get driver microcopy for a list of events.
+    
+    Returns human-readable microcopy explaining the astrological driver
+    without jargon (e.g., 'Energy peaks—tackle a meaty task.').
+    
+    Args:
+        events: List of event dictionaries with transit_body, natal_body/natal_point, aspect
+        
+    Returns:
+        Microcopy string, or empty string if no match
+    """
+    return _get_driver_microcopy_for_events(events)
+
+
 def coverage_matrix(areas: Iterable[str] | None = None) -> set[tuple[str, str, str]]:
     target_areas = tuple(areas) if areas else AREAS
     combos = set()
@@ -674,4 +795,5 @@ __all__ = [
     "bullet_templates_for",
     "seed_from_event",
     "coverage_matrix",
+    "get_driver_microcopy",
 ]
