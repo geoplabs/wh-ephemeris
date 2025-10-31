@@ -10730,5 +10730,42 @@
     "end_with_period": true,
     "min_sentence_length": 3,
     "avoid_repetition": true
+  },
+  "guardrails": {
+    "health": {
+      "modal_verbs": ["consider", "aim to", "try to", "explore", "think about"],
+      "softening_phrases": ["you might", "you could", "it may help to"],
+      "banned_verbs": ["must", "need to", "should", "require", "prescribe", "diagnose"],
+      "disclaimer_suffix": " Adjust to your body's needs and consult professionals for medical guidance.",
+      "disclaimer_probability": 0.3
+    },
+    "finance": {
+      "modal_verbs": ["review", "consider", "plan", "evaluate", "assess"],
+      "softening_phrases": ["you might", "you could", "consider whether"],
+      "banned_verbs": ["guarantee", "promise", "ensure", "must", "will definitely"],
+      "disclaimer_suffix": " This is general guidance; consult financial professionals for specific advice.",
+      "disclaimer_probability": 0.25
+    },
+    "love": {
+      "modal_verbs": ["consider", "try", "explore", "notice"],
+      "softening_phrases": ["you might", "you could", "it may help to"],
+      "banned_verbs": ["must", "need to", "require"],
+      "disclaimer_suffix": null,
+      "disclaimer_probability": 0
+    },
+    "career": {
+      "modal_verbs": [],
+      "softening_phrases": [],
+      "banned_verbs": [],
+      "disclaimer_suffix": null,
+      "disclaimer_probability": 0
+    },
+    "general": {
+      "modal_verbs": [],
+      "softening_phrases": [],
+      "banned_verbs": [],
+      "disclaimer_suffix": null,
+      "disclaimer_probability": 0
+    }
   }
 }

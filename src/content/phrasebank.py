@@ -23,6 +23,7 @@ PHRASES_PATH = DATA_ROOT / "phrases.json"
 _TONE_LIBRARY: dict[str, dict[str, tuple[str, ...]]] = {}
 _AREA_LEXICON: dict[str, dict[str, tuple[str, ...]]] = {}
 _CONSTRAINTS: dict[str, object] = {}
+_GUARDRAILS: dict[str, dict[str, object]] = {}
 _RECENT_SELECTIONS: list[str] = []  # Track recent clause selections for deduplication
 _ACTION_OVERRIDES: dict[str, str] = {
     "allow": "allowing space for",
@@ -108,6 +109,16 @@ def _initialize_constraints(config: Mapping[str, object] | None) -> None:
     if not config:
         return
     _CONSTRAINTS = dict(config)
+
+
+def _initialize_guardrails(config: Mapping[str, object] | None) -> None:
+    global _GUARDRAILS
+    _GUARDRAILS = {}
+    if not config:
+        return
+    for area, rules in config.items():
+        if isinstance(rules, Mapping):
+            _GUARDRAILS[str(area)] = dict(rules)
 
 
 def _gerund_word(word: str) -> str:
@@ -274,8 +285,8 @@ def _is_recent_duplicate(text: str) -> bool:
     return text.strip().lower() in [s.strip().lower() for s in recent]
 
 
-def _validate_sentence(text: str) -> bool:
-    """Validate sentence against constraints."""
+def _validate_sentence(text: str, area: str = "general") -> bool:
+    """Validate sentence against constraints and guardrails."""
     if not text or not text.strip():
         return False
     
@@ -309,6 +320,10 @@ def _validate_sentence(text: str) -> bool:
     
     # Check for recent duplicates
     if _is_recent_duplicate(text):
+        return False
+    
+    # Check area-specific banned verbs
+    if _contains_banned_verbs(text, area):
         return False
     
     return True
@@ -350,6 +365,51 @@ def _record_selection(text: str) -> None:
     max_history = max(dedupe_window * 2, 10)
     if len(_RECENT_SELECTIONS) > max_history:
         _RECENT_SELECTIONS = _RECENT_SELECTIONS[-max_history:]
+
+
+def _contains_banned_verbs(text: str, area: str) -> bool:
+    """Check if text contains banned verbs for the given area."""
+    if not _GUARDRAILS or area not in _GUARDRAILS:
+        return False
+    
+    rules = _GUARDRAILS[area]
+    banned_verbs = rules.get("banned_verbs", [])
+    if not isinstance(banned_verbs, list):
+        return False
+    
+    text_lower = text.lower()
+    for verb in banned_verbs:
+        if isinstance(verb, str) and verb.lower() in text_lower:
+            return True
+    
+    return False
+
+
+def _apply_guardrails(text: str, area: str, *, seed: int | None = None) -> str:
+    """Apply area-specific guardrails (softening, disclaimers)."""
+    if not text or not _GUARDRAILS or area not in _GUARDRAILS:
+        return text
+    
+    rules = _GUARDRAILS[area]
+    result = text
+    
+    # Add disclaimer suffix (probabilistically)
+    disclaimer_suffix = rules.get("disclaimer_suffix")
+    disclaimer_probability = rules.get("disclaimer_probability", 0)
+    
+    if disclaimer_suffix and isinstance(disclaimer_suffix, str):
+        if isinstance(disclaimer_probability, (int, float)) and disclaimer_probability > 0:
+            # Use seed to deterministically decide whether to add disclaimer
+            if seed is not None:
+                import random
+                rng = random.Random(seed + hash(area))
+                if rng.random() < disclaimer_probability:
+                    # Remove trailing period if present before adding disclaimer
+                    if result.endswith("."):
+                        result = result[:-1]
+                    result = result + disclaimer_suffix
+    
+    return result
 
 
 @dataclass(frozen=True)
@@ -402,6 +462,7 @@ def _asset_map() -> Mapping[tuple[str, str, str], PhraseAsset]:
     _initialize_tone(payload.get("tone"))
     _initialize_area_lexicon(payload.get("area_lexicon"))
     _initialize_constraints(payload.get("constraints"))
+    _initialize_guardrails(payload.get("guardrails"))
     entries = payload.get("entries", [])
     assets: dict[tuple[str, str, str], PhraseAsset] = {}
     for entry in entries:
@@ -515,6 +576,7 @@ def select_clause(archetype: str, intensity: str, area: str, *, seed: int | None
         tokens.setdefault("area", area)
         result = clauses[0].format_map(_FormatTokens(tokens))
         result = _apply_constraints(result)
+        result = _apply_guardrails(result, area, seed=seed)
         _record_selection(result)
         return result
     
@@ -528,9 +590,10 @@ def select_clause(archetype: str, intensity: str, area: str, *, seed: int | None
     clause_template = context.first("clauses", clauses[0]) if "clauses" in context else None
     if clause_template:
         result = clause_template.format_map(_FormatTokens(tokens))
-        # Validate against constraints
-        if _validate_sentence(result):
+        # Validate against constraints and guardrails
+        if _validate_sentence(result, area):
             result = _apply_constraints(result)
+            result = _apply_guardrails(result, area, seed=seed)
             _record_selection(result)
             return result
     
@@ -541,14 +604,16 @@ def select_clause(archetype: str, intensity: str, area: str, *, seed: int | None
         if not selection:
             continue
         result = selection[0].format_map(_FormatTokens(tokens))
-        if _validate_sentence(result):
+        if _validate_sentence(result, area):
             result = _apply_constraints(result)
+            result = _apply_guardrails(result, area, seed=seed)
             _record_selection(result)
             return result
     
-    # Last resort: use first clause with constraints applied
+    # Last resort: use first clause with constraints and guardrails applied
     result = clauses[0].format_map(_FormatTokens(tokens))
     result = _apply_constraints(result)
+    result = _apply_guardrails(result, area, seed=seed)
     _record_selection(result)
     return result
 
