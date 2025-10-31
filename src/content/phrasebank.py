@@ -427,7 +427,9 @@ def _asset_map() -> Mapping[tuple[str, str, str], PhraseAsset]:
                         weight = float(weight_value)
                     except (TypeError, ValueError):
                         weight = 1.0
-                    parsed_items.append(VariationItem(text=text, weight=weight))
+                    tag = item.get("tag")
+                    tag_str = str(tag) if tag else None
+                    parsed_items.append(VariationItem(text=text, weight=weight, tag=tag_str))
                 else:
                     text = _normalize_word(item)
                     if not text:
@@ -437,6 +439,8 @@ def _asset_map() -> Mapping[tuple[str, str, str], PhraseAsset]:
             # Extract weights from parsed items
             weights = tuple(item.weight for item in parsed_items) if parsed_items else None
             
+            disallow_same_tag_twice = bool(config.get("disallow_same_tag_twice", False))
+            
             variation_groups[str(name)] = VariationGroup(
                 name=str(name),
                 mode=str(config.get("mode", "choice")),
@@ -445,6 +449,7 @@ def _asset_map() -> Mapping[tuple[str, str, str], PhraseAsset]:
                 minimum=(config.get("minimum") if config.get("minimum") is not None else None),
                 maximum=(config.get("maximum") if config.get("maximum") is not None else None),
                 weights=weights,
+                disallow_same_tag_twice=disallow_same_tag_twice,
             )
         
         # Parse phrase_requirements if present

@@ -50,14 +50,15 @@
           "pick": 1
         },
         "optional_sentences": {
-          "mode": "subset",
+          "mode": "subset_by_tag",
           "items": [
-            "Keep a {tone_adjective} pace by {tone_action} each step.",
-            "Note one {tone_adjective} choice that comes from {tone_action} your priorities.",
-            "Share a {tone_adjective} insight after {tone_action} what felt aligned."
+            {"text": "Keep a {tone_adjective} pace by {tone_action} each step.", "tag": "pacing"},
+            {"text": "Note one {tone_adjective} choice that comes from {tone_action} your priorities.", "tag": "reflection"},
+            {"text": "Share a {tone_adjective} insight after {tone_action} what felt aligned.", "tag": "social"}
           ],
           "minimum": 0,
-          "maximum": 2
+          "maximum": 2,
+          "disallow_same_tag_twice": true
         }
       },
       "phrase_requirements": {

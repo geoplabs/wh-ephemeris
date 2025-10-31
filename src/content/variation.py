@@ -11,6 +11,7 @@ class VariationItem:
 
     text: str
     weight: float = 1.0
+    tag: str | None = None  # Optional tag for grouping by function/purpose
 
 
 T = TypeVar("T")
@@ -35,6 +36,7 @@ class VariationGroup:
     minimum: int | None = None
     maximum: int | None = None
     weights: tuple[float, ...] | None = None  # For weighted_choice mode
+    disallow_same_tag_twice: bool = False  # For subset_by_tag mode
 
     def normalized(self) -> "VariationGroup":
         pick = self.pick if (self.pick or 0) > 0 else None
@@ -157,6 +159,66 @@ class VariationEngine:
             return tuple()
         return tuple(rng.sample(values, count))
 
+    def subset_by_tag(
+        self,
+        key: str,
+        items: Sequence[VariationItem],
+        *,
+        minimum: int = 0,
+        maximum: int | None = None,
+        disallow_same_tag_twice: bool = False
+    ) -> tuple[str, ...]:
+        """Select subset of items with optional tag diversity enforcement.
+        
+        Args:
+            key: Seed key for deterministic selection
+            items: Items to select from (with optional tags)
+            minimum: Minimum number to select
+            maximum: Maximum number to select
+            disallow_same_tag_twice: If True, only one item per tag allowed
+            
+        Returns:
+            Tuple of selected item texts
+        """
+        if not items:
+            return tuple()
+        
+        import random
+        rng = random.Random(_hashed_seed(self.seed, key))
+        
+        count = len(items)
+        max_pick = count if maximum is None else min(max(int(maximum), 0), count)
+        min_pick = min(max(int(minimum), 0), max_pick)
+        pick_count = rng.randint(min_pick, max_pick)
+        
+        if pick_count == 0:
+            return tuple()
+        
+        if not disallow_same_tag_twice:
+            # Simple random selection without tag constraints
+            selected = rng.sample(list(items), pick_count)
+            return tuple(item.text for item in selected)
+        
+        # Tag-aware selection: only one item per tag
+        selected: list[VariationItem] = []
+        used_tags: set[str] = set()
+        available = list(items)
+        rng.shuffle(available)
+        
+        for item in available:
+            if len(selected) >= pick_count:
+                break
+            
+            # Skip if tag already used (unless tag is None)
+            if item.tag and item.tag in used_tags:
+                continue
+            
+            selected.append(item)
+            if item.tag:
+                used_tags.add(item.tag)
+        
+        return tuple(item.text for item in selected)
+
     def weighted_choice(
         self, key: str, items: Sequence[VariationItem], *, pick: int = 1
     ) -> tuple[str, ...]:
@@ -215,6 +277,14 @@ class VariationEngine:
             elif normalized.mode == "weighted_choice":
                 selections = self.weighted_choice(
                     name, normalized.items, pick=normalized.pick or 1
+                )
+            elif normalized.mode == "subset_by_tag":
+                selections = self.subset_by_tag(
+                    name,
+                    normalized.items,
+                    minimum=normalized.minimum or 0,
+                    maximum=normalized.maximum,
+                    disallow_same_tag_twice=normalized.disallow_same_tag_twice
                 )
             else:
                 raise ValueError(f"Unsupported variation mode '{normalized.mode}' for {name}")
