@@ -178,6 +178,15 @@ def _tone_palette(intensity: str) -> dict[str, tuple[str, ...]]:
 
 
 @dataclass(frozen=True)
+class PhraseRequirements:
+    """Grammatical requirements for phrase placeholders in templates."""
+    expected_types: tuple[str, ...]
+    fallback: str
+    lowercase: bool
+    add_article: bool
+
+
+@dataclass(frozen=True)
 class PhraseAsset:
     archetype: str
     intensity: str
@@ -245,6 +254,10 @@ def _asset_map() -> Mapping[tuple[str, str, str], PhraseAsset]:
                     if not text:
                         continue
                     parsed_items.append(VariationItem(text=text))
+            
+            # Extract weights from parsed items
+            weights = tuple(item.weight for item in parsed_items) if parsed_items else None
+            
             variation_groups[str(name)] = VariationGroup(
                 name=str(name),
                 mode=str(config.get("mode", "choice")),
@@ -377,6 +390,7 @@ def coverage_matrix(areas: Iterable[str] | None = None) -> set[tuple[str, str, s
 
 
 __all__ = [
+    "PhraseRequirements",
     "PhraseAsset",
     "ARCHETYPES",
     "INTENSITIES",
