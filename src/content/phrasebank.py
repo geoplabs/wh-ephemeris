@@ -21,6 +21,7 @@ PHRASES_PATH = DATA_ROOT / "phrases.json"
 
 
 _TONE_LIBRARY: dict[str, dict[str, tuple[str, ...]]] = {}
+_AREA_LEXICON: dict[str, dict[str, tuple[str, ...]]] = {}
 _ACTION_OVERRIDES: dict[str, str] = {
     "allow": "allowing space for",
     "lean toward": "leaning toward",
@@ -78,6 +79,25 @@ def _initialize_tone(config: Mapping[str, object] | None) -> None:
             "verbs": verb_values,
         }
     _TONE_LIBRARY = tone
+
+
+def _initialize_area_lexicon(config: Mapping[str, object] | None) -> None:
+    global _AREA_LEXICON
+    _AREA_LEXICON = {}
+    if not config:
+        return
+    lexicon: dict[str, dict[str, tuple[str, ...]]] = {}
+    for area, area_data in config.items():
+        if not isinstance(area_data, Mapping):
+            continue
+        area_dict: dict[str, tuple[str, ...]] = {}
+        for category, items in area_data.items():
+            if isinstance(items, (list, tuple)):
+                area_dict[str(category)] = tuple(
+                    _normalize_word(item) for item in items if _normalize_word(item)
+                )
+        lexicon[str(area)] = area_dict
+    _AREA_LEXICON = lexicon
 
 
 def _gerund_word(word: str) -> str:
@@ -168,6 +188,34 @@ def _tone_variations(engine: VariationEngine, intensity: str) -> dict[str, Varia
     return results
 
 
+def _area_lexicon_variations(engine: VariationEngine, area: str) -> dict[str, VariationResult]:
+    """Generate variation results from area-specific lexicon."""
+    lexicon = _area_lexicon_for(area)
+    if not lexicon:
+        return {}
+    results: dict[str, VariationResult] = {}
+    
+    # Add direct access to each category (actions, nouns, contexts)
+    for category, items in lexicon.items():
+        if not items:
+            continue
+        selection = engine.choice(f"area_{category}:{area}", items, pick=1)
+        if selection:
+            results[f"area_{category}"] = VariationResult(
+                name=f"area_{category}",
+                selections=selection,
+                mode="choice"
+            )
+            # Also add with area prefix for explicit access like {career.actions}
+            results[f"{area}.{category}"] = VariationResult(
+                name=f"{area}.{category}",
+                selections=selection,
+                mode="choice"
+            )
+    
+    return results
+
+
 def _tone_palette(intensity: str) -> dict[str, tuple[str, ...]]:
     palette = _TONE_LIBRARY.get(intensity)
     if palette:
@@ -175,6 +223,11 @@ def _tone_palette(intensity: str) -> dict[str, tuple[str, ...]]:
     if intensity == "surge":
         return _TONE_LIBRARY.get("strong", {})
     return {}
+
+
+def _area_lexicon_for(area: str) -> dict[str, tuple[str, ...]]:
+    """Get lexicon entries for a specific area."""
+    return _AREA_LEXICON.get(area, _AREA_LEXICON.get("general", {}))
 
 
 @dataclass(frozen=True)
@@ -211,6 +264,8 @@ class PhraseAsset:
         results = {name: base_context[name] for name in base_context}
         for key, result in _tone_variations(engine, self.intensity).items():
             results.setdefault(key, result)
+        for key, result in _area_lexicon_variations(engine, self.area).items():
+            results.setdefault(key, result)
         return VariationContext(results)
 
 
@@ -223,6 +278,7 @@ def _load_raw() -> Mapping[str, object]:
 def _asset_map() -> Mapping[tuple[str, str, str], PhraseAsset]:
     payload = _load_raw()
     _initialize_tone(payload.get("tone"))
+    _initialize_area_lexicon(payload.get("area_lexicon"))
     entries = payload.get("entries", [])
     assets: dict[tuple[str, str, str], PhraseAsset] = {}
     for entry in entries:

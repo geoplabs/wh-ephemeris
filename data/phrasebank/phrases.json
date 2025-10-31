@@ -10560,5 +10560,154 @@
         "ship"
       ]
     }
+  },
+  "area_lexicon": {
+    "career": {
+      "actions": [
+        "send a status update",
+        "clarify scope",
+        "set a milestone",
+        "tidy a brief",
+        "review deliverables",
+        "schedule a handoff",
+        "update the roadmap",
+        "check stakeholder notes"
+      ],
+      "nouns": [
+        "handoff",
+        "backlog item",
+        "stakeholder note",
+        "roadmap",
+        "scope doc",
+        "milestone",
+        "brief",
+        "status update",
+        "runway plan",
+        "deliverable"
+      ],
+      "contexts": [
+        "before a team sync",
+        "after clarifying scope",
+        "when stakeholders ask",
+        "during planning",
+        "before handoffs"
+      ]
+    },
+    "love": {
+      "actions": [
+        "share a warm moment",
+        "listen with care",
+        "plan something small",
+        "check in gently",
+        "express appreciation",
+        "offer support",
+        "make time together",
+        "acknowledge feelings"
+      ],
+      "nouns": [
+        "listening moment",
+        "shared plan",
+        "small gesture",
+        "check-in",
+        "warmth exchange",
+        "honest conversation",
+        "tender ritual",
+        "heartfelt word"
+      ],
+      "contexts": [
+        "when connection feels light",
+        "after a meaningful talk",
+        "during quiet time",
+        "when presence matters",
+        "before a shared moment"
+      ]
+    },
+    "health": {
+      "actions": [
+        "take deep breaths",
+        "rest mindfully",
+        "hydrate well",
+        "pace your energy",
+        "move gently",
+        "track recovery",
+        "honor body signals",
+        "schedule downtime"
+      ],
+      "nouns": [
+        "breath practice",
+        "rest window",
+        "hydration ritual",
+        "movement pattern",
+        "recovery phase",
+        "body signal",
+        "energy rhythm",
+        "wellness check"
+      ],
+      "contexts": [
+        "before high activity",
+        "after exertion",
+        "when energy dips",
+        "during recovery",
+        "between commitments"
+      ]
+    },
+    "finance": {
+      "actions": [
+        "review the budget",
+        "check cash flow",
+        "update expense tracking",
+        "calculate the buffer",
+        "review recurring fees",
+        "assess exposure",
+        "plan outflows",
+        "verify balances"
+      ],
+      "nouns": [
+        "budget line",
+        "cash buffer",
+        "outflow pattern",
+        "exposure level",
+        "fee structure",
+        "spending review",
+        "balance check",
+        "ledger entry"
+      ],
+      "contexts": [
+        "before a big expense",
+        "after reviewing numbers",
+        "when planning ahead",
+        "during budget check-ins",
+        "before committing funds"
+      ]
+    },
+    "general": {
+      "actions": [
+        "set clear priorities",
+        "take a mindful pause",
+        "review your intentions",
+        "choose aligned steps",
+        "organize your focus",
+        "clarify next moves",
+        "honor your pace",
+        "trust your instincts"
+      ],
+      "nouns": [
+        "daily intention",
+        "focused step",
+        "aligned choice",
+        "mindful pause",
+        "priority shift",
+        "clear boundary",
+        "grounded decision",
+        "intuitive move"
+      ],
+      "contexts": [
+        "when clarity emerges",
+        "after reflection",
+        "during transitions",
+        "before major decisions",
+        "between commitments"
+      ]
+    }
   }
 }
