@@ -694,7 +694,20 @@ def imperative_bullet(s: str, order: int = 0, mode: str = "do", *, area: str | N
             # Apply grammatically safe transformation based on template
             phrase = safe_phrase_for_template(raw_phrase, template, fallback=fallback_phrase)
             
-            candidate = template.format(phrase=phrase)
+            # Provide all possible placeholders to handle templates with tone/area variables
+            try:
+                candidate = template.format(
+                    phrase=phrase,
+                    tone_action="focus",
+                    tone_adjective="clear",
+                    area_actions="priorities",
+                    area_nouns="goals",
+                    area_contexts="workspace"
+                )
+            except KeyError:
+                # Fallback if template has unexpected placeholders
+                candidate = template.replace("{phrase}", phrase)
+            
             word_count = len(candidate.rstrip(".").split())
             if 3 <= word_count <= 10:
                 return _cleanup_sentence(candidate)
@@ -707,7 +720,20 @@ def imperative_bullet(s: str, order: int = 0, mode: str = "do", *, area: str | N
     raw_phrase = _format_phrase([words[0]], mode)
     template = templates[order % template_count]
     phrase = safe_phrase_for_template(raw_phrase, template, fallback=fallback_phrase)
-    return _cleanup_sentence(template.format(phrase=phrase))
+    
+    try:
+        candidate = template.format(
+            phrase=phrase,
+            tone_action="focus",
+            tone_adjective="clear",
+            area_actions="priorities",
+            area_nouns="goals",
+            area_contexts="workspace"
+        )
+    except KeyError:
+        candidate = template.replace("{phrase}", phrase)
+    
+    return _cleanup_sentence(candidate)
 
 
 def clamp_sentences(paragraph: str, max_sentences: int = 2) -> str:
