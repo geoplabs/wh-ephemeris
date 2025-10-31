@@ -1,7 +1,8 @@
 import re
+import random
 
 from src.content.phrasebank import PhraseAsset, bullet_templates_for
-from src.content.inflection import safe_phrase_for_template, transform_phrase
+from src.content.inflection import safe_phrase_for_template, transform_phrase, to_gerund
 
 _ORB = re.compile(r"\b\d+(\.\d+)?°\b")
 _APPLYING_SEP = re.compile(r"\b(Applying|Separating)\b[^.]*\.?")
@@ -638,6 +639,81 @@ def _resolve_templates(area: str | None, mode: str, asset: PhraseAsset | None) -
     )
 
 
+def _get_template_placeholders(area: str | None, order: int) -> dict[str, str]:
+    """
+    Generate grammatically correct placeholder values for bullet templates.
+    
+    Returns a dict with:
+    - tone_action: gerund form (for "while" contexts)
+    - tone_adjective: adjective form
+    - area_actions: gerund form (for action contexts)
+    - area_nouns: noun form
+    - area_contexts: noun form
+    """
+    # Tone library defaults - using gerunds for tone_action since it's used after "while"
+    tone_verbs_by_intensity = {
+        "background": ["notice", "allow", "lean toward", "sense"],
+        "gentle": ["choose", "keep", "tend", "guide"],
+        "steady": ["organize", "prioritize", "consolidate", "track"],
+        "strong": ["commit", "drive", "push", "focus"],
+    }
+    
+    tone_adjectives_by_intensity = {
+        "background": ["subtle", "quiet", "soft", "gentle"],
+        "gentle": ["measured", "easy", "steady", "supportive"],
+        "steady": ["reliable", "grounded", "clear", "consistent"],
+        "strong": ["bold", "decisive", "focused", "driven"],
+    }
+    
+    # Area-specific lexicon
+    area_actions_map = {
+        "career": ["tracking scope", "updating status", "reviewing handoffs", "organizing priorities", "clarifying milestones"],
+        "love": ["listening deeply", "sharing openly", "honoring needs", "expressing care", "building trust"],
+        "health": ["noticing signals", "honoring rest", "tracking energy", "allowing recovery", "supporting wellness"],
+        "finance": ["reviewing budgets", "tracking spending", "organizing ledgers", "checking projections", "planning buffers"],
+        "general": ["tracking progress", "organizing goals", "clarifying priorities", "reviewing plans", "managing tasks"],
+    }
+    
+    area_nouns_map = {
+        "career": ["deliverables", "milestones", "scope", "priorities", "deadlines"],
+        "love": ["connection", "boundaries", "needs", "feelings", "communication"],
+        "health": ["rest", "energy", "wellness", "recovery", "balance"],
+        "finance": ["budget", "spending", "resources", "expenses", "savings"],
+        "general": ["progress", "goals", "priorities", "plans", "tasks"],
+    }
+    
+    area_contexts_map = {
+        "career": ["workspace", "meetings", "projects", "team dynamics", "workflow"],
+        "love": ["shared time", "conversations", "intimacy", "partnership", "connection"],
+        "health": ["body signals", "energy levels", "wellness routines", "recovery time", "self-care"],
+        "finance": ["financial plans", "spending habits", "resource allocation", "money flow", "budget tracking"],
+        "general": ["daily rhythm", "decision-making", "time management", "priorities", "progress"],
+    }
+    
+    # Select from appropriate area (fallback to general)
+    area_key = area if area in area_actions_map else "general"
+    
+    # Use order for deterministic selection
+    rng = random.Random(order)
+    
+    # Pick a random intensity for variety
+    intensity = rng.choice(["gentle", "steady"])
+    
+    tone_verb = rng.choice(tone_verbs_by_intensity[intensity])
+    tone_adj = rng.choice(tone_adjectives_by_intensity[intensity])
+    area_action = rng.choice(area_actions_map[area_key])
+    area_noun = rng.choice(area_nouns_map[area_key])
+    area_context = rng.choice(area_contexts_map[area_key])
+    
+    return {
+        "tone_action": to_gerund(tone_verb),  # Convert to gerund for "while" contexts
+        "tone_adjective": tone_adj,
+        "area_actions": area_action,  # Already in gerund form in the map
+        "area_nouns": area_noun,
+        "area_contexts": area_context,
+    }
+
+
 def imperative_bullet(s: str, order: int = 0, mode: str = "do", *, area: str | None = None, asset: PhraseAsset | None = None) -> str:
     s = de_jargon(s)
     s = re.sub(r"^(?:Try to|You should|Consider|Aim to)\s+", "", s, flags=re.I)
@@ -685,6 +761,9 @@ def imperative_bullet(s: str, order: int = 0, mode: str = "do", *, area: str | N
     if asset and asset.phrase_requirements:
         fallback_phrase = asset.phrase_requirements.fallback
     
+    # Get dynamic placeholder values based on area and order
+    placeholders = _get_template_placeholders(area, order)
+    
     for offset in range(template_count):
         template = templates[(order + offset) % template_count]
         for cut in range(len(phrase_words), 0, -1):
@@ -698,11 +777,7 @@ def imperative_bullet(s: str, order: int = 0, mode: str = "do", *, area: str | N
             try:
                 candidate = template.format(
                     phrase=phrase,
-                    tone_action="focus",
-                    tone_adjective="clear",
-                    area_actions="priorities",
-                    area_nouns="goals",
-                    area_contexts="workspace"
+                    **placeholders  # Use dynamic values from helper function
                 )
             except KeyError:
                 # Fallback if template has unexpected placeholders
@@ -721,14 +796,13 @@ def imperative_bullet(s: str, order: int = 0, mode: str = "do", *, area: str | N
     template = templates[order % template_count]
     phrase = safe_phrase_for_template(raw_phrase, template, fallback=fallback_phrase)
     
+    # Get dynamic placeholder values
+    placeholders = _get_template_placeholders(area, order)
+    
     try:
         candidate = template.format(
             phrase=phrase,
-            tone_action="focus",
-            tone_adjective="clear",
-            area_actions="priorities",
-            area_nouns="goals",
-            area_contexts="workspace"
+            **placeholders  # Use dynamic values
         )
     except KeyError:
         candidate = template.replace("{phrase}", phrase)

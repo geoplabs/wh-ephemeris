@@ -133,6 +133,18 @@ def to_gerund(phrase: str) -> str:
             gerund = gerund.capitalize()
         return f"{gerund} {' '.join(words[1:])}" if len(words) > 1 else gerund
     
+    # Don't convert known adjectives to gerunds
+    ADJECTIVES = {
+        "radiant", "distant", "constant", "patient", "elegant", "brilliant",
+        "curious", "serious", "generous", "harmonious", "expansive",
+        "sensitive", "responsive", "creative", "intuitive", "supportive",
+        "emotional", "rational", "practical", "spiritual", "subtle",
+        "passionate", "compassionate", "disciplined", "harmonizing"
+    }
+    
+    if first_word in ADJECTIVES:
+        return phrase
+    
     # If already ends in -ing, assume it's already a gerund
     if first_word.endswith("ing"):
         return phrase
