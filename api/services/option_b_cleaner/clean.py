@@ -165,7 +165,52 @@ def to_you_pov(s: str, profile_name: str) -> str:
     )
     s = s.replace(profile_name, "You")
     s = re.sub(r"^you\b", "You", s)
+    
+    # Clean up awkward phrasings
+    s = _polish_awkward_constructions(s)
+    
     return s
+
+
+def _polish_awkward_constructions(text: str) -> str:
+    """
+    Polish awkward grammatical constructions in paragraphs.
+    
+    Fixes:
+        - "through noticing" → "by tracking"
+        - "after noticing" → "after reviewing"
+        - "while noticing" → "while tracking"
+        - "quiet through" → "clear by"
+        - "soft by" → "clear when"
+    """
+    if not text:
+        return text
+    
+    # Pattern replacements for more natural phrasing
+    POLISHING_PATTERNS = {
+        r"\bthrough noticing\b": "by tracking",
+        r"\bafter noticing\b": "after reviewing",
+        r"\bwhile noticing\b": "while tracking",
+        r"\bby noticing\b": "by tracking",
+        r"\bquiet through\b": "clear by",
+        r"\bquiet by\b": "clear when",
+        r"\bsoft through\b": "clear when",
+        r"\bsoft by\b": "gentle through",
+        r"\bsubtle through\b": "clear by",
+        r"\bsubtle by\b": "clear when",
+        r"\byou're noticing\b": "you track",
+        r"\bwhen you're noticing\b": "when you track",
+        r"\bbecause you're noticing\b": "when you notice",
+    }
+    
+    result = text
+    for pattern, replacement in POLISHING_PATTERNS.items():
+        result = re.sub(pattern, replacement, result, flags=re.IGNORECASE)
+    
+    # Fix duplicate adjective-verb combinations
+    result = re.sub(r"\b(quiet|soft|subtle) (quiet|soft|subtle)\b", r"\1", result, flags=re.IGNORECASE)
+    
+    return result
 
 
 def _dedupe_preserve_order(words: list[str]) -> list[str]:
@@ -438,7 +483,100 @@ def _format_phrase(words: list[str], mode: str = "do") -> str:
     phrase = " ".join(tokens)
     if not phrase:
         return "steady focus"
+    
+    # Complete fragments - ensure phrases are grammatically complete
+    phrase = _complete_phrase_fragments(phrase, mode)
+    
     return phrase
+
+
+def _complete_phrase_fragments(phrase: str, mode: str = "do") -> str:
+    """
+    Complete phrase fragments by adding missing nouns, articles, or plurals.
+    
+    Examples:
+        "sensitive boundary" → "sensitive boundaries"
+        "radiant" → "radiant energy"
+        "curious inner" → "curious inner conversations"
+    """
+    words = phrase.strip().split()
+    if not words:
+        return phrase
+    
+    # Map of adjectives that need nouns
+    ADJECTIVE_NOUN_PAIRS = {
+        "radiant": "energy",
+        "curious": "conversations",
+        "sensitive": "boundaries",
+        "emotional": "rhythms",
+        "inner": "conversations",
+        "outer": "commitments",
+        "harmonizing": "rhythms",
+        "disciplined": "priorities",
+        "expansive": "growth",
+        "passionate": "focus",
+        "compassionate": "connections",
+        "intuitive": "insights",
+        "spiritual": "practices",
+        "practical": "steps",
+    }
+    
+    # If phrase is just an adjective, add its noun
+    if len(words) == 1 and words[0] in ADJECTIVE_NOUN_PAIRS:
+        return f"{words[0]} {ADJECTIVE_NOUN_PAIRS[words[0]]}"
+    
+    # If phrase ends with an adjective without a noun, add one
+    last_word = words[-1]
+    if last_word in ADJECTIVE_NOUN_PAIRS and len(words) < 4:
+        # Check if there's already a noun after the adjective
+        has_noun = any(w in ["energy", "conversations", "boundaries", "rhythms", "growth", "focus", "connections", "priorities", "steps"] for w in words)
+        if not has_noun:
+            words.append(ADJECTIVE_NOUN_PAIRS[last_word])
+    
+    # Ensure "boundary" is plural when it's the subject of focus
+    for i, word in enumerate(words):
+        if word == "boundary" and i > 0:
+            # Check if it follows an adjective
+            prev_word = words[i-1]
+            if prev_word in ADJECTIVE_NOUN_PAIRS or prev_word in ["sensitive", "responsibility", "professional", "personal"]:
+                words[i] = "boundaries"
+    
+    # Fix common awkward constructions
+    phrase_str = " ".join(words)
+    
+    # Remove duplicate noun types (e.g., "rhythms priorities" → "priorities")
+    NOUN_GROUPS = {
+        "priorities": ["rhythms", "steps", "goals"],
+        "conversations": ["rhythms", "steps"],
+        "boundaries": ["rhythms", "steps"],
+        "growth": ["rhythms", "energy"],
+    }
+    
+    for primary_noun, duplicates in NOUN_GROUPS.items():
+        if primary_noun in words:
+            for dup in duplicates:
+                if dup in words and dup != primary_noun:
+                    # Keep the more specific noun
+                    idx = words.index(dup)
+                    words.pop(idx)
+    
+    phrase_str = " ".join(words)
+    
+    # Fix specific problematic patterns
+    PATTERN_FIXES = {
+        r"\bemotional growth rhythms priorities\b": "emotional growth priorities",
+        r"\bradiant drive support\b": "radiant drive to support",
+        r"\bset (\w+) priority\b": r"set \1 priorities",
+        r"\bkeep (\w+) measured\b": r"keep \1 clear",
+        r"\bthrough noticing\b": "by tracking",
+        r"\bafter noticing\b": "after reviewing",
+        r"\bwhile noticing\b": "while tracking",
+    }
+    
+    for pattern, replacement in PATTERN_FIXES.items():
+        phrase_str = re.sub(pattern, replacement, phrase_str, flags=re.IGNORECASE)
+    
+    return phrase_str.strip()
 
 
 def _refine_phrase_tokens(tokens: list[str], mode: str) -> list[str]:
