@@ -67,6 +67,7 @@ COPY --from=build /opt/venv /opt/venv
 
 # Copy application code
 COPY --chown=ephemeris:ephemeris api ./api
+COPY --chown=ephemeris:ephemeris src ./src
 COPY --chown=ephemeris:ephemeris data ./data
 
 # Create ephemeris directory with proper permissions and download files
