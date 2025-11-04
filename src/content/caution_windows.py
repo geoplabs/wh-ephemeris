@@ -528,7 +528,9 @@ def compute_caution_windows(events: Sequence[Mapping[str, Any]]) -> list[dict[st
             if all(rec.score <= 0 for rec in contributors):
                 severity = "Support" if adjusted_score <= -0.6 else "No flag"
 
-        if _has_angle_trigger(contributors) and severity in {"No flag", "Gentle Note", "Support", "Insight"}:
+        # Only upgrade to Caution if the aspect is actually challenging (positive score)
+        # Don't upgrade supportive aspects (Support/Insight) just because they involve angles
+        if _has_angle_trigger(contributors) and severity in {"No flag", "Gentle Note"}:
             severity = "Caution"
 
         top_record = contributors[0]

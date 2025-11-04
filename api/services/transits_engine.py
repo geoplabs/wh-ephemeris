@@ -5,12 +5,12 @@ from .transit_math import is_applying
 from .constants import sign_name_from_lon
 
 ASPECT_WEIGHTS = {
-    "conjunction": 5,
-    "opposition": 4,
-    "square": 3,
-    "trine": 2,
-    "sextile": 1,
-    "quincunx": 3,
+    "conjunction": 2,    # Neutral-to-supportive (depends on planet)
+    "opposition": 4,     # Friction
+    "square": 3,         # Friction
+    "trine": -2,         # Supportive (NEGATIVE)
+    "sextile": -1,       # Supportive (NEGATIVE)
+    "quincunx": 1,       # Minor friction
 }
 PLANET_WEIGHTS = {"Saturn":3,"Jupiter":2,"Mars":2,"Sun":1,"Venus":1,"Mercury":1,"Moon":0.5,
                   "Uranus":3,"Neptune":3,"Pluto":3,"TrueNode":1,"Chiron":1}
@@ -91,9 +91,17 @@ def _daterange_utc(d0:str, d1:str, step_days:int):
         cur = cur + timedelta(days=step_days)
 
 def _severity_score(aspect:str, orb:float, orb_limit:float, t_body:str)->float:
-    base = ASPECT_WEIGHTS.get(aspect,1) + PLANET_WEIGHTS.get(t_body,1)
+    """Calculate score with proper polarity: negative=supportive, positive=friction."""
+    aspect_weight = ASPECT_WEIGHTS.get(aspect, 1)
+    planet_weight = PLANET_WEIGHTS.get(t_body, 1)
     closeness = max(0.0, 1.0 - (orb / max(0.001, orb_limit)))
-    return round(10.0 * (0.3*base/8.0 + 0.7*closeness), 2)
+    
+    # Polarity from aspect (negative = supportive, positive = friction)
+    # Magnitude from planet importance and closeness
+    polarity = 1 if aspect_weight > 0 else -1 if aspect_weight < 0 else 0
+    magnitude = abs(aspect_weight) * planet_weight * closeness
+    
+    return round(polarity * magnitude * 3.0, 2)
 
 def _natal_positions(chart_input: Dict[str,Any]) -> Dict[str,Dict[str,float]]:
     # compute natal positions (tropical or sidereal based on chart_input.system)

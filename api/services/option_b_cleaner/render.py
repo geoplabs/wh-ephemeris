@@ -267,22 +267,29 @@ def _build_caution_window_from_events(
         intensity = _coerce_text((classification or {}).get("intensity"))
         aspect = _coerce_text(event.get("aspect")).lower()
         note = _coerce_text(event.get("note"))
-        if _looks_challenging(aspect, note.lower(), tone, intensity):
+        score = event.get("score", 0)
+        # Supportive aspects (score < 0) should NEVER be used for caution
+        looks_bad = _looks_challenging(aspect, note.lower(), tone, intensity) and score > 0
+        if looks_bad:
             time_window = _event_time_window(event) or CAUTION_FALLBACK_TIME
             note_text = _ensure_sentence(
                 _strip_dashes(note) or CAUTION_FALLBACK_NOTE
             )
             return {"time_window": time_window, "note": note_text}
 
+    # Fallback: use the first FRICTION event (score > 0), not supportive events
     if enriched_events:
-        fallback_event = enriched_events[0].get("event") if isinstance(enriched_events[0], Mapping) else None
-        if isinstance(fallback_event, Mapping):
-            time_window = _event_time_window(fallback_event) or CAUTION_FALLBACK_TIME
-            note_text = _ensure_sentence(
-                _strip_dashes(_coerce_text(fallback_event.get("note")))
-                or CAUTION_FALLBACK_NOTE
-            )
-            return {"time_window": time_window, "note": note_text}
+        for item in enriched_events:
+            fallback_event = item.get("event") if isinstance(item, Mapping) else None
+            if isinstance(fallback_event, Mapping):
+                score = fallback_event.get("score", 0)
+                if score > 0:  # Only use friction events for caution fallback
+                    time_window = _event_time_window(fallback_event) or CAUTION_FALLBACK_TIME
+                    note_text = _ensure_sentence(
+                        _strip_dashes(_coerce_text(fallback_event.get("note")))
+                        or CAUTION_FALLBACK_NOTE
+                    )
+                    return {"time_window": time_window, "note": note_text}
 
     return {"time_window": CAUTION_FALLBACK_TIME, "note": CAUTION_FALLBACK_NOTE}
 
