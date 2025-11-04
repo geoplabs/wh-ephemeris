@@ -56,13 +56,15 @@ ASPECT_GUIDANCE = {
 }
 
 def _intensity_adverb(score: float) -> str:
-    if score >= 8.5:
+    """Return intensity adverb based on absolute score magnitude (polarity-agnostic)."""
+    abs_score = abs(score)
+    if abs_score >= 8.5:
         return "Powerfully"
-    if score >= 7.0:
+    if abs_score >= 7.0:
         return "Strongly"
-    if score >= 5.5:
+    if abs_score >= 5.5:
         return "Notably"
-    if score >= 3.5:
+    if abs_score >= 3.5:
         return "Gently"
     return "Subtly"
 
