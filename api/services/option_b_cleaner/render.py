@@ -708,21 +708,18 @@ def build_context(option_b_json: dict[str, Any]) -> dict[str, Any]:
     caution_window = _build_caution_window_from_events(enriched_events)
     
     # Step 2: Calculate LUCKY candidates independently
-    # Get all supportive events sorted by score
+    # Get all supportive events (score < 0) sorted by score
+    # Trust the score - it already accounts for aspect type, planets, orbs, phase, etc.
     supportive_events = []
     for event in annotated_events:
         if not isinstance(event, Mapping):
             continue
-        aspect = (event.get("aspect") or "").lower()
-        transit_body = (event.get("transit_body") or "").lower()
         score = event.get("score", 0)
         exact_time = event.get("exact_hit_time_utc")
         
-        supportive_aspects = {"trine", "sextile"}
-        benefic_bodies = {"venus", "jupiter"}
-        is_supportive = aspect in supportive_aspects or (aspect == "conjunction" and transit_body in benefic_bodies)
-        
-        if is_supportive and exact_time:
+        # Score < 0 means supportive (system already determined this)
+        # Score > 0 means friction
+        if score < 0 and exact_time:
             supportive_events.append(event)
     
     # Sort by absolute score (strongest first)

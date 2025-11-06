@@ -193,9 +193,8 @@ def lucky_from_dominant(
     # Calculate time window from supportive events if available
     calculated_window = None
     if events and not time_window:
-        # Try all supportive events, picking first that doesn't overlap with caution
-        supportive_aspects = {"trine", "sextile"}
-        benefic_bodies = {"venus", "jupiter"}
+        # Try all supportive events (score < 0), picking first that doesn't overlap with caution
+        # Trust the score - it already accounts for aspect type, planets, orbs, phase, etc.
         
         candidates = []
         for event in events:
@@ -206,12 +205,10 @@ def lucky_from_dominant(
             if not exact_time or exact_time is None:
                 continue
             
-            aspect = (event.get("aspect") or "").lower()
-            transit_body = (event.get("transit_body") or "").lower()
             score = float(event.get("score", 0))
             
-            is_supportive = aspect in supportive_aspects or (aspect == "conjunction" and transit_body in benefic_bodies)
-            if is_supportive:
+            # Score < 0 means supportive (system already determined this)
+            if score < 0:
                 candidates.append((abs(score), event))
         
         # Sort by score and try each candidate
