@@ -167,36 +167,47 @@ def _calculate_overlap_net_score(
 ) -> float:
     """Calculate net score in overlapping region between lucky and caution windows.
     
+    Handles midnight wrap-around for both the overlap region and event influence windows.
+    
     Net score = sum of friction scores - sum of support scores in overlap
     Positive = friction dominates, Negative = support dominates
     
     Args:
         lucky_event: The supportive event contributing to lucky window
         all_events: All transit events
-        lucky_window: Lucky time window string (e.g., "08:51-10:51 UTC")
+        lucky_window: Lucky time window string (e.g., "08:51-10:51 UTC" or "22:00-02:00 UTC")
         caution_window: Caution time window string (e.g., "13:16-19:16 UTC")
     
     Returns:
         Net score (positive = friction wins, negative = support wins)
     """
-    from .lucky import _parse_window_times
+    from .lucky import _parse_window_times, _intervals
     
-    # Parse windows
+    # Parse windows and split into intervals (handles wrap-around)
     lucky_span = _parse_window_times(lucky_window)
     caution_span = _parse_window_times(caution_window)
     
     if not lucky_span or not caution_span:
         return 0.0
     
-    # Calculate overlap span
-    overlap_start = max(lucky_span[0], caution_span[0])
-    overlap_end = min(lucky_span[1], caution_span[1])
+    lucky_intervals = _intervals(lucky_span)
+    caution_intervals = _intervals(caution_span)
     
-    if overlap_start >= overlap_end:
+    # Calculate overlap intervals
+    overlap_intervals = []
+    for (l_start, l_end) in lucky_intervals:
+        for (c_start, c_end) in caution_intervals:
+            # Check if intervals intersect
+            overlap_start = max(l_start, c_start)
+            overlap_end = min(l_end, c_end)
+            if overlap_start < overlap_end:
+                overlap_intervals.append((overlap_start, overlap_end))
+    
+    if not overlap_intervals:
         return 0.0  # No actual overlap
     
-    # Sum friction scores (positive) and support scores (negative) that contribute to this overlap
-    # ONLY count events whose INFLUENCE WINDOWS intersect the overlap region
+    # Sum friction scores (positive) and support scores (negative) that contribute to overlap
+    # ONLY count events whose INFLUENCE WINDOWS intersect any overlap interval
     friction_score = 0.0
     support_score = 0.0
     
@@ -235,15 +246,34 @@ def _calculate_overlap_net_score(
             transit_body = (event.get("transit_body") or "").lower()
             window_minutes = influence_windows.get(transit_body, 120)  # default ±2 hours
             
-            # Calculate event's influence window in minutes from midnight
-            event_start = exact_dt - timedelta(minutes=window_minutes)
-            event_end = exact_dt + timedelta(minutes=window_minutes)
-            event_start_min = event_start.hour * 60 + event_start.minute
-            event_end_min = event_end.hour * 60 + event_end.minute
+            # Calculate event's influence window (can cross midnight)
+            event_start_dt = exact_dt - timedelta(minutes=window_minutes)
+            event_end_dt = exact_dt + timedelta(minutes=window_minutes)
             
-            # Check if event's window intersects the overlap region
-            # Intersection exists if: event_start < overlap_end AND event_end > overlap_start
-            if event_end_min <= overlap_start or event_start_min >= overlap_end:
+            # Convert to minutes from midnight, handling wrap-around
+            # If start and end are on different days, we need to split
+            event_start_min = event_start_dt.hour * 60 + event_start_dt.minute
+            event_end_min = event_end_dt.hour * 60 + event_end_dt.minute
+            
+            # Check if event window crosses midnight
+            if event_start_dt.date() != event_end_dt.date():
+                # Event window wraps around midnight
+                event_intervals = [(event_start_min, 1440), (0, event_end_min)]
+            else:
+                # Event window doesn't wrap
+                event_intervals = [(event_start_min, event_end_min)]
+            
+            # Check if event's influence window intersects ANY overlap interval
+            intersects = False
+            for (e_start, e_end) in event_intervals:
+                for (o_start, o_end) in overlap_intervals:
+                    if e_start < o_end and e_end > o_start:
+                        intersects = True
+                        break
+                if intersects:
+                    break
+            
+            if not intersects:
                 continue  # No intersection, skip this event
             
         except (ValueError, AttributeError):
@@ -261,8 +291,9 @@ def _calculate_overlap_net_score(
     # Positive means friction dominates, negative means support dominates
     net = friction_score - support_score
     
-    # Normalize by the size of the overlap window (in hours)
-    overlap_hours = (overlap_end - overlap_start) / 60.0
+    # Normalize by the total size of the overlap intervals (in hours)
+    total_overlap_minutes = sum(end - start for (start, end) in overlap_intervals)
+    overlap_hours = total_overlap_minutes / 60.0
     if overlap_hours > 0:
         net = net / overlap_hours
     

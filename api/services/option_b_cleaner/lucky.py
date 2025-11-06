@@ -108,18 +108,56 @@ def _parse_window_times(time_window_str: str) -> tuple[int, int] | None:
     return None
 
 
+def _intervals(window: tuple[int, int]) -> list[tuple[int, int]]:
+    """Split a window into intervals, handling midnight wrap-around.
+    
+    Args:
+        window: (start_min, end_min) where minutes are from midnight [0, 1440)
+        
+    Returns:
+        List of intervals. Non-wrapping: [(start, end)]. 
+        Wrapping (e.g., 22:00-02:00): [(start, 1440), (0, end)]
+    
+    Example:
+        (1320, 120) -> [(1320, 1440), (0, 120)]  # 22:00-02:00 wraps
+        (300, 600)  -> [(300, 600)]              # 05:00-10:00 doesn't wrap
+    """
+    start, end = window
+    if end >= start:
+        # Normal case: no wrap-around
+        return [(start, end)]
+    else:
+        # Wrap-around: split into [start, midnight) and [midnight, end)
+        return [(start, 1440), (0, end)]
+
+
 def _windows_overlap(window1_str: str, window2_str: str) -> bool:
-    """Check if two time windows overlap."""
+    """Check if two time windows overlap, handling midnight wrap-around.
+    
+    Args:
+        window1_str: Time window string like '22:00-02:00 UTC' or '12:35-16:35 UTC'
+        window2_str: Time window string like '01:00-05:00 UTC'
+        
+    Returns:
+        True if windows overlap, False otherwise
+    """
     w1 = _parse_window_times(window1_str)
     w2 = _parse_window_times(window2_str)
     if not w1 or not w2:
         return False
     
-    s1, e1 = w1
-    s2, e2 = w2
+    # Get intervals for each window (handles wrap-around)
+    intervals1 = _intervals(w1)
+    intervals2 = _intervals(w2)
     
-    # Check for any overlap
-    return (s1 <= s2 < e1) or (s1 < e2 <= e1) or (s2 <= s1 < e2) or (s2 < e1 <= e2)
+    # Check if any pair of intervals overlap
+    for (s1, e1) in intervals1:
+        for (s2, e2) in intervals2:
+            # Overlap exists if intervals intersect
+            if s1 < e2 and s2 < e1:
+                return True
+    
+    return False
 
 
 def _generate_non_overlapping_window(caution_window_str: str) -> str:
