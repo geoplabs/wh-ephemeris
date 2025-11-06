@@ -755,14 +755,18 @@ def build_context(option_b_json: dict[str, Any]) -> dict[str, Any]:
                     caution_time_str
                 )
                 
-                abs_net = abs(net_score)
+                # Decision rules based on NET SCORE (not abs)
+                # net < 0: support dominates (good for lucky)
+                # net > 0: friction dominates (bad for lucky)
                 
-                # Decision rules
-                if abs_net < 0.5:
-                    # Near zero (mixed) - skip this candidate, try next
+                if net_score >= 0.5:
+                    # Friction dominates - reject this lucky candidate
                     continue
-                elif 0.5 <= abs_net < 1.5:
-                    # Soft/moderate - compare with 2nd best non-overlapping
+                elif net_score > -0.5:
+                    # Too mixed (near zero) - skip this candidate
+                    continue
+                elif net_score >= -1.5:
+                    # Support moderately dominates - compare with 2nd best non-overlapping
                     if idx + 1 < len(supportive_events):
                         second_event = supportive_events[idx + 1]
                         second_time_window = _calculate_lucky_window_from_exact_time(
@@ -779,7 +783,7 @@ def build_context(option_b_json: dict[str, Any]) -> dict[str, Any]:
                     lucky = lucky_from_dominant(dom_planet, dom_sign, time_window=candidate_time_window)
                     break
                 else:
-                    # Strong dominance (≥1.5) - use it regardless of overlap
+                    # Support strongly dominates (net < -1.5) - use it
                     lucky = lucky_from_dominant(dom_planet, dom_sign, time_window=candidate_time_window)
                     break
             else:
