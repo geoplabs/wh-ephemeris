@@ -727,14 +727,8 @@ def build_context(option_b_json: dict[str, Any]) -> dict[str, Any]:
     top_classification = enriched_events[0]["classification"] if enriched_events else None
     area_summary = summarize_rankings(area_rankings)
     
-    # Extract raw events for window resolution
-    raw_events: list[Mapping[str, Any]] = []
-    for item in enriched_events:
-        if not isinstance(item, Mapping):
-            continue
-        event = item.get("event") if isinstance(item, Mapping) else None
-        if isinstance(event, Mapping):
-            raw_events.append(event)
+    # Note: annotated_events is already the raw events list (with scores)
+    # No need to extract raw_events separately - use annotated_events directly
     
     # Step 1: Calculate CAUTION window independently (DO NOT TOUCH based on lucky)
     caution_window = _build_caution_window_from_events(enriched_events)
@@ -791,8 +785,16 @@ def build_context(option_b_json: dict[str, Any]) -> dict[str, Any]:
                         micro_window,
                         caution_time_str
                     )
-                    # Tighter threshold for micro windows
-                    if micro_net <= -0.5:
+                    # Planet-aware threshold for micro windows
+                    transit_body = candidate_event.get("transit_body", "").lower()
+                    if transit_body == "moon":
+                        threshold = -0.3  # Looser for Moon (fast-moving, brief peaks)
+                    elif transit_body in {"jupiter", "saturn", "uranus", "neptune", "pluto"}:
+                        threshold = -0.8  # Tighter for slow movers (need stronger support)
+                    else:
+                        threshold = -0.5  # Default for Mercury, Venus, Mars, Sun
+                    
+                    if micro_net <= threshold:
                         # Support dominates in this micro peak - use it
                         lucky = lucky_from_dominant(dom_planet, dom_sign, time_window=micro_window)
                         break
@@ -825,22 +827,32 @@ def build_context(option_b_json: dict[str, Any]) -> dict[str, Any]:
                     # Too mixed (near zero) - skip this candidate
                     continue
                 elif net_score >= -1.5:
-                    # Support moderately dominates - compare with 2nd best non-overlapping
-                    if idx + 1 < len(supportive_events):
-                        second_event = supportive_events[idx + 1]
-                        second_time_window = _calculate_lucky_window_from_exact_time(
-                            second_event.get("exact_hit_time_utc"),
-                            second_event.get("transit_body", dom_planet)
+                    # Support moderately dominates - scan ALL remaining events for best non-overlapping
+                    best_alternative = None
+                    best_alternative_score = 0.0
+                    best_alternative_window = None
+                    
+                    for alt_event in supportive_events[idx + 1:]:
+                        alt_window = _calculate_lucky_window_from_exact_time(
+                            alt_event.get("exact_hit_time_utc"),
+                            alt_event.get("transit_body", dom_planet)
                         )
-                        if second_time_window and not _windows_overlap(second_time_window, caution_time_str):
-                            # Compare scores - use stronger one
-                            if abs(second_event.get("score", 0)) > abs(candidate_event.get("score", 0)):
-                                # Second is stronger and doesn't overlap - use it
-                                lucky = lucky_from_dominant(dom_planet, dom_sign, time_window=second_time_window)
-                                break
-                    # Either no second candidate or first is stronger - use first
-                    lucky = lucky_from_dominant(dom_planet, dom_sign, time_window=candidate_time_window)
-                    break
+                        if alt_window and not _windows_overlap(alt_window, caution_time_str):
+                            alt_score = abs(alt_event.get("score", 0))
+                            if alt_score > best_alternative_score:
+                                best_alternative = alt_event
+                                best_alternative_score = alt_score
+                                best_alternative_window = alt_window
+                    
+                    # Compare best alternative with candidate
+                    if best_alternative and best_alternative_score > abs(candidate_event.get("score", 0)):
+                        # Best alternative is stronger and doesn't overlap - use it
+                        lucky = lucky_from_dominant(dom_planet, dom_sign, time_window=best_alternative_window)
+                        break
+                    else:
+                        # Candidate is stronger (or no alternatives) - use candidate
+                        lucky = lucky_from_dominant(dom_planet, dom_sign, time_window=candidate_time_window)
+                        break
                 else:
                     # Support strongly dominates (net < -1.5) - use it
                     lucky = lucky_from_dominant(dom_planet, dom_sign, time_window=candidate_time_window)
