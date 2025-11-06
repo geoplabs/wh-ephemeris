@@ -126,11 +126,15 @@ def _windows_overlap(window1_str: str, window2_str: str) -> bool:
     
     Args:
         window1_str: Time window string like '22:00-02:00 UTC' or '12:35-16:35 UTC'
-        window2_str: Time window string like '01:00-05:00 UTC'
+        window2_str: Time window string like '01:00-05:00 UTC' or 'All day (general caution)'
         
     Returns:
         True if windows overlap, False otherwise
     """
+    # Special case: If either window is "all day", they always overlap
+    if "all day" in window1_str.lower() or "all day" in window2_str.lower():
+        return True
+    
     w1 = _parse_window_times(window1_str)
     w2 = _parse_window_times(window2_str)
     if not w1 or not w2:

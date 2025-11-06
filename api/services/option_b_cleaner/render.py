@@ -176,16 +176,21 @@ def _calculate_overlap_net_score(
         lucky_event: The supportive event contributing to lucky window
         all_events: All transit events
         lucky_window: Lucky time window string (e.g., "08:51-10:51 UTC" or "22:00-02:00 UTC")
-        caution_window: Caution time window string (e.g., "13:16-19:16 UTC")
+        caution_window: Caution time window string (e.g., "13:16-19:16 UTC" or "All day (general caution)")
     
     Returns:
         Net score (positive = friction wins, negative = support wins)
     """
     from .lucky import _parse_window_times, _intervals
     
-    # Parse windows and split into intervals (handles wrap-around)
+    # Special case: If caution is "all day", use full 24-hour span
+    if "all day" in caution_window.lower():
+        caution_span = (0, 1440)  # Full day
+    else:
+        caution_span = _parse_window_times(caution_window)
+    
+    # Parse lucky window
     lucky_span = _parse_window_times(lucky_window)
-    caution_span = _parse_window_times(caution_window)
     
     if not lucky_span or not caution_span:
         return 0.0
