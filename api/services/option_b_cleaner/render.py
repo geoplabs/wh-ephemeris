@@ -196,9 +196,24 @@ def _calculate_overlap_net_score(
         return 0.0  # No actual overlap
     
     # Sum friction scores (positive) and support scores (negative) that contribute to this overlap
-    # ONLY count events whose time windows actually intersect the overlap region
+    # ONLY count events whose INFLUENCE WINDOWS intersect the overlap region
     friction_score = 0.0
     support_score = 0.0
+    
+    # Define influence window duration by planet (in minutes)
+    influence_windows = {
+        "moon": 60,        # ±1 hour
+        "mercury": 90,     # ±1.5 hours
+        "venus": 90,       # ±1.5 hours
+        "sun": 120,        # ±2 hours
+        "mars": 120,       # ±2 hours
+        "jupiter": 180,    # ±3 hours
+        "saturn": 180,     # ±3 hours
+        "uranus": 180,     # ±3 hours
+        "neptune": 180,    # ±3 hours
+        "pluto": 180,      # ±3 hours
+        "chiron": 120,     # ±2 hours
+    }
     
     for event in all_events:
         if not isinstance(event, Mapping):
@@ -210,22 +225,31 @@ def _calculate_overlap_net_score(
         if not exact_time:
             continue
         
-        # Parse the exact time to get event timing in minutes from midnight
+        # Parse the exact time and calculate event's influence window
         try:
-            from datetime import datetime
+            from datetime import datetime, timedelta
             exact_time_str = exact_time.replace("Z", "+00:00")
             exact_dt = datetime.fromisoformat(exact_time_str)
-            event_minute = exact_dt.hour * 60 + exact_dt.minute
             
-            # Check if this event's exact time falls within the overlap region
-            # (Using a simple point-in-time check; could be enhanced to check full event window)
-            if not (overlap_start <= event_minute <= overlap_end):
-                continue  # Event is outside overlap region, skip it
+            # Determine window size based on transit planet
+            transit_body = (event.get("transit_body") or "").lower()
+            window_minutes = influence_windows.get(transit_body, 120)  # default ±2 hours
+            
+            # Calculate event's influence window in minutes from midnight
+            event_start = exact_dt - timedelta(minutes=window_minutes)
+            event_end = exact_dt + timedelta(minutes=window_minutes)
+            event_start_min = event_start.hour * 60 + event_start.minute
+            event_end_min = event_end.hour * 60 + event_end.minute
+            
+            # Check if event's window intersects the overlap region
+            # Intersection exists if: event_start < overlap_end AND event_end > overlap_start
+            if event_end_min <= overlap_start or event_start_min >= overlap_end:
+                continue  # No intersection, skip this event
             
         except (ValueError, AttributeError):
             continue  # Can't parse time, skip this event
         
-        # Event is within overlap region - count its score
+        # Event's window intersects overlap region - count its score
         if score > 0:
             # Friction event - add to friction score
             friction_score += abs(score)
