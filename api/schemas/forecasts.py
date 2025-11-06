@@ -43,10 +43,10 @@ class DailyOptions(BaseModel):
     date: str
     user_id: Optional[str] = None
     profile_name: Optional[str] = None
-    use_ai: bool = False  # Enable/disable AI generation (OpenAI)
+    use_ai: bool = False  # Enable/disable AI generation (OpenAI) - legacy, use generation_mode instead
+    generation_mode: Optional[str] = None  # "template" | "ai_mini" | "ai_full" (default: template if use_ai=false)
     step_days: int = 1
     window_days: int = 1
-    use_ai: Optional[bool] = None
     areas: List[str] = ["career", "love", "health", "finance"]
     transit_bodies: List[str] = [
         "Sun",

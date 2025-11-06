@@ -298,6 +298,12 @@ def daily_payload(chart_input: Dict[str, Any], options: Dict[str, Any]) -> Dict[
         else:
             use_ai_flag = bool(use_ai_option)
         meta["use_ai"] = use_ai_flag
+    
+    # Pass generation_mode through to meta
+    generation_mode = options.get("generation_mode")
+    if generation_mode:
+        meta["generation_mode"] = generation_mode
+    
     lucky = _build_lucky(top_events[0] if top_events else None)
 
     return {

@@ -1185,10 +1185,22 @@ def generate_daily_template(
 ) -> DailyTemplateResult:
     _, content_hash, etag = _stable_bundle(daily_payload)
     date = daily_payload.get("meta", {}).get("date", "unknown")
-    cache_key = f"dailyTpl:{date}:{TEMPLATE_LANG}:{TEMPLATE_VERSION}:{TEMPLATE_MODEL}:{content_hash}"
+    
+    # Check for generation_mode parameter
+    meta = daily_payload.get("meta", {})
+    generation_mode = meta.get("generation_mode", "").strip().lower()
+    
+    # Determine if we should use AI mini composer
+    use_ai_mini = (generation_mode == "ai_mini" and not use_ai)
+    
+    # DEBUG: Log AI mini composer decision
+    logger.info(f"AI mini composer check: generation_mode={generation_mode!r}, use_ai={use_ai}, use_ai_mini={use_ai_mini}")
+    
+    # Update cache key to include generation mode
+    mode_suffix = ":ai_mini" if use_ai_mini else (":ai_full" if use_ai else ":template")
+    cache_key = f"dailyTpl:{date}:{TEMPLATE_LANG}:{TEMPLATE_VERSION}:{TEMPLATE_MODEL}:{content_hash}{mode_suffix}"
     lock_key = f"lock:{cache_key}"
 
-    meta = daily_payload.get("meta", {})
     use_ai_pref = meta.get("use_ai")
     if isinstance(use_ai_pref, str):
         normalized = use_ai_pref.strip().lower()
@@ -1295,7 +1307,113 @@ def generate_daily_template(
     generated_payload: Optional[Dict[str, Any]] = None
     raw_response: Optional[str] = None
 
-    if llm_client is not None and use_ai:
+    # NEW: Try AI mini composer if enabled
+    if use_ai_mini:
+        logger.info(f"[AI_MINI] Entering AI mini composer block for {date}")
+        try:
+            # Import here to avoid circular dependencies
+            from .ai_composer import compose_daily_forecast_parallel
+            
+            # Build template context first as fallback data
+            logger.info(f"[AI_MINI] Attempting AI mini composer for {date}")
+            
+            # Extract necessary variables from daily_payload (same as _build_storylet)
+            daily = daily_payload
+            meta = daily.get("meta", {})
+            top_events = daily.get("top_events", [])
+            focus_areas = daily.get("focus_areas", [])
+            
+            # Extract profile info
+            profile = _title_case(meta.get("profile_name"))
+            
+            # Extract mood, theme, and other base data
+            score = float(top_events[0].get("score", 0.0)) if top_events else 0.0
+            mood = _coerce_string(daily.get("mood")) or ("energised" if score >= 7 else "balanced")
+            
+            # Extract proper theme from focus_areas (same as legacy _build_storylet)
+            headline_source = next(
+                (
+                    _coerce_string(area.get("headline"))
+                    for area in focus_areas
+                    if _coerce_string(area.get("headline"))
+                ),
+                "Focused Momentum",
+            )
+            theme = _trim_for_display(
+                headline_source,
+                fallback="Focused Momentum",
+            ) or "Focused Momentum"
+            
+            summary_for_opening = _coerce_string(daily.get("summary")) or "Stay present with the day."
+            
+            # Build simplified fallbacks for sections
+            fallback_mantra = "I choose what strengthens me."
+            career_paragraph_src = "Focus on your work priorities today."
+            love_paragraph_src = "Notice the emotional tone in your relationships."
+            health_paragraph_src = "Pay attention to your body's signals."
+            finance_paragraph_src = "Review your resources mindfully."
+            career_bullets = ["Track your key tasks", "Communicate clearly with colleagues"]
+            finance_bullets = ["Monitor your spending", "Review upcoming expenses"]
+            health_notes = ["Rest when needed", "Move your body gently"]
+            do_today = ["Focus on one priority", "Speak kindly"]
+            avoid_today = ["Overcommitting", "Reactive conversations"]
+            fallback_lucky = {
+                "color": "Soft Rose",
+                "time_window": "Morning hours",
+                "direction": "East",
+                "affirmation": "I attract harmony and support."
+            }
+            
+            # Build option_b_payload with pre-populated sections (same as legacy path)
+            option_b_payload_for_ai: Dict[str, Any] = {
+                "profile_name": profile,
+                "date": date,
+                "mood": mood,
+                "theme": theme,
+                "opening_summary": summary_for_opening,
+                "morning_mindset": {
+                    "paragraph": summary_for_opening,
+                    "mantra": fallback_mantra,
+                },
+                "career": {"paragraph": career_paragraph_src, "bullets": career_bullets},
+                "love": {"paragraph": love_paragraph_src, "attached": "", "single": ""},
+                "health": {"paragraph": health_paragraph_src, "good_options": health_notes},
+                "finance": {"paragraph": finance_paragraph_src, "bullets": finance_bullets},
+                "do_today": do_today,
+                "avoid_today": avoid_today,
+                "lucky": fallback_lucky,
+                "one_line_summary": summary_for_opening,
+                "events": daily.get("events", []),
+                "top_events": top_events,
+                "focus_areas": focus_areas,
+            }
+            
+            template_context = build_context(option_b_payload_for_ai)
+            
+            # Use asyncio to run the parallel composer
+            import asyncio
+            loop = asyncio.new_event_loop()
+            asyncio.set_event_loop(loop)
+            try:
+                ai_result = loop.run_until_complete(
+                    compose_daily_forecast_parallel(
+                        template_context=template_context,
+                        profile_name=meta.get("profile_name", "User"),
+                        forecast_date=date,
+                    )
+                )
+                if ai_result is not None:
+                    generated_payload = ai_result.model_dump(mode="json")
+                    logger.info(f"AI mini composer succeeded for {date}")
+                else:
+                    logger.warning(f"AI mini composer returned None, falling back to templates for {date}")
+            finally:
+                loop.close()
+        except Exception as e:
+            logger.error(f"AI mini composer failed: {e}, falling back to templates")
+            # Continue to template fallback below
+
+    if llm_client is not None and use_ai and not use_ai_mini:
         parsed, raw_response, llm_tokens = _render_with_llm(llm_client, daily_payload)
         if parsed is not None:
             sanitized = _sanitize_payload(parsed)

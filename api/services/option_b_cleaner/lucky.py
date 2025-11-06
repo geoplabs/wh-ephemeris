@@ -122,6 +122,52 @@ def _windows_overlap(window1_str: str, window2_str: str) -> bool:
     return (s1 <= s2 < e1) or (s1 < e2 <= e1) or (s2 <= s1 < e2) or (s2 < e1 <= e2)
 
 
+def _generate_non_overlapping_window(caution_window_str: str) -> str:
+    """Generate a safe lucky window that doesn't overlap with caution window.
+    
+    Args:
+        caution_window_str: The caution window string (e.g., "12:35-16:35 UTC")
+        
+    Returns:
+        A non-overlapping time window string
+    """
+    caution_times = _parse_window_times(caution_window_str)
+    if not caution_times:
+        return "10:30 AM - 12:00 PM"  # Fallback to default
+    
+    caution_start_min, caution_end_min = caution_times
+    
+    # Try to find a 2-3 hour window outside the caution period
+    # Option 1: Early morning (4:00 AM - 6:30 AM) if caution starts after 6:30 AM
+    early_start = 4 * 60  # 4:00 AM
+    early_end = 6 * 60 + 30  # 6:30 AM
+    if early_end <= caution_start_min:
+        return f"{early_start // 60:02d}:{early_start % 60:02d}-{early_end // 60:02d}:{early_end % 60:02d} UTC"
+    
+    # Option 2: Late evening (18:00 - 20:30) if caution ends before 18:00
+    evening_start = 18 * 60  # 6:00 PM
+    evening_end = 20 * 60 + 30  # 8:30 PM
+    if caution_end_min <= evening_start:
+        return f"{evening_start // 60:02d}:{evening_start % 60:02d}-{evening_end // 60:02d}:{evening_end % 60:02d} UTC"
+    
+    # Option 3: Night (21:00 - 23:00) if caution ends before 21:00
+    night_start = 21 * 60  # 9:00 PM
+    night_end = 23 * 60  # 11:00 PM
+    if caution_end_min <= night_start:
+        return f"{night_start // 60:02d}:{night_start % 60:02d}-{night_end // 60:02d}:{night_end % 60:02d} UTC"
+    
+    # If caution spans most of the day, return early morning before caution starts
+    if caution_start_min > 2 * 60:  # If caution starts after 2 AM
+        safe_start = max(0, caution_start_min - 180)  # 3 hours before caution
+        safe_end = max(safe_start + 90, caution_start_min - 30)  # 1.5-2.5 hours window
+        return f"{safe_start // 60:02d}:{safe_start % 60:02d}-{safe_end // 60:02d}:{safe_end % 60:02d} UTC"
+    
+    # Last resort: use a small window right after caution ends
+    safe_start = min(23 * 60, caution_end_min + 30)  # 30 min after caution
+    safe_end = min(24 * 60 - 1, safe_start + 90)  # 1.5 hour window
+    return f"{safe_start // 60:02d}:{safe_start % 60:02d}-{safe_end // 60:02d}:{safe_end % 60:02d} UTC"
+
+
 def lucky_from_dominant(
     dominant_planet: str, 
     dominant_sign: str, 
@@ -185,7 +231,18 @@ def lucky_from_dominant(
                 calculated_window = test_window
                 break
     
-    window = time_window or calculated_window or DEFAULT_TIME_WINDOW
+    # Determine final window, but check default for overlap
+    if time_window:
+        window = time_window
+    elif calculated_window:
+        window = calculated_window
+    else:
+        # Using default - check if it overlaps with caution window
+        if caution_window_str and _windows_overlap(DEFAULT_TIME_WINDOW, caution_window_str):
+            # Default overlaps with caution - generate a safe non-overlapping window
+            window = _generate_non_overlapping_window(caution_window_str)
+        else:
+            window = DEFAULT_TIME_WINDOW
     
     affirmation = {
         "Sun": "I act with clarity and purpose.",
