@@ -21,7 +21,7 @@ from .language import (
 )
 from ..remedy_templates import remedy_templates_for_planet
 from src.content import compute_caution_windows
-from src.content.window_resolver import resolve_windows_with_netting
+# Window resolver not currently used - caution/lucky windows calculated independently
 from src.content.archetype_router import classify_event
 from src.content.area_selector import rank_events_by_area, summarize_rankings
 from src.content.phrasebank import (
@@ -212,18 +212,19 @@ def _calculate_overlap_net_score(
     support_score = 0.0
     
     # Define influence window duration by planet (in minutes)
+    # Based on planetary speed and typical orb of influence
     influence_windows = {
-        "moon": 60,        # ±1 hour
+        "moon": 75,        # ±75 min (fast mover, tight window)
         "mercury": 90,     # ±1.5 hours
         "venus": 90,       # ±1.5 hours
-        "sun": 120,        # ±2 hours
+        "sun": 150,        # ±2.5 hours (longer influence)
         "mars": 120,       # ±2 hours
-        "jupiter": 180,    # ±3 hours
-        "saturn": 180,     # ±3 hours
-        "uranus": 180,     # ±3 hours
-        "neptune": 180,    # ±3 hours
-        "pluto": 180,      # ±3 hours
-        "chiron": 120,     # ±2 hours
+        "jupiter": 240,    # ±4 hours (slow mover, wider influence)
+        "saturn": 300,     # ±5 hours (very slow, sustained influence)
+        "uranus": 360,     # ±6 hours (outer planet, generational)
+        "neptune": 360,    # ±6 hours (outer planet)
+        "pluto": 360,      # ±6 hours (outer planet, transformational)
+        "chiron": 180,     # ±3 hours (slower than personal planets)
     }
     
     for event in all_events:
@@ -762,13 +763,40 @@ def build_context(option_b_json: dict[str, Any]) -> dict[str, Any]:
     
     for idx, candidate_event in enumerate(supportive_events):
         # Calculate lucky window for this candidate
-        from .lucky import _calculate_lucky_window_from_exact_time
+        from .lucky import _calculate_lucky_window_from_exact_time, _is_all_day_caution, _calculate_micro_window
         candidate_time_window = _calculate_lucky_window_from_exact_time(
             candidate_event.get("exact_hit_time_utc"),
             candidate_event.get("transit_body", dom_planet)
         )
         
         if not candidate_time_window:
+            continue
+        
+        # Special handling for all-day caution: use micro lucky windows
+        if caution_time_str and _is_all_day_caution(caution_time_str):
+            # Try a micro window (±45 min) for focused supportive peaks
+            micro_window = _calculate_micro_window(
+                candidate_event.get("exact_hit_time_utc"),
+                candidate_event.get("transit_body", dom_planet),
+                minutes=45
+            )
+            if micro_window:
+                # Check if micro window still overlaps all-day caution (it will)
+                from .lucky import _windows_overlap
+                if _windows_overlap(micro_window, caution_time_str):
+                    # Recompute net score in micro overlap
+                    micro_net = _calculate_overlap_net_score(
+                        candidate_event,
+                        annotated_events,
+                        micro_window,
+                        caution_time_str
+                    )
+                    # Tighter threshold for micro windows
+                    if micro_net <= -0.5:
+                        # Support dominates in this micro peak - use it
+                        lucky = lucky_from_dominant(dom_planet, dom_sign, time_window=micro_window)
+                        break
+            # If micro window doesn't work, try next candidate
             continue
         
         # Check if it overlaps with caution window

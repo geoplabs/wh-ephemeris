@@ -57,36 +57,26 @@ def _calculate_lucky_window_from_exact_time(exact_time_utc: str, planet: str) ->
 def _find_best_supportive_event(events: Sequence[Mapping[str, Any]]) -> Mapping[str, Any] | None:
     """Find the most supportive event with exact_hit_time_utc for lucky window calculation.
     
+    Uses score-based filtering (score < 0 = supportive).
+    
     Prioritizes:
-    1. Supportive aspects (trine, sextile, benefic conjunctions)
+    1. Score < 0 (supportive - trust the scoring system)
     2. Has exact_hit_time_utc field
     3. Highest absolute score
     """
-    supportive_aspects = {"trine", "sextile"}
-    benefic_bodies = {"venus", "jupiter"}
-    
     candidates = []
     for event in events:
         if not isinstance(event, Mapping):
             continue
         
-        # Check if event has exact hit time
         exact_time = event.get("exact_hit_time_utc")
         if not exact_time or exact_time is None:
             continue
         
-        aspect = (event.get("aspect") or "").lower()
-        transit_body = (event.get("transit_body") or "").lower()
         score = float(event.get("score", 0))
         
-        # Identify supportive events
-        is_supportive = False
-        if aspect in supportive_aspects:
-            is_supportive = True
-        elif aspect == "conjunction" and transit_body in benefic_bodies:
-            is_supportive = True
-        
-        if is_supportive:
+        # Score < 0 means supportive (trust the scoring system)
+        if score < 0:
             candidates.append((abs(score), event))
     
     # Return highest scoring supportive event
@@ -158,6 +148,68 @@ def _windows_overlap(window1_str: str, window2_str: str) -> bool:
                 return True
     
     return False
+
+
+def _is_all_day_caution(caution_window_str: str) -> bool:
+    """Check if caution window is effectively all-day (>=12 hours or contains 'all day').
+    
+    Args:
+        caution_window_str: Caution window string like "All day (general caution)" or "05:00-20:00 UTC"
+        
+    Returns:
+        True if all-day or >= 12 hours
+    """
+    if not caution_window_str:
+        return False
+    
+    # Check for explicit "all day" text
+    if "all day" in caution_window_str.lower():
+        return True
+    
+    # Parse and check duration
+    parsed = _parse_window_times(caution_window_str)
+    if not parsed:
+        return False
+    
+    start, end = parsed
+    # Handle wrap-around
+    if end < start:
+        duration = (1440 - start) + end
+    else:
+        duration = end - start
+    
+    # >= 12 hours (720 minutes) is considered all-day
+    return duration >= 720
+
+
+def _calculate_micro_window(exact_time_utc: str, planet: str, minutes: int = 45) -> str | None:
+    """Calculate a micro lucky window (tighter than normal) around exact hit time.
+    
+    Used when caution window is all-day to find narrow supportive peaks.
+    
+    Args:
+        exact_time_utc: ISO format UTC time like "2025-10-29T14:30:00Z"
+        planet: Transit planet name (for labeling)
+        minutes: Half-width of micro window (±minutes)
+        
+    Returns:
+        Formatted micro window like "14:00-15:15 UTC (micro peak)"
+    """
+    try:
+        from datetime import datetime, timedelta
+        exact_time_str = exact_time_utc.replace("Z", "+00:00")
+        exact_dt = datetime.fromisoformat(exact_time_str)
+        
+        # Create tight window around exact time
+        start = exact_dt - timedelta(minutes=minutes)
+        end = exact_dt + timedelta(minutes=minutes)
+        
+        # Format as UTC times
+        start_str = start.strftime("%H:%M")
+        end_str = end.strftime("%H:%M")
+        return f"{start_str}–{end_str} UTC (micro peak)"
+    except (ValueError, AttributeError):
+        return None
 
 
 def _generate_non_overlapping_window(caution_window_str: str) -> str:
