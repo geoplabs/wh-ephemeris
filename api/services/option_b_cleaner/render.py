@@ -196,6 +196,7 @@ def _calculate_overlap_net_score(
         return 0.0  # No actual overlap
     
     # Sum friction scores (positive) and support scores (negative) that contribute to this overlap
+    # ONLY count events whose time windows actually intersect the overlap region
     friction_score = 0.0
     support_score = 0.0
     
@@ -209,11 +210,22 @@ def _calculate_overlap_net_score(
         if not exact_time:
             continue
         
-        # Check if this event's time window overlaps with our overlap region
-        # For simplicity, we check if the event contributes to either window
-        # Friction events (positive scores) contribute to caution
-        # Support events (negative scores) contribute to lucky
+        # Parse the exact time to get event timing in minutes from midnight
+        try:
+            from datetime import datetime
+            exact_time_str = exact_time.replace("Z", "+00:00")
+            exact_dt = datetime.fromisoformat(exact_time_str)
+            event_minute = exact_dt.hour * 60 + exact_dt.minute
+            
+            # Check if this event's exact time falls within the overlap region
+            # (Using a simple point-in-time check; could be enhanced to check full event window)
+            if not (overlap_start <= event_minute <= overlap_end):
+                continue  # Event is outside overlap region, skip it
+            
+        except (ValueError, AttributeError):
+            continue  # Can't parse time, skip this event
         
+        # Event is within overlap region - count its score
         if score > 0:
             # Friction event - add to friction score
             friction_score += abs(score)
