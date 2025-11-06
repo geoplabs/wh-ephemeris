@@ -215,47 +215,61 @@ def _calculate_micro_window(exact_time_utc: str, planet: str, minutes: int = 45)
 def _generate_non_overlapping_window(caution_window_str: str) -> str:
     """Generate a safe lucky window that doesn't overlap with caution window.
     
+    Handles midnight wrap-around caution windows correctly.
+    
     Args:
-        caution_window_str: The caution window string (e.g., "12:35-16:35 UTC")
+        caution_window_str: The caution window string (e.g., "12:35-16:35 UTC" or "22:00-02:00 UTC")
         
     Returns:
-        A non-overlapping time window string
+        A non-overlapping time window string in 24-hour UTC format
     """
-    caution_times = _parse_window_times(caution_window_str)
-    if not caution_times:
-        return "10:30 AM - 12:00 PM"  # Fallback to default
+    parsed = _parse_window_times(caution_window_str)
+    if not parsed:
+        return "10:30-12:00 UTC"  # Fixed: consistent UTC format
     
-    caution_start_min, caution_end_min = caution_times
+    # Split caution into intervals (handles wrap-around)
+    blocks = _intervals(parsed)
+    blocked = []
+    for s, e in blocks:
+        blocked.append((s, e))
     
-    # Try to find a 2-3 hour window outside the caution period
-    # Option 1: Early morning (4:00 AM - 6:30 AM) if caution starts after 6:30 AM
-    early_start = 4 * 60  # 4:00 AM
-    early_end = 6 * 60 + 30  # 6:30 AM
-    if early_end <= caution_start_min:
-        return f"{early_start // 60:02d}:{early_start % 60:02d}-{early_end // 60:02d}:{early_end % 60:02d} UTC"
+    # Build free intervals over [0, 1440) minutes
+    cursor = 0
+    free = []
+    for (s, e) in sorted(blocked):
+        if cursor < s:
+            free.append((cursor, s))
+        cursor = max(cursor, e)
+    if cursor < 1440:
+        free.append((cursor, 1440))
     
-    # Option 2: Late evening (18:00 - 20:30) if caution ends before 18:00
-    evening_start = 18 * 60  # 6:00 PM
-    evening_end = 20 * 60 + 30  # 8:30 PM
-    if caution_end_min <= evening_start:
-        return f"{evening_start // 60:02d}:{evening_start % 60:02d}-{evening_end // 60:02d}:{evening_end % 60:02d} UTC"
+    # Prefer daytime hours: 06:00–22:00 (360-1320 minutes)
+    preferred = [(6 * 60, 22 * 60)]
     
-    # Option 3: Night (21:00 - 23:00) if caution ends before 21:00
-    night_start = 21 * 60  # 9:00 PM
-    night_end = 23 * 60  # 11:00 PM
-    if caution_end_min <= night_start:
-        return f"{night_start // 60:02d}:{night_start % 60:02d}-{night_end // 60:02d}:{night_end % 60:02d} UTC"
+    def pick_window(pools, min_len=90, target_len=120):
+        """Find a window of target_len (or at least min_len) from available pools."""
+        for (fs, fe) in pools:
+            length = fe - fs
+            if length >= min_len:
+                # Center the window within the free block
+                start = fs + max(0, (length - target_len) // 2)
+                end = min(fe, start + target_len)
+                if end - start >= min_len:
+                    return f"{start // 60:02d}:{start % 60:02d}-{end // 60:02d}:{end % 60:02d} UTC"
+        return None
     
-    # If caution spans most of the day, return early morning before caution starts
-    if caution_start_min > 2 * 60:  # If caution starts after 2 AM
-        safe_start = max(0, caution_start_min - 180)  # 3 hours before caution
-        safe_end = max(safe_start + 90, caution_start_min - 30)  # 1.5-2.5 hours window
-        return f"{safe_start // 60:02d}:{safe_start % 60:02d}-{safe_end // 60:02d}:{safe_end % 60:02d} UTC"
+    # Intersect free blocks with preferred daytime hours
+    preferred_free = []
+    for (fs, fe) in free:
+        for (ps, pe) in preferred:
+            s = max(fs, ps)
+            e = min(fe, pe)
+            if s < e:
+                preferred_free.append((s, e))
     
-    # Last resort: use a small window right after caution ends
-    safe_start = min(23 * 60, caution_end_min + 30)  # 30 min after caution
-    safe_end = min(24 * 60 - 1, safe_start + 90)  # 1.5 hour window
-    return f"{safe_start // 60:02d}:{safe_start % 60:02d}-{safe_end // 60:02d}:{safe_end % 60:02d} UTC"
+    # Try preferred daytime first, then any free block
+    win = pick_window(preferred_free) or pick_window(free)
+    return win or "10:30-12:00 UTC"
 
 
 def lucky_from_dominant(
@@ -277,8 +291,12 @@ def lucky_from_dominant(
     Returns:
         Dict with color, time_window, direction, and affirmation
     """
-    color = COLOR_BY_SIGN.get(dominant_sign, "Gold")
-    direction = DIR_BY_PLANET.get(dominant_planet, "East")
+    # Normalize planet and sign to Title case for consistent mapping lookups
+    p_key = (dominant_planet or "").strip().title()
+    s_key = (dominant_sign or "").strip().title()
+    
+    color = COLOR_BY_SIGN.get(s_key, "Gold")
+    direction = DIR_BY_PLANET.get(p_key, "East")
     
     # Calculate time window from supportive events if available
     calculated_window = None
@@ -339,7 +357,7 @@ def lucky_from_dominant(
         "Saturn": "I honor structure and steady progress.",
         "Moon": "I listen to my feelings with care.",
         "Pluto": "My inner power is steady and calm.",
-    }.get(dominant_planet, "I choose what strengthens me.")
+    }.get(p_key, "I choose what strengthens me.")
     
     return {
         "color": color,

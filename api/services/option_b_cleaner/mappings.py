@@ -37,4 +37,4 @@ DIR_BY_PLANET = {
     "Pluto": "South",  # Pluto often mapped via Mars
 }
 
-DEFAULT_TIME_WINDOW = "10:30 AM - 12:00 PM"
+DEFAULT_TIME_WINDOW = "10:30-12:00 UTC"
