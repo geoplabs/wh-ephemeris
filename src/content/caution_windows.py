@@ -173,7 +173,8 @@ def _aspect_weight(aspect: str, transit_body: str, natal_body: str) -> float:
             return 1.2
         if transit_lower in BENEFIC_BODIES or natal_lower in BENEFIC_BODIES:
             return -0.8
-        return 0.6
+        # Reduced from 0.6 to 0.4 for more conservative neutral conjunction scoring
+        return 0.4
     return ASPECT_WEIGHTS.get(aspect, 0.0)
 
 
@@ -434,7 +435,8 @@ def _merge_windows(windows: list[WindowRecord]) -> list[WindowRecord]:
         return []
     windows.sort(key=lambda item: item.start)
     merged: list[WindowRecord] = [windows[0]]
-    tolerance = timedelta(minutes=60)
+    # Reduced from 60 to 30 minutes to avoid over-merging distinct Moon windows
+    tolerance = timedelta(minutes=30)
     for window in windows[1:]:
         prev = merged[-1]
         if window.start <= prev.end + tolerance:
@@ -502,9 +504,10 @@ def compute_caution_windows(events: Sequence[Mapping[str, Any]]) -> list[dict[st
 
     background = [record for record in background if record not in attached_background]
 
-    positive_background_dates: set[date | None] = set()
+    # Fix: Only add non-None dates to prevent global boost
+    positive_background_dates: set[date] = set()
     for record in background:
-        if record.score > 0:
+        if record.score > 0 and record.local_date is not None:
             positive_background_dates.add(record.local_date)
 
     results: list[dict[str, Any]] = []
@@ -518,7 +521,7 @@ def compute_caution_windows(events: Sequence[Mapping[str, Any]]) -> list[dict[st
 
         window_date = window.start.date()
         boost = 1.0
-        if any(d is None or d == window_date for d in positive_background_dates):
+        if window_date in positive_background_dates:
             boost = 1.1
 
         adjusted_score = _cap_score(raw_score * boost)
@@ -533,8 +536,11 @@ def compute_caution_windows(events: Sequence[Mapping[str, Any]]) -> list[dict[st
         if _has_angle_trigger(contributors) and severity in {"No flag", "Gentle Note"}:
             severity = "Caution"
 
+        # Only downgrade Moon windows if Moon is the TOP FRICTION driver with wide orb
         top_record = contributors[0]
-        if top_record.transit_body.lower() == "moon" and top_record.orb > 3.0:
+        if (top_record.transit_body.lower() == "moon" and 
+            top_record.score > 0 and 
+            top_record.orb > 3.0):
             severity = _downgrade_severity(severity)
 
         if severity == "No flag":
