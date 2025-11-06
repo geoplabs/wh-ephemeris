@@ -747,9 +747,10 @@ def build_context(option_b_json: dict[str, Any]) -> dict[str, Any]:
             
             if overlaps:
                 # Calculate net score in overlap region
+                # Use annotated_events (raw events), not enriched_events (wrapped structure)
                 net_score = _calculate_overlap_net_score(
                     candidate_event,
-                    enriched_events,
+                    annotated_events,
                     candidate_time_window,
                     caution_time_str
                 )
