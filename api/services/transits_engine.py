@@ -3,6 +3,7 @@ from typing import Dict, Any, List, Optional
 from . import ephem, aspects as aspects_svc, houses as houses_svc
 from .transit_math import is_applying
 from .constants import sign_name_from_lon
+from . import advanced_transits
 
 ASPECT_WEIGHTS = {
     "conjunction": 2,    # Neutral-to-supportive (depends on planet)
@@ -259,9 +260,99 @@ def compute_transits(chart_input: Dict[str,Any], opts: Dict[str,Any]) -> List[Di
                         
                         # Determine transit motion (retrograde/direct)
                         transit_motion = "retrograde" if t_pos["speed_lon"] < 0 else "direct"
+                        is_retrograde = t_pos["speed_lon"] < 0
                         
                         # Determine natal point type
                         natal_point_type = _natal_point_type(n_name)
+                        
+                        # ===== ADVANCED FEATURES DETECTION =====
+                        
+                        # 1. Station Detection
+                        station_info = advanced_transits.detect_station(
+                            t_name,
+                            t_pos["speed_lon"],
+                            dt,
+                            datetime.fromisoformat(chart_input["date"])
+                        )
+                        station_score = 0.0
+                        if station_info:
+                            station_score = advanced_transits.calculate_station_score(
+                                station_info, a_name, n_name, t_name
+                            )
+                        
+                        # 2. Retrograde Category Bias
+                        retrograde_bias = advanced_transits.get_retrograde_bias(
+                            t_name,
+                            is_retrograde,
+                            station_info is not None
+                        )
+                        
+                        # 3. Sign Change (Ingress) Detection
+                        ingress_info = advanced_transits.detect_ingress(
+                            t_name,
+                            t_pos["lon"],
+                            dt,
+                            {k: v["lon"] for k, v in natal_map.items()}
+                        )
+                        
+                        # 4. Solar Relationship (for planets other than Sun)
+                        solar_relationship = None
+                        if t_name != "Sun" and "Sun" in T:
+                            solar_relationship = advanced_transits.calculate_solar_relationship(
+                                t_pos["lon"],
+                                T["Sun"]["lon"]
+                            )
+                        
+                        # 5. Enhanced Outer-Planet Window Duration
+                        # (This will be used by caution_windows.py)
+                        enhanced_window_hours = advanced_transits.calculate_enhanced_window(
+                            t_name,
+                            a_name,
+                            n_name,
+                            0  # Standard window (will be calculated later)
+                        )
+                        
+                        # 6. Outer-Planet Score Boost
+                        outer_planet_boost = advanced_transits.calculate_outer_planet_score_boost(
+                            t_name,
+                            a_name,
+                            n_name,
+                            score
+                        )
+                        
+                        # Apply advanced modifiers to base score
+                        adjusted_score = score
+                        adjusted_score += station_score
+                        if retrograde_bias["has_bias"]:
+                            adjusted_score += retrograde_bias["modifier"]
+                        if ingress_info and ingress_info["boost"] > 0:
+                            adjusted_score += ingress_info["boost"]
+                        if solar_relationship and solar_relationship["has_solar_relationship"]:
+                            adjusted_score += solar_relationship["score_modifier"]
+                        # Replace with outer planet boosted score if applicable
+                        if outer_planet_boost != score:
+                            adjusted_score = outer_planet_boost
+                        
+                        # ===== VEDIC-SPECIFIC FEATURES =====
+                        
+                        # 7. Nodal Contacts (Rahu/Ketu to luminaries/angles)
+                        nodal_contact = advanced_transits.detect_nodal_contact(
+                            t_name,
+                            n_name,
+                            orb,
+                            a_name
+                        )
+                        if nodal_contact:
+                            # Apply nodal contact score modifier
+                            adjusted_score += nodal_contact["score_modifier"]
+                        
+                        # Note: Panchang influence (Tithi/Nakshatra/Yoga/Karana) 
+                        # should be calculated at the daily forecast level, not per-event.
+                        # It will be available in render.py for microcopy integration.
+                        
+                        # Note: Declination parallels require declination data from Swiss Ephemeris.
+                        # This is an advanced optional feature that can be added later
+                        # when declination calculation is integrated into ephem.py
                         
                         # Build event dict
                         event = {
@@ -272,13 +363,22 @@ def compute_transits(chart_input: Dict[str,Any], opts: Dict[str,Any]) -> List[Di
                             "orb": orb,
                             "applying": applying,
                             "phase": phase,  # lowercase for caution window compatibility
-                            "score": score,
+                            "score": adjusted_score,  # Use adjusted score
+                            "base_score": score,  # Keep original for reference
                             "note": note,
                             "transit_sign": transit_sign,
                             "natal_sign": natal_sign,
                             "zodiac": zodiac_mode,
                             "transit_motion": transit_motion,
                             "natal_point_type": natal_point_type,
+                            # Advanced features
+                            "station_info": station_info,
+                            "retrograde_bias": retrograde_bias,
+                            "ingress_info": ingress_info,
+                            "solar_relationship": solar_relationship,
+                            "enhanced_window_hours": enhanced_window_hours,
+                            # Vedic features
+                            "nodal_contact": nodal_contact,
                         }
                         
                         # Add exact_hit_time_utc if calculated
@@ -286,6 +386,121 @@ def compute_transits(chart_input: Dict[str,Any], opts: Dict[str,Any]) -> List[Di
                             event["exact_hit_time_utc"] = exact_hit_time_utc
                         
                         events.append(event)
+    
+    # ===== SPECIAL SKY EVENTS (LUNAR CYCLE & ECLIPSES) =====
+    # Add these after regular transit aspects
+    for dt in _daterange_utc(obs_from, obs_to, step):
+        tr = _transit_positions(dt, chart_input["system"], ayan)
+        
+        if "Moon" in tr and "Sun" in tr:
+            moon = tr["Moon"]
+            sun = tr["Sun"]
+            
+            # 1. Lunar Phase Detection
+            lunar_phase = advanced_transits.detect_lunar_phase(
+                moon["lon"],
+                sun["lon"],
+                dt
+            )
+            
+            if lunar_phase:
+                # Calculate score based on natal aspects if available
+                # For now, use base weight
+                phase_score = lunar_phase["base_weight"]
+                
+                # Create a special event for the lunar phase
+                phase_event = {
+                    "date": dt.date().isoformat(),
+                    "transit_body": "Moon",
+                    "natal_body": "Sun",  # Conceptual
+                    "aspect": "lunar_phase",
+                    "phase_name": lunar_phase["phase_name"],
+                    "orb": lunar_phase["orb_from_exact"],
+                    "score": phase_score,
+                    "note": f"{lunar_phase['phase_name'].replace('_', ' ').title()}: {lunar_phase['description']}",
+                    "lunar_phase_info": lunar_phase,
+                    "event_type": "lunar_phase",
+                }
+                events.append(phase_event)
+            
+            # 2. Void-of-Course Moon
+            voc_moon = advanced_transits.detect_void_of_course_moon(
+                moon["lon"],
+                moon["speed_lon"],
+                dt
+            )
+            
+            if voc_moon:
+                voc_event = {
+                    "date": dt.date().isoformat(),
+                    "transit_body": "Moon",
+                    "natal_body": None,
+                    "aspect": "void_of_course",
+                    "score": voc_moon["score_modifier"],
+                    "note": voc_moon["effect"],
+                    "voc_info": voc_moon,
+                    "event_type": "void_of_course",
+                }
+                events.append(voc_event)
+            
+            # 3. Supermoon / Micromoon (requires distance data)
+            # Note: distance calculation requires Swiss Ephemeris extension
+            # For now, we'll skip this or use approximate calculation
+            # moon_distance = tr["Moon"].get("distance_km")
+            # if moon_distance and lunar_phase:
+            #     special_moon = advanced_transits.detect_supermoon_micromoon(
+            #         moon_distance, lunar_phase
+            #     )
+            #     if special_moon:
+            #         # Add amplification to existing lunar phase event
+            #         pass
+            
+            # 4. Out-of-Bounds Moon (requires declination data)
+            moon_dec = tr["Moon"].get("dec")
+            if moon_dec is not None:
+                oob_moon = advanced_transits.detect_out_of_bounds_moon(moon_dec)
+                
+                if oob_moon:
+                    oob_event = {
+                        "date": dt.date().isoformat(),
+                        "transit_body": "Moon",
+                        "natal_body": None,
+                        "aspect": "out_of_bounds",
+                        "score": oob_moon["caution_modifier"],
+                        "note": oob_moon["description"],
+                        "oob_info": oob_moon,
+                        "event_type": "out_of_bounds",
+                    }
+                    events.append(oob_event)
+            
+            # 5. Eclipse Detection (requires Moon latitude)
+            moon_lat = tr["Moon"].get("lat", 0)  # Ecliptic latitude
+            natal_lons = {k: v["lon"] for k, v in natal_map.items()}
+            
+            eclipse = advanced_transits.detect_eclipse(
+                moon["lon"],
+                sun["lon"],
+                moon_lat,
+                dt,
+                natal_lons
+            )
+            
+            if eclipse:
+                eclipse_score = advanced_transits.calculate_eclipse_score(eclipse)
+                
+                eclipse_event = {
+                    "date": dt.date().isoformat(),
+                    "transit_body": "Moon" if eclipse["eclipse_category"] == "lunar" else "Sun",
+                    "natal_body": None,
+                    "aspect": "eclipse",
+                    "eclipse_type": eclipse["eclipse_type"],
+                    "eclipse_category": eclipse["eclipse_category"],
+                    "score": eclipse_score,
+                    "note": eclipse["description"],
+                    "eclipse_info": eclipse,
+                    "event_type": "eclipse",
+                }
+                events.append(eclipse_event)
     
     # Sort: Prioritize fast-moving planets, then by date, then by score
     # Priority order: fast planets with exact_hit_time > fast planets without > slow planets

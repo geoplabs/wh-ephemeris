@@ -228,14 +228,27 @@ def _infer_window(event: Mapping[str, Any], exact_utc: datetime | None) -> tuple
     date_str = (event.get("date") or "").strip()
     if exact_utc is not None:
         center = exact_utc.astimezone(UTC)
-        if transit_body == "moon":
+        
+        # Check for enhanced window hours from advanced features
+        enhanced_hours = event.get("enhanced_window_hours")
+        if enhanced_hours and enhanced_hours > 0:
+            # Use enhanced window for outer planets with hard aspects
+            delta = timedelta(hours=enhanced_hours)
+        elif transit_body == "moon":
             delta = timedelta(minutes=90)
         elif transit_body in {"mercury", "venus", "sun"}:
             delta = timedelta(hours=2)
         elif transit_body == "mars":
             delta = timedelta(hours=3)
         elif transit_body in SLOW_BODIES:
-            return None
+            # Check for station info - stations get extended windows
+            station_info = event.get("station_info")
+            if station_info and station_info.get("is_station"):
+                # Use station window from advanced features
+                station_hours = station_info.get("window_hours", 48)
+                delta = timedelta(hours=station_hours)
+            else:
+                return None
         else:
             delta = timedelta(hours=2)
         return center - delta, center + delta
@@ -387,7 +400,8 @@ def _event_record(event: Mapping[str, Any]) -> EventRecord | None:
         aspect,
     )
 
-    score = (
+    # Calculate base score
+    base_score = (
         w_aspect
         * transit_weight
         * natal_weight
@@ -396,6 +410,11 @@ def _event_record(event: Mapping[str, Any]) -> EventRecord | None:
         * motion_multiplier
         * sign_multiplier
     )
+    
+    # Use adjusted score from transits_engine if available (includes advanced features)
+    # Otherwise fall back to base_score calculated here
+    score = event.get("score", base_score)
+    
     if score == 0:
         return None
 

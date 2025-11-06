@@ -78,9 +78,11 @@ check-dev-env.ps1
 deploy-to-aws.ps1
 
 # Terraform task definition files
-task-def.json
-new-task-def.json
-new-task-def-clean.json
+task-*.json
+
+# Postman collections
+WH-ephemis-API.postman*
+*.postman_collection.json
 
 # Docker deployment documentation
 DOCKER_DEPLOYMENT_GUIDE.md
