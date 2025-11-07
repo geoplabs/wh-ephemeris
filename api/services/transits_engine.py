@@ -461,8 +461,9 @@ def compute_transits(chart_input: Dict[str,Any], opts: Dict[str,Any]) -> List[Di
                 voc_event = {
                     "date": dt.date().isoformat(),
                     "transit_body": "Moon",
-                    "natal_body": None,
+                    "natal_body": "—",  # Special event, not a transit
                     "aspect": "void_of_course",
+                    "orb": 0.0,  # Not applicable for VoC
                     "score": voc_moon["score_modifier"],
                     "note": voc_moon["effect"],
                     "voc_info": voc_moon,
@@ -482,8 +483,9 @@ def compute_transits(chart_input: Dict[str,Any], opts: Dict[str,Any]) -> List[Di
                     oob_event = {
                         "date": dt.date().isoformat(),
                         "transit_body": "Moon",
-                        "natal_body": None,
+                        "natal_body": "—",  # Special event, not a transit
                         "aspect": "out_of_bounds",
+                        "orb": 0.0,  # Not applicable for OOB
                         "score": oob_moon["caution_modifier"],
                         "note": oob_moon["description"],
                         "oob_info": oob_moon,
@@ -509,8 +511,9 @@ def compute_transits(chart_input: Dict[str,Any], opts: Dict[str,Any]) -> List[Di
                 eclipse_event = {
                     "date": dt.date().isoformat(),
                     "transit_body": "Moon" if eclipse["eclipse_category"] == "lunar" else "Sun",
-                    "natal_body": None,
+                    "natal_body": "—",  # Special event, not a transit
                     "aspect": "eclipse",
+                    "orb": 0.0,  # Exact by definition
                     "eclipse_type": eclipse["eclipse_type"],
                     "eclipse_category": eclipse["eclipse_category"],
                     "score": eclipse_score,

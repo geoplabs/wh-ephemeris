@@ -6,6 +6,7 @@ import re
 import time
 from collections.abc import Mapping
 from dataclasses import dataclass
+from datetime import datetime
 from functools import lru_cache
 from hashlib import sha256
 from typing import Any, Dict, List, Optional, Sequence, Tuple
@@ -460,19 +461,18 @@ def _format_special_event(event: Mapping[str, Any]) -> str:
             end = window.get("end")
             if start and end:
                 try:
-                    from datetime import datetime as dt_class
                     # Handle both datetime objects and ISO strings
-                    if isinstance(start, dt_class):
+                    if isinstance(start, datetime):
                         start_dt = start
                     else:
                         start_str = str(start).replace("Z", "+00:00")
-                        start_dt = dt_class.fromisoformat(start_str)
+                        start_dt = datetime.fromisoformat(start_str)
                     
-                    if isinstance(end, dt_class):
+                    if isinstance(end, datetime):
                         end_dt = end
                     else:
                         end_str = str(end).replace("Z", "+00:00")
-                        end_dt = dt_class.fromisoformat(end_str)
+                        end_dt = datetime.fromisoformat(end_str)
                     
                     time_display = f"{start_dt.strftime('%H:%M')}-{end_dt.strftime('%H:%M')} UTC"
                 except Exception:
