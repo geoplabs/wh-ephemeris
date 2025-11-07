@@ -1137,9 +1137,9 @@ def detect_eclipse(
     if angle > 180:
         angle = 360 - angle
     
-    # Check if near New or Full Moon
-    is_new = angle <= 10  # Within 10° of New Moon
-    is_full = abs(angle - 180) <= 10  # Within 10° of Full Moon
+    # Check if near New or Full Moon (tightened thresholds)
+    is_new = angle <= 6  # Within 6° of New Moon (was 10°)
+    is_full = abs(angle - 180) <= 6  # Within 6° of Full Moon (was 10°)
     
     if not (is_new or is_full):
         return None
@@ -1147,9 +1147,9 @@ def detect_eclipse(
     # Check if Moon is near nodes (ecliptic latitude close to 0)
     abs_lat = abs(moon_lat)
     
-    # Eclipse thresholds (simplified)
-    SOLAR_ECLIPSE_LAT = 1.5  # Solar eclipse if lat ≤ 1.5°
-    LUNAR_ECLIPSE_LAT = 1.0  # Lunar eclipse if lat ≤ 1.0°
+    # Eclipse thresholds (tightened for accuracy)
+    SOLAR_ECLIPSE_LAT = 1.0  # Solar eclipse if lat ≤ 1.0° (was 1.5°)
+    LUNAR_ECLIPSE_LAT = 0.7  # Lunar eclipse if lat ≤ 0.7° (was 1.0°)
     
     eclipse_info = None
     

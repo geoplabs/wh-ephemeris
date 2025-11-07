@@ -420,10 +420,16 @@ def _format_special_event(event: Mapping[str, Any]) -> str:
     # Eclipse-specific formatting with personalization
     if event_type == "eclipse":
         eclipse_info = _sanitize_mapping(event.get("eclipse_info"))
+        logger.debug("Eclipse formatting", extra={
+            "has_eclipse_info": bool(eclipse_info),
+            "eclipse_info_keys": list(eclipse_info.keys()) if eclipse_info else []
+        })
+        
         banner = _coerce_string(eclipse_info.get("banner"))
         if not banner:
-            category = _coerce_string(eclipse_info.get("eclipse_category"))
-            eclipse_type = _coerce_string(eclipse_info.get("eclipse_type"))
+            # Fallback: try to build from top-level fields if eclipse_info is missing data
+            category = _coerce_string(eclipse_info.get("eclipse_category") or event.get("eclipse_category"))
+            eclipse_type = _coerce_string(eclipse_info.get("eclipse_type") or event.get("eclipse_type"))
             if category and eclipse_type:
                 banner = f"{category.title()} Eclipse ({eclipse_type.title()})"
             else:
@@ -445,7 +451,9 @@ def _format_special_event(event: Mapping[str, Any]) -> str:
             parts.append("Visible from your location")
         
         combined = " – ".join(parts) if len(parts) > 1 else (parts[0] if parts else "")
-        return _ensure_sentence(combined or note_sentence or "Major eclipse today")
+        result = _ensure_sentence(combined or note_sentence or "Major eclipse today")
+        logger.debug("Eclipse formatted", extra={"result": result, "banner": banner, "tone_line": tone_line})
+        return result
 
     # Void-of-Course Moon with time window
     if event_type == "void_of_course":
