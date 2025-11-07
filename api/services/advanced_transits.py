@@ -788,6 +788,9 @@ def detect_lunar_phase(
     # Find matching phase
     for phase_name, phase_data in phases.items():
         diff = abs(angle - phase_data["exact_angle"])
+        # Handle wrap-around for angles near 0°/360°
+        if diff > 180:
+            diff = 360 - diff
         if diff <= phase_data["orb"]:
             return {
                 "has_lunar_phase": True,
