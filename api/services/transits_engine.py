@@ -183,7 +183,8 @@ def _transit_positions(dt: datetime, system: str, ayan: str|None) -> Dict[str,Di
     jd = ephem.to_jd_utc(dt.date().isoformat(), "12:00:00", "UTC")
     sidereal = (system == "vedic")
     pos = ephem.positions_ecliptic(jd, sidereal=sidereal, ayanamsha=(ayan or "lahiri"))
-    return {k: {"lon": v["lon"], "speed_lon": v["speed_lon"]} for k,v in pos.items()}
+    # Include latitude for eclipse detection
+    return {k: {"lon": v["lon"], "speed_lon": v["speed_lon"], "lat": v.get("lat", 0)} for k,v in pos.items()}
 
 def compute_transits(chart_input: Dict[str,Any], opts: Dict[str,Any]) -> List[Dict[str,Any]]:
     # options

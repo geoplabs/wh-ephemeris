@@ -88,13 +88,14 @@ def positions_ecliptic(jd_utc: float, sidereal: bool = False, ayanamsha: str = "
             lon, _lat, _dist, lon_speed, _lat_speed, _dist_speed = values
             bodies[name] = {
                 "lon": lon % 360.0,
+                "lat": _lat,  # Ecliptic latitude (needed for eclipse detection)
                 "speed_lon": lon_speed,
                 "retro": lon_speed < 0,
             }
         except Exception:
             # Bodies such as Chiron require the Swiss ephemeris files; if unavailable
             # fall back to a neutral value so the caller can still render a response.
-            bodies[name] = {"lon": 0.0, "speed_lon": 0.0, "retro": False}
+            bodies[name] = {"lon": 0.0, "lat": 0.0, "speed_lon": 0.0, "retro": False}
 
     return bodies
 
