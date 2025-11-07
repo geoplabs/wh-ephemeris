@@ -144,3 +144,17 @@ def test_wide_moon_orb_downgrades_severity():
 
     assert caution_window and caution_window[0]["severity"] in {"Caution", "High Caution"}
     assert downgraded_window and downgraded_window[0]["severity"] == "Gentle Note"
+
+
+def test_time_window_marks_next_day_when_wrapping_midnight():
+    events = [
+        _base_event(
+            exact_hit_time_utc="2025-10-29T23:30:00Z",
+            orb=0.8,
+        )
+    ]
+
+    windows = compute_caution_windows(events)
+
+    assert windows, "expected a caution window to be produced"
+    assert windows[0]["time_window_utc"].endswith("(next day)")
