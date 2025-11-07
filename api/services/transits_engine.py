@@ -403,11 +403,31 @@ def compute_transits(chart_input: Dict[str,Any], opts: Dict[str,Any]) -> List[Di
                 dt
             )
             
+            special_moon = None
+
             if lunar_phase:
-                # Calculate score based on natal aspects if available
-                # For now, use base weight
-                phase_score = lunar_phase["base_weight"]
-                
+                # Attempt to enhance lunar scoring with special moon data when available
+                moon_distance = (
+                    moon.get("distance_km")
+                    or moon.get("distance")
+                    or moon.get("distance_au")
+                )
+
+                # Normalize AU distance to km if necessary
+                if isinstance(moon_distance, (int, float)) and moon_distance < 10:
+                    # Assume Astronomical Units if the value is small
+                    moon_distance = moon_distance * 149_597_870.7
+
+                if isinstance(moon_distance, (int, float)):
+                    special_moon = advanced_transits.detect_supermoon_micromoon(
+                        moon_distance, lunar_phase
+                    )
+
+                phase_score = advanced_transits.calculate_lunar_phase_score(
+                    lunar_phase,
+                    special_moon=special_moon,
+                )
+
                 # Create a special event for the lunar phase
                 phase_event = {
                     "date": dt.date().isoformat(),
@@ -420,7 +440,14 @@ def compute_transits(chart_input: Dict[str,Any], opts: Dict[str,Any]) -> List[Di
                     "note": f"{lunar_phase['phase_name'].replace('_', ' ').title()}: {lunar_phase['description']}",
                     "lunar_phase_info": lunar_phase,
                     "event_type": "lunar_phase",
+                    "banner": lunar_phase.get("banner"),
+                    "tone_line": lunar_phase.get("tone_line"),
+                    "impact_level": lunar_phase.get("impact_level"),
                 }
+
+                if special_moon:
+                    phase_event["special_moon"] = special_moon
+
                 events.append(phase_event)
             
             # 2. Void-of-Course Moon
@@ -443,17 +470,8 @@ def compute_transits(chart_input: Dict[str,Any], opts: Dict[str,Any]) -> List[Di
                 }
                 events.append(voc_event)
             
-            # 3. Supermoon / Micromoon (requires distance data)
-            # Note: distance calculation requires Swiss Ephemeris extension
-            # For now, we'll skip this or use approximate calculation
-            # moon_distance = tr["Moon"].get("distance_km")
-            # if moon_distance and lunar_phase:
-            #     special_moon = advanced_transits.detect_supermoon_micromoon(
-            #         moon_distance, lunar_phase
-            #     )
-            #     if special_moon:
-            #         # Add amplification to existing lunar phase event
-            #         pass
+            # 3. Supermoon / Micromoon handled during lunar phase scoring when
+            #    distance data is available. No additional event needed here.
             
             # 4. Out-of-Bounds Moon (requires declination data)
             moon_dec = tr["Moon"].get("dec")
