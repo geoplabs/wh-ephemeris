@@ -473,7 +473,18 @@ def _cap_score(score: float) -> float:
 def _format_time_window(start: datetime, end: datetime) -> str:
     start_utc = start.astimezone(UTC)
     end_utc = end.astimezone(UTC)
-    return f"{start_utc.strftime('%H:%M')}-{end_utc.strftime('%H:%M')} UTC"
+    start_str = start_utc.strftime("%H:%M")
+    end_str = end_utc.strftime("%H:%M")
+    window = f"{start_str}-{end_str} UTC"
+
+    # Add clarity when a window continues into the next day (or beyond).
+    # This happens for longer influence periods that span midnight in UTC.
+    day_delta = (end_utc.date() - start_utc.date()).days
+    if day_delta == 1:
+        return f"{window} (next day)"
+    if day_delta > 1:
+        return f"{window} (+{day_delta} days)"
+    return window
 
 
 def compute_caution_windows(events: Sequence[Mapping[str, Any]]) -> list[dict[str, Any]]:
