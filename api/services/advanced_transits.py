@@ -730,33 +730,57 @@ def detect_lunar_phase(
         "new_moon": {
             "exact_angle": 0,
             "orb": 8,  # ±8° for detection
-            "weight": 0.8,  # Can be positive or negative based on aspects
-            "window_hours": 12,
+            "weight": 0.8,  # Sign is determined via natal aspects (±)
+            "window_hours": {
+                "core": {"pre": 6, "post": 6},
+                "extended": {"pre": 12, "post": 12},
+            },
             "description": "Fresh starts and new intentions",
+            "banner": "New Moon",
+            "tone_line": "Fresh start window – plant seeds and reset focus.",
+            "impact_level": "high",
             "keywords": ["beginning", "seed", "intention", "initiate"],
         },
         "first_quarter": {
             "exact_angle": 90,
             "orb": 6,
             "weight": 0.5,
-            "window_hours": 6,
+            "window_hours": {
+                "core": {"pre": 4, "post": 4},
+                "extended": {"pre": 6, "post": 6},
+            },
             "description": "Action moment - decisions and momentum",
+            "banner": "First Quarter Moon",
+            "tone_line": "Action cue – tweak plans and push forward.",
+            "impact_level": "medium",
             "keywords": ["action", "decision", "push", "momentum"],
         },
         "full_moon": {
             "exact_angle": 180,
             "orb": 8,
-            "weight": 1.0,  # Will be adjusted based on natal aspects
-            "window_hours": 12,
+            "weight": 1.0,  # Adjusted based on natal aspects
+            "window_hours": {
+                "core": {"pre": 6, "post": 6},
+                "extended": {"pre": 12, "post": 12},
+            },
             "description": "Culmination and release",
+            "banner": "Full Moon",
+            "tone_line": "Peak tides – revelations and culmination moments.",
+            "impact_level": "high",
             "keywords": ["culmination", "release", "harvest", "revelation"],
         },
         "last_quarter": {
             "exact_angle": 270,
             "orb": 6,
             "weight": 0.5,
-            "window_hours": 6,
+            "window_hours": {
+                "core": {"pre": 4, "post": 4},
+                "extended": {"pre": 6, "post": 6},
+            },
             "description": "Review and adjustment moment",
+            "banner": "Last Quarter Moon",
+            "tone_line": "Refine + release – course correct and integrate.",
+            "impact_level": "medium",
             "keywords": ["review", "adjust", "refine", "release"],
         },
     }
@@ -774,6 +798,9 @@ def detect_lunar_phase(
                 "window_hours": phase_data["window_hours"],
                 "description": phase_data["description"],
                 "keywords": phase_data["keywords"],
+                "banner": phase_data["banner"],
+                "tone_line": phase_data["tone_line"],
+                "impact_level": phase_data["impact_level"],
             }
     
     return None
@@ -782,17 +809,21 @@ def detect_lunar_phase(
 def calculate_lunar_phase_score(
     phase_info: Dict[str, Any],
     natal_aspects: Optional[Dict[str, Any]] = None,
+    special_moon: Optional[Dict[str, Any]] = None,
 ) -> float:
     """
-    Calculate score modifier for lunar phase based on natal aspects.
-    
-    Full Moon gets +1.0 if squaring/opposing natal luminaries/angles,
-    -0.6 if trine/sextile.
-    
+    Calculate score modifier for lunar phase based on natal aspects and amplifiers.
+
+    - New Moon: ±0.8 based on natal luminary/angle connections.
+    - Full Moon: +1.0 for hard aspects to luminaries/angles, -0.6 for supportive ones.
+    - First/Last Quarter: +/-0.5 leaning based on action or refinement cues.
+    - Supermoon/Micromoon: Applies +/-10-15% amplification to New/Full Moon scores.
+
     Args:
         phase_info: Lunar phase info from detect_lunar_phase
         natal_aspects: Optional natal aspect information
-        
+        special_moon: Optional supermoon/micromoon metadata for amplification
+
     Returns:
         Score modifier
     """
@@ -801,20 +832,58 @@ def calculate_lunar_phase_score(
     
     base_weight = phase_info["base_weight"]
     phase_name = phase_info["phase_name"]
-    
-    # If we have natal aspect information, adjust Full/New Moon weights
-    if natal_aspects and phase_name in {"new_moon", "full_moon"}:
-        aspect_type = natal_aspects.get("aspect_type")
-        
-        if aspect_type in {"square", "opposition"}:
-            # Challenging aspects to luminaries/angles
-            return base_weight * 1.25 if phase_name == "full_moon" else base_weight
-        elif aspect_type in {"trine", "sextile"}:
-            # Supportive aspects
-            return -0.6  # Supportive influence
-    
-    # Default weights for First/Last Quarter
-    return base_weight
+
+    luminaries_angles = {"sun", "moon", "ascendant", "midheaven", "mc", "asc"}
+    hard_aspects = {"square", "opposition"}
+    soft_aspects = {"trine", "sextile"}
+    conjunctions = {"conjunction"}
+
+    def _normalize(value: Optional[str]) -> str:
+        return value.strip().lower() if isinstance(value, str) else ""
+
+    aspect_type = _normalize(natal_aspects.get("aspect_type")) if natal_aspects else ""
+    natal_point_normalized = (
+        _normalize(natal_aspects.get("natal_point")) if natal_aspects else ""
+    )
+
+    score = base_weight
+
+    if phase_name == "new_moon":
+        # Default to supportive reset
+        score = 0.8
+        if natal_aspects and natal_point_normalized in luminaries_angles:
+            if aspect_type in hard_aspects:
+                score = -0.8
+            elif aspect_type in soft_aspects or aspect_type in conjunctions:
+                score = 0.8
+
+    elif phase_name == "full_moon":
+        score = base_weight
+        if natal_aspects and natal_point_normalized in luminaries_angles:
+            if aspect_type in hard_aspects:
+                score = 1.0
+            elif aspect_type in soft_aspects:
+                score = -0.6
+            elif aspect_type in conjunctions:
+                score = base_weight
+
+    elif phase_name in {"first_quarter", "last_quarter"}:
+        score = base_weight
+        if natal_aspects and natal_point_normalized in luminaries_angles:
+            if aspect_type in soft_aspects:
+                score = -abs(base_weight)
+            elif aspect_type in hard_aspects | conjunctions:
+                score = abs(base_weight)
+
+    # Apply supermoon/micromoon amplification for relevant phases
+    if (
+        special_moon
+        and special_moon.get("has_special_moon")
+        and phase_name in {"new_moon", "full_moon"}
+    ):
+        score *= special_moon.get("amplification_factor", 1.0)
+
+    return score
 
 
 def detect_void_of_course_moon(
@@ -822,6 +891,8 @@ def detect_void_of_course_moon(
     moon_speed: float,
     forecast_datetime: datetime,
     next_sign_ingress_time: Optional[datetime] = None,
+    voc_start: Optional[datetime] = None,
+    voc_end: Optional[datetime] = None,
 ) -> Optional[Dict[str, Any]]:
     """
     Detect Void-of-Course Moon periods.
@@ -836,34 +907,81 @@ def detect_void_of_course_moon(
         moon_speed: Moon speed (deg/day)
         forecast_datetime: Current time
         next_sign_ingress_time: When Moon enters next sign
+        voc_start: Actual VoC start time if known
+        voc_end: Actual VoC end time if known
         
     Returns:
         VoC Moon info or None
     """
-    # Calculate Moon's current sign
     current_sign = int(moon_lon / 30)
+    # Prefer explicit VoC spans when supplied
+    if voc_start and voc_end and voc_start < voc_end:
+        if voc_start <= forecast_datetime < voc_end:
+            total_seconds = (voc_end - voc_start).total_seconds()
+            elapsed_seconds = (forecast_datetime - voc_start).total_seconds()
+            remaining_seconds = (voc_end - forecast_datetime).total_seconds()
+            total_hours = total_seconds / 3600
+
+            return {
+                "is_void_of_course": True,
+                "window": {
+                    "start": voc_start,
+                    "end": voc_end,
+                    "total_hours": total_hours,
+                    "elapsed_hours": max(elapsed_seconds / 3600, 0.0),
+                    "remaining_hours": max(remaining_seconds / 3600, 0.0),
+                },
+                "next_sign": current_sign + 1,
+                "effect": "Low-signal period - favor preparation over execution",
+                "score_modifier": -0.3,
+                "banner": "Void of Course Moon",
+                "tone_line": "Low-signal window – prep/review beats go-time.",
+                "modifiers": {"decision": -0.3, "execution": -0.3},
+                "recommended_activities": [
+                    "Review existing plans",
+                    "Organize and prepare",
+                    "Rest and reflect",
+                    "Avoid major launches or decisions",
+                ],
+            }
+        # Outside explicit VoC window
+        return None
+
+    # Calculate Moon's current sign for heuristic fallback
     next_sign_boundary = (current_sign + 1) * 30
-    
+
     # Calculate hours until sign change
     degrees_to_boundary = next_sign_boundary - moon_lon
     if degrees_to_boundary < 0:
         degrees_to_boundary += 360
-    
+
     # Moon moves ~13°/day = ~0.54°/hour
-    hours_to_boundary = (degrees_to_boundary / moon_speed) * 24
-    
+    hours_to_boundary = (degrees_to_boundary / moon_speed) * 24 if moon_speed else 0
+
     # VoC typically lasts 0-48 hours
-    # For simplicity, assume VoC if Moon is in last 3° of sign
-    # (more sophisticated detection would require aspect calculation)
     is_voc = degrees_to_boundary <= 3.0 and hours_to_boundary <= 12
-    
+
     if is_voc:
+        end_time = (
+            next_sign_ingress_time
+            if next_sign_ingress_time
+            else forecast_datetime + timedelta(hours=hours_to_boundary)
+        )
+
         return {
             "is_void_of_course": True,
-            "hours_remaining": hours_to_boundary,
+            "window": {
+                "start": forecast_datetime,
+                "end": end_time,
+                "total_hours": max(hours_to_boundary, 0.0),
+                "remaining_hours": max(hours_to_boundary, 0.0),
+            },
             "next_sign": current_sign + 1,
             "effect": "Low-signal period - favor preparation over execution",
             "score_modifier": -0.3,
+            "banner": "Void of Course Moon",
+            "tone_line": "Low-signal window – prep/review beats go-time.",
+            "modifiers": {"decision": -0.3, "execution": -0.3},
             "recommended_activities": [
                 "Review existing plans",
                 "Organize and prepare",
@@ -871,7 +989,7 @@ def detect_void_of_course_moon(
                 "Avoid major launches or decisions",
             ],
         }
-    
+
     return None
 
 
@@ -905,16 +1023,20 @@ def detect_supermoon_micromoon(
     if moon_distance_km < PERIGEE_THRESHOLD:
         # Supermoon - amplify effects
         amplification = 1.15  # +15%
+        amplification_percent = 15
         type_name = "supermoon"
         description = "Enhanced lunar influence - emotions and events amplified"
+        tone_line = "Lunar spotlight – everything feels bigger and louder."
     elif moon_distance_km > APOGEE_THRESHOLD:
         # Micromoon - dampen effects
         amplification = 0.90  # -10%
+        amplification_percent = -10
         type_name = "micromoon"
         description = "Subdued lunar influence - gentler energies"
+        tone_line = "Muted tides – keep expectations lighter and softer."
     else:
         return None
-    
+
     # Only significant if during New or Full Moon
     if phase_info and phase_info.get("phase_name") in {"new_moon", "full_moon"}:
         return {
@@ -922,9 +1044,13 @@ def detect_supermoon_micromoon(
             "type": type_name,
             "distance_km": moon_distance_km,
             "amplification_factor": amplification,
+            "amplification_percent": amplification_percent,
             "description": description,
+            "banner": "Supermoon" if type_name == "supermoon" else "Micromoon",
+            "tone_line": tone_line,
+            "impact_level": "high" if type_name == "supermoon" else "subtle",
         }
-    
+
     return None
 
 
@@ -955,6 +1081,9 @@ def detect_out_of_bounds_moon(
             "intensity": intensity,
             "caution_modifier": 0.3,
             "description": "Heightened emotional volatility - stay grounded",
+            "banner": "Out-of-Bounds Moon",
+            "tone_line": "Volatility spike – emotions swing wider than usual.",
+            "volatility_flag": True,
             "keywords": ["intense", "unpredictable", "emotional", "volatility"],
         }
     
@@ -971,6 +1100,8 @@ def detect_eclipse(
     moon_lat: float,  # Moon's ecliptic latitude
     forecast_datetime: datetime,
     natal_positions: Optional[Dict[str, float]] = None,
+    visible_from_location: Optional[bool] = None,
+    visibility_weight: float = 0.15,
 ) -> Optional[Dict[str, Any]]:
     """
     Detect solar and lunar eclipses.
@@ -990,6 +1121,8 @@ def detect_eclipse(
         moon_lat: Moon's ecliptic latitude (distance from ecliptic)
         forecast_datetime: Current date/time
         natal_positions: Dict of natal positions {body: longitude}
+        visible_from_location: Whether eclipse is visible at observer's location
+        visibility_weight: Optional percent boost (0.10-0.20) applied if visible
         
     Returns:
         Eclipse info or None
@@ -1032,9 +1165,12 @@ def detect_eclipse(
             "eclipse_type": eclipse_type,
             "base_weight": base_weight,
             "description": f"Solar Eclipse ({eclipse_type}) - major new chapter",
+            "banner": f"Solar Eclipse ({eclipse_type.title()})",
+            "tone_line": "Sun reboot – destiny hands you a blank page.",
+            "impact_level": "very_high",
             "keywords": ["reset", "breakthrough", "new chapter", "fated shift"],
         }
-    
+
     elif is_full and abs_lat <= LUNAR_ECLIPSE_LAT:
         # Lunar Eclipse
         if abs_lat <= 0.3:
@@ -1043,16 +1179,26 @@ def detect_eclipse(
         else:
             eclipse_type = "partial"
             base_weight = 1.2
-        
+
         eclipse_info = {
             "has_eclipse": True,
             "eclipse_category": "lunar",
             "eclipse_type": eclipse_type,
             "base_weight": base_weight,
             "description": f"Lunar Eclipse ({eclipse_type}) - culmination and release",
+            "banner": f"Lunar Eclipse ({eclipse_type.title()})",
+            "tone_line": (
+                "Blood Moon peak – emotional tides surge."
+                if eclipse_type == "total"
+                else "Lunar spotlight – revelations surface."
+            ),
+            "impact_level": "very_high",
             "keywords": ["revelation", "culmination", "release", "transformation"],
         }
-    
+
+        if eclipse_type == "total":
+            eclipse_info["aliases"] = ["Blood Moon"]
+
     if not eclipse_info:
         return None
     
@@ -1068,16 +1214,31 @@ def detect_eclipse(
                     # Tighter orb = stronger boost
                     boost_factor = 0.4 if diff <= 1.0 else 0.2
                     personalization_boost = max(personalization_boost, boost_factor)
-    
+
     eclipse_info["personalization_boost"] = personalization_boost
-    
-    # Calculate window phases
+
+    if visible_from_location:
+        eclipse_info["visibility_boost"] = visibility_weight
+
+    # Calculate window phases (build → peak → settle)
     eclipse_info["windows"] = {
-        "build": {"hours": -12, "description": "Energy building"},
-        "peak": {"hours": 2, "description": "Maximum intensity"},
-        "settle": {"hours": 6, "description": "Integration period"},
+        "build": {
+            "start_offset_hours": -12,
+            "end_offset_hours": 0,
+            "description": "Energy building",
+        },
+        "peak": {
+            "start_offset_hours": -1,
+            "end_offset_hours": 1,
+            "description": "Maximum intensity",
+        },
+        "settle": {
+            "start_offset_hours": 0,
+            "end_offset_hours": 6,
+            "description": "Integration period",
+        },
     }
-    
+
     return eclipse_info
 
 
@@ -1098,9 +1259,12 @@ def calculate_eclipse_score(
     
     base_weight = eclipse_info["base_weight"]
     personalization_boost = eclipse_info.get("personalization_boost", 0.0)
-    
-    # Apply personalization boost (20-40% increase)
+    visibility_boost = eclipse_info.get("visibility_boost", 0.0)
+
+    # Apply personalization boost (20-40% increase) and optional visibility bonus
     total_score = base_weight * (1 + personalization_boost)
-    
+    if visibility_boost:
+        total_score *= 1 + visibility_boost
+
     return total_score
 
