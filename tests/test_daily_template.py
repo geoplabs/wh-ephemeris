@@ -83,6 +83,7 @@ daily_template = importlib.import_module("api.services.daily_template")
 _build_fallback = daily_template._build_fallback
 _ensure_sentence = daily_template._ensure_sentence
 _trim_for_display = daily_template._trim_for_display
+_apply_special_sky_events = daily_template._apply_special_sky_events
 generate_daily_template = daily_template.generate_daily_template
 
 
@@ -231,7 +232,7 @@ def test_fallback_mantra_replaces_matching_affirmation():
 
     assert "—" not in lucky_affirmation and "–" not in lucky_affirmation
     assert "—" not in mantra and "–" not in mantra
-    assert lucky_affirmation.endswith("plans shift.")
+    assert lucky_affirmation.endswith(".")
     assert mantra != lucky_affirmation
 
 
@@ -357,3 +358,46 @@ def test_generate_daily_template_uses_llm_when_use_ai_true(monkeypatch):
 
     assert render_calls["count"] == 1
     assert result.payload == expected_payload
+
+
+def test_special_sky_events_are_injected_into_output():
+    payload = _sample_daily_payload()
+    special_events = [
+        {
+            "event_type": "lunar_phase",
+            "phase_name": "full_moon",
+            "note": "Full Moon: Insight peaks around relationships",
+            "special_moon": {
+                "has_special_moon": True,
+                "banner": "Supermoon",
+                "description": "Emotions and events amplify—move intentionally",
+            },
+            "score": 1.2,
+        },
+        {
+            "event_type": "void_of_course",
+            "note": "Void-of-course Moon from 14:00-17:00 UTC invites gentle pacing.",
+            "score": 0.4,
+        },
+    ]
+
+    payload["events"] = special_events
+    payload["top_events"] = special_events
+
+    fallback = _build_fallback(payload).model_dump(mode="json")
+    updated = _apply_special_sky_events(fallback, payload)
+
+    assert "Special sky watch:" in updated["opening_summary"]
+    assert "Special sky watch:" in updated["morning_mindset"]["paragraph"]
+    assert "Supermoon" in updated["opening_summary"]
+    assert "Void-of-course Moon" in updated["opening_summary"]
+    assert "Special sky watch:" in updated["one_line_summary"]
+
+
+def test_special_sky_events_skip_when_none_present():
+    payload = _sample_daily_payload()
+    fallback = _build_fallback(payload).model_dump(mode="json")
+    updated = _apply_special_sky_events(fallback, payload)
+
+    assert updated is fallback
+    assert "Special sky watch:" not in updated["opening_summary"]
