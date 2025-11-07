@@ -26,6 +26,36 @@ _SPACE_BEFORE_PUNCT = re.compile(r"\s+([,.;:!?])")
 _PUNCT_RUN = re.compile(r"([.!?]){2,}")
 _DANGLING_COMMA = re.compile(r",\s*([.!?])")
 
+# Sky-watch (strip everywhere, show once in summary/one-liner)
+_SKYWATCH_RX = re.compile(r"(?:Special sky watch:.*?\.|Full Moon:.*?\.)", re.I)
+
+# Aspect smoothing: collapse astro-jargon to plain English
+_ASPECT_SMOOTH: List[Tuple[re.Pattern[str], str]] = [
+    (re.compile(r"\bflows with\b", re.I), "supports"),
+    (re.compile(r"\bpresses on\b", re.I), "puts pressure on"),
+    (re.compile(r"\baligns with\b", re.I), "spotlights"),
+    # collapse long astro phrasing down to the aspect label
+    (
+        re.compile(
+            r"\b(separating|applying)\b.*?"
+            r"(trine|sextile|square|opposition|conjunction)\b"
+            r".*?(?:\d+(\.\d+)?°\s*orb)?",
+            re.I,
+        ),
+        r"\2",
+    ),
+    (re.compile(r"\bfrom [A-Z][a-z]+ to [A-Z][a-z]+\b"), ""),  # drop sign travel
+    (re.compile(r"\b(?:trine|sextile)\b", re.I), "a supportive aspect"),
+    (re.compile(r"\b(?:square|opposition)\b", re.I), "a tense aspect"),
+    (re.compile(r"\bconjunction\b", re.I), "an amplifying alignment"),
+]
+
+
+def _apply_aspect_smooth(s: str) -> str:
+    for rx, repl in _ASPECT_SMOOTH:
+        s = rx.sub(repl, s)
+    return re.sub(r"\s{2,}", " ", s).strip()
+
 
 # ---------- Astrology scaffolding ----------
 
@@ -42,12 +72,6 @@ SIGN_DETAILS = {
     "Capricorn": ("Cardinal", "Earth"),
     "Aquarius": ("Fixed", "Air"),
     "Pisces": ("Mutable", "Water"),
-}
-
-MODALITY_VERB = {
-    "Cardinal": "promotes",
-    "Fixed": "sustains",
-    "Mutable": "inspires",
 }
 
 ELEMENT_QUALITIES = {
@@ -179,7 +203,8 @@ _ALTERNATIVES = {
     "bold":    ["decisive", "confident", "assertive", "powerful"],
 }
 
-# ---------- Storylets (more variety; same keys for compatibility) ----------
+
+# ---------- Storylets (kept compatible with storylets.json) ----------
 
 STORYLETS: dict[str, dict[str, Any]] = {
     "default": {
@@ -456,22 +481,28 @@ def fix_indefinite_articles(text: str) -> str:
     return _ARTICLE_PATTERN.sub(repl, text)
 
 
-def _clean_text(text: str, profile_name: str) -> str:
-    cleaned = de_jargon(text or "")
-    return to_you_pov(cleaned, profile_name)
+def _strip_skywatch(text: str) -> tuple[str, str]:
+    """Return (stripped_text, skywatch_note_once)."""
+    if not text:
+        return "", ""
+    notes = _SKYWATCH_RX.findall(text)
+    cleaned = _SKYWATCH_RX.sub("", text).strip()
+    # Deduplicate notes while preserving order
+    unique = " ".join(dict.fromkeys(n.strip() for n in notes))
+    return cleaned, unique
 
 
-def _keywords_from_text(texts: Iterable[str], profile_name: str = "") -> List[str]:
-    tokens: List[str] = []
-    blocked: set[str] = set()
-    if profile_name:
-        blocked.update(re.findall(r"[a-z']+", profile_name.lower()))
-    for text in texts:
-        cleaned = de_jargon(text or "").lower()
-        tokens.extend(re.findall(r"[a-z']+", cleaned))
-    if blocked:
-        tokens = [t for t in tokens if t not in blocked]
-    return tokens
+def _plain_event_sentence(s: str) -> str:
+    """De-jargon + aspect smoothing + light polish (kept 2nd-person)."""
+    s = de_jargon(s)
+    s = _apply_aspect_smooth(s)
+    s = re.sub(r"\s{2,}", " ", s).strip()
+    return s[0].upper() + s[1:] if s else s
+
+
+def _clamp(text: str, n: int = 3) -> str:
+    parts = [p.strip() for p in re.split(r"(?<=[.!?])\s+", text) if p.strip()]
+    return " ".join(parts[:n])
 
 
 def _norm(s: str) -> str:
@@ -485,12 +516,8 @@ def _stable_index(key: str, n: int) -> int:
     return int.from_bytes(h, "big") % max(1, n)
 
 
-def _combined_text(*texts: str) -> str:
-    return _norm(" ".join(filter(None, texts)))
-
-
 def _contains_any_phrase(haystack: str, phrases: Iterable[str]) -> bool:
-    h = " " + haystack.lower() + " "
+    h = " " + (haystack or "").lower() + " "
     for p in phrases:
         p_clean = " " + p.lower().strip() + " "
         if p_clean in h:
@@ -499,6 +526,19 @@ def _contains_any_phrase(haystack: str, phrases: Iterable[str]) -> bool:
 
 
 # ---------- Scoring: descriptor, focus, tone, intensity ----------
+
+def _keywords_from_text(texts: Iterable[str], profile_name: str = "") -> List[str]:
+    tokens: List[str] = []
+    blocked: set[str] = set()
+    if profile_name:
+        blocked.update(re.findall(r"[a-z']+", profile_name.lower()))
+    for text in texts:
+        cleaned = de_jargon(text or "").lower()
+        tokens.extend(re.findall(r"[a-z']+", cleaned))
+    if blocked:
+        tokens = [t for t in tokens if t not in blocked]
+    return tokens
+
 
 def descriptor_from_text(
     *texts: str,
@@ -549,10 +589,31 @@ def focus_from_text(*texts: str, default: str = "path", profile_name: str = "") 
     return default
 
 
+def _adjust_focus_for_area(area: str, focus: str) -> str:
+    """Keep the focus semantically aligned with the section."""
+    area = (area or "").lower()
+    f = (focus or "").lower()
+    if area == "love":
+        if f in {"work", "career path", "ambitions", "money moves", "financial choices"}:
+            return "heart space"
+    if area == "health":
+        if f in {"work", "career path", "ambitions", "money moves", "financial choices"}:
+            return "wellness rituals"
+    if area == "finance":
+        if f in {"heart space", "emotional rhythms", "relationships"}:
+            return "money choices"
+    if area == "career":
+        if f in {"heart space", "emotional rhythms"}:
+            return "work"
+    return focus
+
+
 def tone_from_text(*texts: str) -> str:
     combined = " ".join(filter(None, texts)).lower()
+
     def _count_cues(cues: set[str]) -> int:
         return sum(len(re.findall(rf"\b{re.escape(cue)}\b", combined)) for cue in cues)
+
     pos = _count_cues(POSITIVE_CUES)
     neg = _count_cues(CHALLENGE_CUES)
     if neg > pos:
@@ -654,54 +715,7 @@ def _render_storylet(
         return default
 
 
-# ---------- Paragraph assembly ----------
-
-def _compose_paragraph(
-    lead: str,
-    evidence: Sequence[str] | None,
-    closing: str | None,
-    *,
-    area: str = "general",
-    events: List[Mapping[str, Any]] | None = None,
-    apply_qa: bool = True,
-) -> str:
-    parts: List[str] = []
-    if lead:
-        normalized = fix_indefinite_articles(_ensure_sentence(lead))
-        if normalized:
-            parts.append(normalized)
-    for sentence in evidence or ():
-        normalized = fix_indefinite_articles(_ensure_sentence(sentence))
-        if normalized and normalized not in parts:
-            parts.append(normalized)
-    if closing:
-        normalized = fix_indefinite_articles(_ensure_sentence(closing))
-        if normalized:
-            parts.append(normalized)
-    
-    result = _sanitize_spaces(" ".join(parts).strip())
-    
-    # Apply phrasebank QA polish and driver microcopy integration
-    if apply_qa and result:
-        try:
-            from api.services.option_b_cleaner.phrasebank_integration import (
-                apply_qa_polish,
-                inject_driver_microcopy,
-            )
-            
-            # Apply QA checks and fixes
-            result = apply_qa_polish(result, area=area)
-            
-            # Inject driver microcopy if events present (max 1 per paragraph)
-            if events:
-                result = inject_driver_microcopy(result, events, max_injections=1)
-        
-        except Exception:
-            # If integration fails, return result as-is
-            pass
-    
-    return result
-
+# ---------- Evidence helpers ----------
 
 def _event_evidence_sentences(
     event: Mapping[str, Any] | None,
@@ -709,6 +723,7 @@ def _event_evidence_sentences(
     *,
     area: str | None = None,
     seed: int | None = None,
+    profile_name: str = "",
 ) -> tuple[str, ...]:
     sentences: List[str] = []
     primary = event_phrase(event)
@@ -746,13 +761,76 @@ def _event_evidence_sentences(
     elif supporting:
         sentences.append(supporting)
 
-    return tuple(sentences)
+    # Convert to plain English + second-person POV
+    polished: List[str] = []
+    for s in sentences:
+        s2 = _plain_event_sentence(s)
+        s2 = to_you_pov(s2, profile_name) if profile_name else s2
+        if s2:
+            polished.append(s2)
+
+    return tuple(polished)
+
+
+# ---------- Paragraph assembly ----------
+
+def _compose_paragraph(
+    lead: str,
+    evidence: Sequence[str] | None,
+    closing: str | None,
+    *,
+    area: str = "general",
+    events: List[Mapping[str, Any]] | None = None,
+    apply_qa: bool = True,
+    clamp_to: int = 3,
+) -> str:
+    parts: List[str] = []
+    if lead:
+        normalized = fix_indefinite_articles(_ensure_sentence(lead))
+        if normalized:
+            parts.append(normalized)
+    for sentence in evidence or ():
+        normalized = fix_indefinite_articles(_ensure_sentence(sentence))
+        if normalized and normalized not in parts:
+            parts.append(normalized)
+    if closing:
+        normalized = fix_indefinite_articles(_ensure_sentence(closing))
+        if normalized:
+            parts.append(normalized)
+
+    result = _sanitize_spaces(" ".join(parts).strip())
+
+    # Apply phrasebank QA polish and driver microcopy integration (best-effort)
+    if apply_qa and result:
+        try:
+            # Try both import paths to be resilient
+            try:
+                from api.services.option_b_cleaner.phrasebank_integration import (
+                    apply_qa_polish,
+                    inject_driver_microcopy,
+                )
+            except Exception:
+                from src.content.phrasebank_integration import (  # type: ignore
+                    apply_qa_polish,
+                    inject_driver_microcopy,
+                )
+            result = apply_qa_polish(result, area=area)
+            if events:
+                result = inject_driver_microcopy(result, events, max_injections=1)
+        except Exception:
+            pass
+
+    if clamp_to and clamp_to > 0:
+        result = _clamp(result, clamp_to)
+
+    return result
 
 
 def _build_story_paragraph(
     area: str,
     *,
     raw: str,
+    profile_name: str = "",
     descriptor: str,
     focus: str,
     tone: str,
@@ -762,7 +840,9 @@ def _build_story_paragraph(
     opener_default: str,
     closing_default: str,
     force_default_opener: bool = False,
+    add_pacing_hint: bool = False,   # inject pacing hint only for one section (e.g., career)
 ) -> str:
+    focus = _adjust_focus_for_area(area, focus)
     tokens = {"descriptor": descriptor, "focus": focus}
     primary_phrase = event_phrase(event)
     supporting_phrase = event_phrase(supporting_event)
@@ -783,13 +863,14 @@ def _build_story_paragraph(
             event=event,
         )
 
-    # evidence
+    # evidence (plain + 2nd-person)
     evidence = list(
         _event_evidence_sentences(
             event,
             supporting_event,
             area=area,
             seed=base_seed + 1,
+            profile_name=profile_name,
         )
     )
 
@@ -805,15 +886,16 @@ def _build_story_paragraph(
     if coaching:
         evidence.append(coaching)
 
-    # If intensity is high, append a pacing hint (once, tone-aware)
-    loud = intensity_from_text(raw, primary_phrase or "", supporting_phrase or "")
-    if loud == "high":
-        if tone == "challenge":
-            evidence.append("Keep margins wide and skip optional commitments.")
-        elif tone == "support":
-            evidence.append("Let the tailwind help—but keep your pacing humane.")
-        else:
-            evidence.append("Stay responsive; re-sequence plans if signals shift.")
+    # Optional pacing hint only once (e.g., for "career" section)
+    if add_pacing_hint:
+        loud = intensity_from_text(raw, primary_phrase or "", supporting_phrase or "")
+        if loud == "high":
+            if tone == "challenge":
+                evidence.append("Keep margins wide and skip optional commitments.")
+            elif tone == "support":
+                evidence.append("Let the tailwind help—but keep your pacing humane.")
+            else:
+                evidence.append("Stay responsive; re-sequence plans if signals shift.")
 
     # closing
     default_closing = closing_default.format(**tokens)
@@ -825,35 +907,34 @@ def _build_story_paragraph(
         tokens=tokens,
         default=default_closing,
     )
-    
-    # Compose with QA and driver microcopy
+
+    # Compose with QA + driver microcopy. Provide events list for injection.
     events_list = [event, supporting_event] if event and supporting_event else \
                   [event] if event else \
                   [supporting_event] if supporting_event else None
-    
+
     return _compose_paragraph(
-        opener, 
-        evidence, 
-        closing, 
-        area=area, 
+        opener,
+        evidence,
+        closing,
+        area=area,
         events=events_list,
-        apply_qa=True
+        apply_qa=True,
+        clamp_to=3,
     )
 
 
 # ---------- Lines & sections ----------
 
 def element_modality_line(sign_a: str, sign_b: str) -> str:
+    """Simpler, more readable backdrop line."""
     info_a = SIGN_DETAILS.get(sign_a, ("Cardinal", "Air"))
     info_b = SIGN_DETAILS.get(sign_b or sign_a, info_a)
-    verb_a = MODALITY_VERB.get(info_a[0], "promotes")
-    verb_b = MODALITY_VERB.get(info_b[0], "sustains")
-    qual_a = ELEMENT_QUALITIES.get(info_a[1], "balance and motion")
-    qual_b = ELEMENT_QUALITIES.get(info_b[1], "intuition and depth")
-    return (
-        f"{info_a[0]} {info_a[1]} ({sign_a}) {verb_a} {qual_a}, "
-        f"while {info_b[0]} {info_b[1]} ({sign_b}) {verb_b} {qual_b}."
-    )
+    qa = (ELEMENT_QUALITIES.get(info_a[1], "balance and clarity") or "").lower()
+    qb = (ELEMENT_QUALITIES.get(info_b[1], "focus and steadiness") or "").lower()
+    if sign_a == sign_b:
+        return f"{sign_a} keeps things {qa}"
+    return f"{sign_a} keeps things {qa}, while {sign_b} adds {qb}"
 
 
 def build_opening_summary(
@@ -865,23 +946,27 @@ def build_opening_summary(
 ) -> str:
     sign_a = signs[0] if signs else "Libra"
     sign_b = signs[1] if len(signs) > 1 else sign_a
-    descriptor = descriptor_from_text(theme, raw, profile_name=profile_name)
-    focus = focus_from_text(theme, raw, profile_name=profile_name)
+
+    # Strip sky-watch once (append at end)
+    theme_raw = ((theme or "") + " " + (raw or "")).strip()
+    theme_clean, skywatch = _strip_skywatch(theme_raw)
+    descriptor = descriptor_from_text(theme_clean, raw, profile_name=profile_name)
+    focus = focus_from_text(theme_clean, raw, profile_name=profile_name)
     article = "an" if descriptor and descriptor[0].lower() in "aeiou" else "a"
 
-    # readable closing
+    backdrop = element_modality_line(sign_a, sign_b)
     closing = (clause.strip() if clause else "Keep momentum pointed toward meaningful moves.") or ""
     closing = closing.replace("quiet clarity", "calm focus").rstrip(".")
-    closing_fragment = (closing[0].lower() + closing[1:]) if closing else ""
-
-    # backdrop
-    backdrop = element_modality_line(sign_a, sign_b).rstrip(".")
+    closing_frag = (closing[0].lower() + closing[1:]) if closing else ""
 
     summary = f"You ride {article} {descriptor} wave toward today's {focus} as {backdrop}"
-    if closing_fragment:
-        summary = f"{summary}, and {closing_fragment}"
+    if closing_frag:
+        summary += f", and {closing_frag}"
     summary = summary.rstrip(", ") + "."
-    return fix_indefinite_articles(_sanitize_spaces(summary))
+    out = fix_indefinite_articles(_sanitize_spaces(summary))
+    if skywatch:
+        out += f" ({skywatch})"
+    return out
 
 
 def build_morning_paragraph(
@@ -892,8 +977,7 @@ def build_morning_paragraph(
 ) -> str:
     descriptor = descriptor_from_text(raw, theme, profile_name=profile_name)
     focus = focus_from_text(raw, theme, default="momentum", profile_name=profile_name)
-    event_clause = event_phrase(event)
-    tokens = {"descriptor": descriptor, "focus": focus, "event_clause": event_clause}
+    tokens = {"descriptor": descriptor, "focus": focus, "event_clause": event_phrase(event)}
     sentence = render_mini_template(
         (
             MiniTemplate(
@@ -907,6 +991,7 @@ def build_morning_paragraph(
         ),
         tokens,
     )
+    # Sky-watch stripped upstream; keep it tight
     return _ensure_sentence(sentence or "You set the tone by taking one intentional pause before leaning into steady momentum today.")
 
 
@@ -925,6 +1010,7 @@ def build_career_paragraph(
     return _build_story_paragraph(
         "career",
         raw=raw,
+        profile_name=profile_name,
         descriptor=descriptor,
         focus=focus,
         tone=tone,
@@ -933,6 +1019,8 @@ def build_career_paragraph(
         supporting_event=supporting_event,
         opener_default="You turn {descriptor} focus into deliberate progress at work.",
         closing_default="Let this focused drive move your intentions into form.",
+        force_default_opener=False,
+        add_pacing_hint=True,  # only here
     )
 
 
@@ -951,6 +1039,7 @@ def build_love_paragraph(
     return _build_story_paragraph(
         "love",
         raw=raw,
+        profile_name=profile_name,
         descriptor=descriptor,
         focus=focus,
         tone=tone,
@@ -959,6 +1048,8 @@ def build_love_paragraph(
         supporting_event=supporting_event,
         opener_default="You nurture heart connections by sharing {descriptor} honesty.",
         closing_default="Let shared space stay honest and kind.",
+        force_default_opener=False,
+        add_pacing_hint=False,
     )
 
 
@@ -997,6 +1088,7 @@ def build_health_paragraph(
     return _build_story_paragraph(
         "health",
         raw=raw or theme,
+        profile_name=profile_name,
         descriptor=descriptor,
         focus=focus,
         tone=tone,
@@ -1006,6 +1098,7 @@ def build_health_paragraph(
         opener_default="You protect wellbeing by honoring {descriptor} rhythms.",
         closing_default=closing_default,
         force_default_opener=force_default_opener,
+        add_pacing_hint=False,
     )
 
 
@@ -1030,6 +1123,7 @@ def build_finance_paragraph(
     return _build_story_paragraph(
         "finance",
         raw=raw or theme,
+        profile_name=profile_name,
         descriptor=descriptor,
         focus=focus,
         tone=tone,
@@ -1038,13 +1132,22 @@ def build_finance_paragraph(
         supporting_event=supporting_event,
         opener_default="You let {descriptor} awareness guide each money choice today.",
         closing_default=closing_default,
+        force_default_opener=False,
+        add_pacing_hint=False,
     )
 
 
 def build_one_line_summary(raw: str, theme: str, profile_name: str = "") -> str:
-    descriptor = descriptor_from_text(raw, theme, default="steady", profile_name=profile_name)
-    focus = focus_from_text(raw, theme, default="momentum", profile_name=profile_name)
-    return fix_indefinite_articles(_sanitize_spaces(f"Make {descriptor} moves and keep your {focus} in view."))
+    # Respect single sky-watch policy (append here at most once)
+    theme_raw = ((theme or "") + " " + (raw or "")).strip()
+    theme_clean, skywatch = _strip_skywatch(theme_raw)
+
+    descriptor = descriptor_from_text(theme_clean, raw, default="steady", profile_name=profile_name)
+    focus = focus_from_text(theme_clean, raw, default="momentum", profile_name=profile_name)
+    line = fix_indefinite_articles(_sanitize_spaces(f"Make {descriptor} moves and keep your {focus} in view."))
+    if skywatch:
+        line += f" ({skywatch})"
+    return line
 
 
 # ---------- Surface polishers ----------
@@ -1056,7 +1159,9 @@ def polished_text(raw: str, profile_name: str) -> str:
     - normalize spacing/punctuation
     - ensure terminal punctuation
     """
-    cleaned = _clean_text(raw, profile_name)
+    # Remove any sky-watch chatter from stray inputs
+    cleaned_src, _ = _strip_skywatch(raw or "")
+    cleaned = to_you_pov(de_jargon(cleaned_src), profile_name)
     sentences = [s.strip() for s in re.split(r"(?<=[.!?])\s+", cleaned) if s.strip()]
     if not sentences:
         return ""
@@ -1077,16 +1182,20 @@ def build_daily_narrative(
 ) -> Mapping[str, str]:
     """
     Convenience aggregator that returns a dict with all major sections rendered.
-    This is opt-in; does not change existing call sites.
-    keys: summary, morning, career, love, health, finance
+    keys: summary, morning, career, love, health, finance, one_liner
     """
     tone_hints = tone_hints or {}
     events = events or {}
+
+    # Strip sky-watch globally from verbose inputs (we re-add once in summary/one-liner)
+    theme_clean, _ = _strip_skywatch(theme or "")
+    raw_clean, _ = _strip_skywatch(raw or "")
+
     return {
-        "summary": build_opening_summary(theme, raw, signs, profile_name),
-        "morning": build_morning_paragraph(raw, profile_name, theme, events.get("morning")),
+        "summary": build_opening_summary(theme_clean, raw_clean, signs, profile_name),
+        "morning": build_morning_paragraph(raw_clean, profile_name, theme_clean, events.get("morning")),
         "career": build_career_paragraph(
-            raw,
+            raw_clean,
             profile_name=profile_name,
             tone_hint=tone_hints.get("career"),
             clause=None,
@@ -1094,7 +1203,7 @@ def build_daily_narrative(
             supporting_event=events.get("career_support"),
         ),
         "love": build_love_paragraph(
-            raw,
+            raw_clean,
             profile_name=profile_name,
             tone_hint=tone_hints.get("love"),
             clause=None,
@@ -1102,8 +1211,8 @@ def build_daily_narrative(
             supporting_event=events.get("love_support"),
         ),
         "health": build_health_paragraph(
-            raw,
-            theme,
+            raw_clean,
+            theme_clean,
             profile_name=profile_name,
             tone_hint=tone_hints.get("health"),
             clause=None,
@@ -1111,13 +1220,13 @@ def build_daily_narrative(
             supporting_event=events.get("health_support"),
         ),
         "finance": build_finance_paragraph(
-            raw,
-            theme,
+            raw_clean,
+            theme_clean,
             profile_name=profile_name,
             tone_hint=tone_hints.get("finance"),
             clause=None,
             event=events.get("finance"),
             supporting_event=events.get("finance_support"),
         ),
-        "one_liner": build_one_line_summary(raw, theme, profile_name),
+        "one_liner": build_one_line_summary(raw_clean, theme_clean, profile_name),
     }

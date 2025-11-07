@@ -79,18 +79,18 @@ def get_enhanced_bullets(
             safe_phrase = safe_phrase_for_template(
                 phrase,
                 template,
-                fallback=variations.tone.get("adjective", "focused") + " progress"
+                fallback=variations.first("tone_adjective", "focused") + " progress"
             )
             
             # Format template with all variations
             try:
                 bullet = template.format(
                     phrase=safe_phrase,
-                    tone_action=variations.tone.get("action", "tracking"),
-                    tone_adjective=variations.tone.get("adjective", "steady"),
-                    area_actions=variations.area_lexicon.get("action", "organizing"),
-                    area_nouns=variations.area_lexicon.get("noun", "priorities"),
-                    area_contexts=variations.area_lexicon.get("context", "workflow"),
+                    tone_action=variations.first("tone_action", "tracking"),
+                    tone_adjective=variations.first("tone_adjective", "steady"),
+                    area_actions=variations.first("area_action", "organizing"),
+                    area_nouns=variations.first("area_noun", "priorities"),
+                    area_contexts=variations.first("area_context", "workflow"),
                 )
                 
                 # Apply QA checks

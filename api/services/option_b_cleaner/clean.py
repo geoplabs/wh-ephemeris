@@ -1,5 +1,7 @@
+# clean.py
 import re
 import random
+from typing import Optional, Iterable
 
 from src.content.phrasebank import PhraseAsset, bullet_templates_for
 from src.content.inflection import safe_phrase_for_template, transform_phrase, to_gerund
@@ -112,7 +114,42 @@ _ACTION_NOUNS = {
 _DROP_TOKENS = {"influence", "influences"}
 _TOKENIZER = re.compile(r"[A-Za-z0-9]+(?:['-][A-Za-z0-9]+)?")
 
+# --------------------
+# House-style QA for bullets
+# --------------------
+_BANNED_COMBOS = [
+    "outer persona radiant energy",
+    "radiant drive relationship boundaries",
+    "set outer persona",
+]
 
+def _shorten_to_10_words(s: str) -> str:
+    words = s.rstrip(".").split()
+    out = " ".join(words[:10])
+    return (out + ".") if not out.endswith(".") else out
+
+def _bullet_qa(s: str) -> str:
+    # Normalize common awkward verbs and filler
+    s = re.sub(r"\bnoticing\b", "tracking", s, flags=re.I)
+    s = re.sub(r"\s{2,}", " ", s).strip()
+
+    # Ban awkward adjective-noun salads
+    lower = s.lower()
+    for bad in _BANNED_COMBOS:
+        if bad in lower:
+            s = re.sub(re.escape(bad), "clear priorities", s, flags=re.I)
+
+    # Keep bullets short and punchy
+    s = _shorten_to_10_words(s)
+
+    # Ensure terminal punctuation
+    if not s.endswith("."):
+        s += "."
+    return s
+
+# --------------------
+# De-jargon & tokenization
+# --------------------
 def de_jargon(s: str) -> str:
     if not isinstance(s, str):
         return s
@@ -127,7 +164,6 @@ def de_jargon(s: str) -> str:
 
 def clean_tokens(s: str, *, max_tokens: int = 8) -> list[str]:
     """Return sanitized tokens extracted from ``s`` after ``de_jargon`` cleanup."""
-
     if not isinstance(s, str):
         return []
     cleaned = de_jargon(s or "")
@@ -147,7 +183,6 @@ def clean_tokens(s: str, *, max_tokens: int = 8) -> list[str]:
 
 def clean_token_phrase(s: str, *, max_tokens: int = 5) -> str:
     """Return a space-joined phrase of sanitized tokens suitable for reuse."""
-
     tokens = clean_tokens(s, max_tokens=max_tokens)
     if not tokens:
         return ""
@@ -165,17 +200,16 @@ def to_you_pov(s: str, profile_name: str) -> str:
     )
     s = s.replace(profile_name, "You")
     s = re.sub(r"^you\b", "You", s)
-    
+
     # Clean up awkward phrasings
     s = _polish_awkward_constructions(s)
-    
     return s
 
 
 def _polish_awkward_constructions(text: str) -> str:
     """
     Polish awkward grammatical constructions in paragraphs.
-    
+
     Fixes:
         - "through noticing" → "by tracking"
         - "after noticing" → "after reviewing"
@@ -185,8 +219,7 @@ def _polish_awkward_constructions(text: str) -> str:
     """
     if not text:
         return text
-    
-    # Pattern replacements for more natural phrasing
+
     POLISHING_PATTERNS = {
         r"\bthrough noticing\b": "by tracking",
         r"\bafter noticing\b": "after reviewing",
@@ -202,14 +235,13 @@ def _polish_awkward_constructions(text: str) -> str:
         r"\bwhen you're noticing\b": "when you track",
         r"\bbecause you're noticing\b": "when you notice",
     }
-    
+
     result = text
     for pattern, replacement in POLISHING_PATTERNS.items():
         result = re.sub(pattern, replacement, result, flags=re.IGNORECASE)
-    
-    # Fix duplicate adjective-verb combinations
+
+    # Fix duplicate adjective-verb combos
     result = re.sub(r"\b(quiet|soft|subtle) (quiet|soft|subtle)\b", r"\1", result, flags=re.IGNORECASE)
-    
     return result
 
 
@@ -279,10 +311,10 @@ def _keywords_for_bullet(text: str) -> list[str]:
     if not keywords:
         keywords = [w for w in lowered if w not in _STOPWORDS]
     keywords = _dedupe_preserve_order(keywords)
-    
+
     # Filter out special event keywords and phrases that shouldn't appear in bullets
     event_keywords = {
-        "moon", "eclipse", "lunar", "solar", "void", "course", 
+        "moon", "eclipse", "lunar", "solar", "void", "course",
         "supermoon", "micromoon", "blood", "out-of-bounds",
         "full", "new", "quarter", "waxing", "waning", "total", "partial",
         "annular", "penumbral", "ingress", "retrograde", "station", "direct",
@@ -291,7 +323,7 @@ def _keywords_for_bullet(text: str) -> list[str]:
         "surge", "surface", "chapter", "fated", "shift", "blank", "page"
     }
     keywords = [w for w in keywords if w not in event_keywords]
-    
+
     if len(keywords) > 3:
         general_tail = {"career", "path", "momentum", "today", "energy"}
         trimmed = [w for w in keywords if w not in general_tail]
@@ -496,17 +528,16 @@ def _format_phrase(words: list[str], mode: str = "do") -> str:
     phrase = " ".join(tokens)
     if not phrase:
         return "steady focus"
-    
+
     # Complete fragments - ensure phrases are grammatically complete
     phrase = _complete_phrase_fragments(phrase, mode)
-    
     return phrase
 
 
 def _complete_phrase_fragments(phrase: str, mode: str = "do") -> str:
     """
     Complete phrase fragments by adding missing nouns, articles, or plurals.
-    
+
     Examples:
         "sensitive boundary" → "sensitive boundaries"
         "radiant" → "radiant energy"
@@ -515,8 +546,7 @@ def _complete_phrase_fragments(phrase: str, mode: str = "do") -> str:
     words = phrase.strip().split()
     if not words:
         return phrase
-    
-    # Map of adjectives that need nouns
+
     ADJECTIVE_NOUN_PAIRS = {
         "radiant": "energy",
         "curious": "conversations",
@@ -533,49 +563,42 @@ def _complete_phrase_fragments(phrase: str, mode: str = "do") -> str:
         "spiritual": "practices",
         "practical": "steps",
     }
-    
+
     # If phrase is just an adjective, add its noun
     if len(words) == 1 and words[0] in ADJECTIVE_NOUN_PAIRS:
         return f"{words[0]} {ADJECTIVE_NOUN_PAIRS[words[0]]}"
-    
+
     # If phrase ends with an adjective without a noun, add one
     last_word = words[-1]
     if last_word in ADJECTIVE_NOUN_PAIRS and len(words) < 4:
-        # Check if there's already a noun after the adjective
         has_noun = any(w in ["energy", "conversations", "boundaries", "rhythms", "growth", "focus", "connections", "priorities", "steps"] for w in words)
         if not has_noun:
             words.append(ADJECTIVE_NOUN_PAIRS[last_word])
-    
+
     # Ensure "boundary" is plural when it's the subject of focus
     for i, word in enumerate(words):
         if word == "boundary" and i > 0:
-            # Check if it follows an adjective
             prev_word = words[i-1]
             if prev_word in ADJECTIVE_NOUN_PAIRS or prev_word in ["sensitive", "responsibility", "professional", "personal"]:
                 words[i] = "boundaries"
-    
-    # Fix common awkward constructions
+
     phrase_str = " ".join(words)
-    
-    # Remove duplicate noun types (e.g., "rhythms priorities" → "priorities")
+
     NOUN_GROUPS = {
         "priorities": ["rhythms", "steps", "goals"],
         "conversations": ["rhythms", "steps"],
         "boundaries": ["rhythms", "steps"],
         "growth": ["rhythms", "energy"],
     }
-    
     for primary_noun, duplicates in NOUN_GROUPS.items():
         if primary_noun in words:
             for dup in duplicates:
                 if dup in words and dup != primary_noun:
-                    # Keep the more specific noun
                     idx = words.index(dup)
                     words.pop(idx)
-    
+
     phrase_str = " ".join(words)
-    
-    # Fix specific problematic patterns
+
     PATTERN_FIXES = {
         r"\bemotional growth rhythms priorities\b": "emotional growth priorities",
         r"\bradiant drive support\b": "radiant drive to support",
@@ -585,10 +608,9 @@ def _complete_phrase_fragments(phrase: str, mode: str = "do") -> str:
         r"\bafter noticing\b": "after reviewing",
         r"\bwhile noticing\b": "while tracking",
     }
-    
     for pattern, replacement in PATTERN_FIXES.items():
         phrase_str = re.sub(pattern, replacement, phrase_str, flags=re.IGNORECASE)
-    
+
     return phrase_str.strip()
 
 
@@ -765,7 +787,7 @@ def _titlecase_tokens(tokens: list[str]) -> list[str]:
     return result
 
 
-def _resolve_templates(area: str | None, mode: str, asset: PhraseAsset | None) -> tuple[str, ...]:
+def _resolve_templates(area: Optional[str], mode: str, asset: Optional[PhraseAsset]) -> tuple[str, ...]:
     if area:
         archetype = asset.archetype if asset else None
         intensity = asset.intensity if asset else None
@@ -790,10 +812,10 @@ def _resolve_templates(area: str | None, mode: str, asset: PhraseAsset | None) -
     )
 
 
-def _get_template_placeholders(area: str | None, order: int) -> dict[str, str]:
+def _get_template_placeholders(area: Optional[str], order: int, *, event: Optional[dict] = None) -> dict[str, str]:
     """
     Generate grammatically correct placeholder values for bullet templates.
-    
+
     Returns a dict with:
     - tone_action: gerund form (for "while" contexts)
     - tone_adjective: adjective form
@@ -808,15 +830,14 @@ def _get_template_placeholders(area: str | None, order: int) -> dict[str, str]:
         "steady": ["organize", "prioritize", "consolidate", "track"],
         "strong": ["commit", "drive", "push", "focus"],
     }
-    
+
     tone_adjectives_by_intensity = {
         "background": ["subtle", "quiet", "soft", "gentle"],
         "gentle": ["measured", "easy", "steady", "supportive"],
         "steady": ["reliable", "grounded", "clear", "consistent"],
         "strong": ["bold", "decisive", "focused", "driven"],
     }
-    
-    # Area-specific lexicon
+
     area_actions_map = {
         "career": ["tracking scope", "updating status", "reviewing handoffs", "organizing priorities", "clarifying milestones"],
         "love": ["listening deeply", "sharing openly", "honoring needs", "expressing care", "building trust"],
@@ -824,7 +845,7 @@ def _get_template_placeholders(area: str | None, order: int) -> dict[str, str]:
         "finance": ["reviewing budgets", "tracking spending", "organizing ledgers", "checking projections", "planning buffers"],
         "general": ["tracking progress", "organizing goals", "clarifying priorities", "reviewing plans", "managing tasks"],
     }
-    
+
     area_nouns_map = {
         "career": ["deliverables", "milestones", "scope", "priorities", "deadlines"],
         "love": ["connection", "boundaries", "needs", "feelings", "communication"],
@@ -832,7 +853,7 @@ def _get_template_placeholders(area: str | None, order: int) -> dict[str, str]:
         "finance": ["budget", "spending", "resources", "expenses", "savings"],
         "general": ["progress", "goals", "priorities", "plans", "tasks"],
     }
-    
+
     area_contexts_map = {
         "career": ["workspace", "meetings", "projects", "team dynamics", "workflow"],
         "love": ["shared time", "conversations", "intimacy", "partnership", "connection"],
@@ -840,69 +861,81 @@ def _get_template_placeholders(area: str | None, order: int) -> dict[str, str]:
         "finance": ["financial plans", "spending habits", "resource allocation", "money flow", "budget tracking"],
         "general": ["daily rhythm", "decision-making", "time management", "priorities", "progress"],
     }
-    
-    # Select from appropriate area (fallback to general)
+
     area_key = area if area in area_actions_map else "general"
-    
-    # Use order for deterministic selection
+
     rng = random.Random(order)
-    
-    # Pick a random intensity for variety
+
+    # Default intensity selection
     intensity = rng.choice(["gentle", "steady"])
-    
+
+    # Event-driven intensity override (mirrors narrative loudness)
+    if event:
+        try:
+            score = abs(float(event.get("score", 0)))
+            if score < 1.0:
+                intensity = "background"
+            elif score < 2.0:
+                intensity = "gentle"
+            elif score < 3.5:
+                intensity = "steady"
+            else:
+                intensity = "strong"
+        except Exception:
+            pass
+
     tone_verb = rng.choice(tone_verbs_by_intensity[intensity])
     tone_adj = rng.choice(tone_adjectives_by_intensity[intensity])
     area_action = rng.choice(area_actions_map[area_key])
     area_noun = rng.choice(area_nouns_map[area_key])
     area_context = rng.choice(area_contexts_map[area_key])
-    
+
     return {
-        "tone_action": to_gerund(tone_verb),  # Convert to gerund for "while" contexts
+        "tone_action": to_gerund(tone_verb),
         "tone_adjective": tone_adj,
-        "area_actions": area_action,  # Already in gerund form in the map
+        "area_actions": area_action,
         "area_nouns": area_noun,
         "area_contexts": area_context,
     }
 
 
 def imperative_bullet(
-    s: str, 
-    order: int = 0, 
-    mode: str = "do", 
-    *, 
-    area: str | None = None, 
-    asset: PhraseAsset | None = None,
-    event: dict | None = None,
+    s: str,
+    order: int = 0,
+    mode: str = "do",
+    *,
+    area: Optional[str] = None,
+    asset: Optional[PhraseAsset] = None,
+    event: Optional[dict] = None,
     use_phrasebank: bool = True,
 ) -> str:
     # Try phrasebank integration first for enhanced quality
     if use_phrasebank and area:
         try:
             from .phrasebank_integration import get_enhanced_bullets, get_archetype_from_tone
-            
-            # Extract keywords and event info
+
             s_clean = de_jargon(s)
             keywords = _keywords_for_bullet(s_clean)
-            
-            # Determine archetype from text
+
             archetype = "support" if "support" in s_clean.lower() else \
-                       "challenge" if any(word in s_clean.lower() for word in ["challenge", "friction", "pressure"]) else \
-                       "neutral"
-            
-            # Determine intensity from event score
+                        "challenge" if any(word in s_clean.lower() for word in ["challenge", "friction", "pressure"]) else \
+                        "neutral"
+
             intensity = "steady"
             if event and "score" in event:
-                score = abs(float(event.get("score", 0)))
-                if score < 1.0:
-                    intensity = "background"
-                elif score < 2.0:
-                    intensity = "gentle"
-                elif score < 3.5:
-                    intensity = "steady"
-                else:
-                    intensity = "strong"
-            
-            # Get enhanced bullets
+                try:
+                    score = abs(float(event.get("score", 0)))
+                    if score < 1.0:
+                        intensity = "background"
+                    elif score < 2.0:
+                        intensity = "gentle"
+                    elif score < 3.5:
+                        intensity = "steady"
+                    else:
+                        intensity = "strong"
+                except Exception:
+                    pass
+
             bullets = get_enhanced_bullets(
                 area=area,
                 mode=mode,
@@ -912,29 +945,30 @@ def imperative_bullet(
                 intensity=intensity,
                 order=order,
             )
-            
-            # Return first bullet if available
+
             if bullets and bullets[0]:
-                return bullets[0]
-        
+                return _bullet_qa(_cleanup_sentence(bullets[0]))
+
         except Exception:
             # Fall back to original implementation
             pass
-    
+
     # Original implementation (fallback)
     s = de_jargon(s)
     s = re.sub(r"^(?:Try to|You should|Consider|Aim to)\s+", "", s, flags=re.I)
     words = _keywords_for_bullet(s)
     if mode == "avoid":
         words = [w for w in words if w != "avoid"]
+
     phrase_words = words
     if mode == "avoid":
         if not phrase_words:
-            return "Avoid reactive conflicts today."
+            return _bullet_qa(_cleanup_sentence("Avoid reactive conflicts today."))
         if "relationship" in phrase_words and "boundaries" in phrase_words:
             phrase_words = ["pushing", "relationship", "boundaries"]
         elif phrase_words == ["steady"]:
             phrase_words = ["overloading", "commitments"]
+
     if phrase_words and phrase_words[0] in _DIRECT_VERBS:
         lower_verb = phrase_words[0].lower()
         remainder = phrase_words[1:]
@@ -958,63 +992,57 @@ def imperative_bullet(
         if word_count < 3:
             fallback_verb = "Stay mindful" if mode == "avoid" else f"{prefix} with care"
             candidate = f"{fallback_verb} today."
-        return _cleanup_sentence(candidate)
+        return _bullet_qa(_cleanup_sentence(candidate))
+
     templates = _resolve_templates(area, mode, asset)
-    best_candidate: str | None = None
+    best_candidate: Optional[str] = None
     template_count = len(templates)
-    
-    # Get phrase requirements from asset if available
+
+    # Use asset requirements if present
     fallback_phrase = "focused progress" if mode == "do" else "reactive moves"
-    if asset and asset.phrase_requirements:
+    if asset and getattr(asset, "phrase_requirements", None):
         fallback_phrase = asset.phrase_requirements.fallback
-    
-    # Get dynamic placeholder values based on area and order
-    placeholders = _get_template_placeholders(area, order)
-    
+
+    # Intensity-aware placeholders
+    placeholders = _get_template_placeholders(area, order, event=event)
+
     for offset in range(template_count):
         template = templates[(order + offset) % template_count]
         for cut in range(len(phrase_words), 0, -1):
-            # Use old format_phrase for backwards compatibility, but try smart transformation
             raw_phrase = _format_phrase(phrase_words[:cut], mode)
-            
-            # Apply grammatically safe transformation based on template
             phrase = safe_phrase_for_template(raw_phrase, template, fallback=fallback_phrase)
-            
-            # Provide all possible placeholders to handle templates with tone/area variables
             try:
                 candidate = template.format(
                     phrase=phrase,
-                    **placeholders  # Use dynamic values from helper function
+                    **placeholders
                 )
             except KeyError:
-                # Fallback if template has unexpected placeholders
                 candidate = template.replace("{phrase}", phrase)
-            
+
             word_count = len(candidate.rstrip(".").split())
             if 3 <= word_count <= 10:
-                return _cleanup_sentence(candidate)
+                return _bullet_qa(_cleanup_sentence(candidate))
             if 3 <= word_count <= 14 and best_candidate is None:
                 best_candidate = candidate
+
     if best_candidate:
-        return _cleanup_sentence(best_candidate)
-    
+        return _bullet_qa(_cleanup_sentence(best_candidate))
+
     # Fallback: use first word with safe transformation
-    raw_phrase = _format_phrase([words[0]], mode)
-    template = templates[order % template_count]
+    raw_phrase = _format_phrase([words[0]] if words else ["focus"], mode)
+    template = templates[order % template_count] if templates else ("Prioritize {phrase} today." if mode == "do" else "Avoid {phrase} today.")
     phrase = safe_phrase_for_template(raw_phrase, template, fallback=fallback_phrase)
-    
-    # Get dynamic placeholder values
-    placeholders = _get_template_placeholders(area, order)
-    
+
+    placeholders = _get_template_placeholders(area, order, event=event)
     try:
         candidate = template.format(
             phrase=phrase,
-            **placeholders  # Use dynamic values
+            **placeholders
         )
     except KeyError:
         candidate = template.replace("{phrase}", phrase)
-    
-    return _cleanup_sentence(candidate)
+
+    return _bullet_qa(_cleanup_sentence(candidate))
 
 
 def clamp_sentences(paragraph: str, max_sentences: int = 2) -> str:
