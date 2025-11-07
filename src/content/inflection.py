@@ -381,4 +381,3 @@ def safe_phrase_for_template(
     
     # Default: use as-is (noun form)
     return transform_phrase(phrase, "noun", fallback=fallback)
-

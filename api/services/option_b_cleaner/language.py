@@ -3,17 +3,31 @@ from __future__ import annotations
 import hashlib
 import random
 import re
-from typing import Any, Iterable, Mapping, Sequence
+import unicodedata
+from typing import Any, Iterable, Mapping, Sequence, Tuple, List, Optional
 
 from .clean import de_jargon, to_you_pov
 from .event_tokens import MiniTemplate, event_phrase, render_mini_template
-from src.content.storylets import storylet_pools, is_phase3_enabled, get_transit_opener
+from src.content.storylets import is_phase3_enabled, get_transit_opener
 
+
+# ---------- Regexes & small phonetics helpers ----------
 
 _ARTICLE_PATTERN = re.compile(r"\b([Aa]n?)\s+([A-Za-z][\w-]*)")
 _REPEATED_WORD_PATTERN = re.compile(r"\b(\w+)(\s+\1\b)+", re.IGNORECASE)
 _SOFT_H_PREFIXES = ("hon", "hour", "heir")
 _HARD_VOWEL_PREFIXES = ("uni", "eu", "one")
+# Acronyms whose initial letter is pronounced with a vowel sound ("an MBA")
+_ACRONYM_AN = set("AEFHILMNORSX")
+
+# Punctuation/whitespace normalization
+_MULTI_SPACE = re.compile(r"[ \t]{2,}")
+_SPACE_BEFORE_PUNCT = re.compile(r"\s+([,.;:!?])")
+_PUNCT_RUN = re.compile(r"([.!?]){2,}")
+_DANGLING_COMMA = re.compile(r",\s*([.!?])")
+
+
+# ---------- Astrology scaffolding ----------
 
 SIGN_DETAILS = {
     "Aries": ("Cardinal", "Fire"),
@@ -43,64 +57,30 @@ ELEMENT_QUALITIES = {
     "Water": "intuition and depth",
 }
 
+
+# ---------- Lexicon ----------
+
 STOPWORDS = {
-    "a",
-    "and",
-    "can",
-    "may",
-    "energy",
-    "if",
-    "into",
-    "lean",
-    "let",
-    "may",
-    "set",
-    "should",
-    "stay",
-    "turn",
-    "feel",
-    "channel",
-    "you're",
-    "you",
-    "ride",
-    "bring",
-    "guide",
-    "attached",
-    "single",
-    "take",
-    "tackle",
-    "move",
-    "notably",
-    "powerfully",
-    "should",
-    "the",
-    "this",
-    "with",
-    "today",
-    "your",
+    "a", "and", "can", "may", "if", "into", "lean", "let", "set", "should", "stay", "turn", "feel",
+    "channel", "you're", "you", "ride", "bring", "guide", "attached", "single", "take", "tackle",
+    "move", "notably", "powerfully", "the", "this", "with", "today", "your", "energy",
 }
 
+# Expanded cues to improve tone detection, including common astro terms
 POSITIVE_CUES = {
-    "radiant",
-    "harmonizing",
-    "support",
-    "ease",
-    "growth",
-    "opportunity",
-    "vibrant",
-    "flow",
-    "opening",
+    "radiant", "harmonizing", "support", "ease", "growth", "opportunity", "vibrant",
+    "flow", "opening", "trine", "sextile", "gift", "easeful", "aligned", "supportive",
 }
 
 CHALLENGE_CUES = {
-    "challenge",
-    "friction",
-    "pressure",
-    "tense",
-    "demand",
-    "intense",
-    "rigid",
-    "strain",
+    "challenge", "friction", "pressure", "tense", "demand", "intense", "rigid", "strain",
+    "square", "opposition", "block", "delay", "inhibit", "conflict", "hard",
+}
+
+# Intensity cues (used to add pacing guidance when a day is “loud”)
+INTENSITY_PHRASES = {
+    "full moon", "new moon", "blood moon", "eclipse", "solar eclipse", "lunar eclipse",
+    "retrograde", "station", "exact hit", "exact aspect", "supermoon",
 }
 
 FOCUS_MAP = (
@@ -114,7 +94,7 @@ FOCUS_MAP = (
     ("finance", "financial choices"),
     ("health", "wellness rituals"),
     ("body", "wellness rituals"),
-    # Phase 1 expansions
+    # Phase expansions
     ("communication", "communication style"),
     ("creative", "creative projects"),
     ("routine", "daily routines"),
@@ -135,6 +115,11 @@ FOCUS_MAP = (
     ("stability", "stability goals"),
     ("change", "transitions"),
     ("decision", "decision-making"),
+    ("travel", "travel plans"),
+    ("social", "social circles"),
+    ("network", "networking efforts"),
+    ("visibility", "public visibility"),
+    ("persona", "outer persona"),
 )
 
 DESCRIPTOR_OVERRIDES = {
@@ -148,7 +133,7 @@ DESCRIPTOR_OVERRIDES = {
     "tone": "steady",
     "heightens": "warming",
     "breath": "calm",
-    # Phase 1 expansions
+    # Phase expansions (curated adjectives)
     "creative": "creative",
     "grounded": "grounded",
     "flowing": "flowing",
@@ -186,6 +171,15 @@ DESCRIPTOR_OVERRIDES = {
     "reflective": "reflective",
 }
 
+# Provide a richer alternative palette for repetition control
+_ALTERNATIVES = {
+    "radiant": ["vibrant", "clear", "focused", "purposeful", "energized"],
+    "steady":  ["grounded", "consistent", "measured", "reliable"],
+    "gentle":  ["soft", "calm", "tender", "easy"],
+    "bold":    ["decisive", "confident", "assertive", "powerful"],
+}
+
+# ---------- Storylets (more variety; same keys for compatibility) ----------
 
 STORYLETS: dict[str, dict[str, Any]] = {
     "default": {
@@ -193,33 +187,44 @@ STORYLETS: dict[str, dict[str, Any]] = {
             "support": (
                 "You move with {descriptor} confidence through today's {focus}.",
                 "Your {descriptor} rhythm keeps today's {focus} flowing forward.",
+                "You keep a {descriptor} tempo as today's {focus} opens up.",
+                "With {descriptor} ease, you navigate today's {focus}.",
             ),
             "challenge": (
                 "You steady {descriptor} turbulence inside today's {focus}.",
                 "Your {descriptor} resolve helps you navigate today's {focus} demands.",
+                "You keep a {descriptor} grip on what's shifting in today's {focus}.",
+                "You pace yourself with {descriptor} patience across today's {focus}.",
             ),
             "neutral": (
                 "You bring {descriptor} awareness to today's {focus}.",
                 "Your {descriptor} pace sets the tone for today's {focus}.",
+                "You keep a {descriptor} view on the whole of today's {focus}.",
+                "A {descriptor} presence supports today's {focus}.",
             ),
         },
         "coaching": (
             "Name the step that matters most so you stay anchored.",
             "Pause for one breath to notice what still feels aligned.",
             "Document a small win so progress remains tangible.",
+            "Decide one boundary you'll honor even if plans move.",
+            "Share one clear ask so collaboration stays easy.",
         ),
         "closers": {
             "support": (
                 "Keep trusting the rituals that already work.",
                 "Let steady choices show you the path forward.",
+                "Carry this momentum with quiet confidence.",
             ),
             "challenge": (
                 "Protect your bandwidth so pressure can't run the day.",
                 "Move gently but deliberately—you're allowed to pace yourself.",
+                "Keep margins wide; let clarity arrive before action.",
             ),
             "neutral": (
                 "Return to the practices that remind you why you're doing this.",
                 "Stay with the process, one grounded choice at a time.",
+                "Let consistency build the result you want.",
             ),
         },
     },
@@ -228,33 +233,40 @@ STORYLETS: dict[str, dict[str, Any]] = {
             "support": (
                 "You channel {descriptor} drive into today's {focus}.",
                 "Your {descriptor} ambition steadies today's {focus}.",
+                "With {descriptor} clarity, you guide today's {focus}.",
             ),
             "challenge": (
                 "You steady {descriptor} pressure across today's {focus}.",
                 "Your {descriptor} grit keeps today's {focus} in motion.",
+                "You keep {descriptor} focus while priorities shift.",
             ),
             "neutral": (
                 "You organize {descriptor} focus around today's {focus}.",
                 "Your {descriptor} pace sets an intentional tone for today's {focus}.",
+                "You frame today's {focus} with {descriptor} structure.",
             ),
         },
         "coaching": (
             "Break the workload into deliberate moves you can trust.",
             "Map the moving pieces before you commit to the next milestone.",
             "Share an update that keeps collaborators aligned.",
+            "Time-box the hardest piece and start there.",
         ),
         "closers": {
             "support": (
                 "Let steady wins show the momentum you're building.",
                 "Lean into allies who reinforce your vision.",
+                "Ship the small thing; compounding wins matter.",
             ),
             "challenge": (
                 "Keep pacing yourself so the pressure doesn't run the show.",
                 "Protect your bandwidth with clear boundaries.",
+                "Defer non-essentials; keep the core moving.",
             ),
             "neutral": (
                 "Stay with the process that makes results repeatable.",
                 "Keep your workflow anchored to what truly matters.",
+                "Let clarity set the sequence of next steps.",
             ),
         },
     },
@@ -263,33 +275,40 @@ STORYLETS: dict[str, dict[str, Any]] = {
             "support": (
                 "You bring {descriptor} care into today's {focus}.",
                 "Your {descriptor} presence softens today's {focus}.",
+                "You meet today's {focus} with {descriptor} sincerity.",
             ),
             "challenge": (
                 "You ease {descriptor} tension inside today's {focus}.",
                 "Your {descriptor} honesty steadies today's {focus} conversations.",
+                "You keep repairs gentle and {descriptor}.",
             ),
             "neutral": (
                 "You invite {descriptor} attention into today's {focus}.",
                 "Your {descriptor} pace keeps today's {focus} sincere.",
+                "You allow space for {descriptor} connection to unfold.",
             ),
         },
         "coaching": (
             "Ask one curious question so connection feels mutual.",
             "Share how your body feels when a moment lands right.",
             "Let listening lead before you decide the next move.",
+            "Name the need; keep the tone warm.",
         ),
         "closers": {
             "support": (
                 "Follow the conversations that feel nourishing.",
                 "Let shared rituals remind you you're supported.",
+                "Keep the softness you found today.",
             ),
             "challenge": (
                 "Keep soft boundaries so tenderness can return.",
                 "Name what you need while staying receptive.",
+                "Slow the pace; clarity is kind.",
             ),
             "neutral": (
                 "Let the pace stay human—no need to force answers.",
                 "Stay tuned to the gestures that feel genuine.",
+                "Let small signs guide the next step.",
             ),
         },
     },
@@ -298,33 +317,40 @@ STORYLETS: dict[str, dict[str, Any]] = {
             "support": (
                 "You honor {descriptor} rhythms through today's {focus}.",
                 "Your {descriptor} awareness protects today's {focus} rituals.",
+                "You give your body {descriptor} space to respond.",
             ),
             "challenge": (
                 "You soften {descriptor} strain across today's {focus}.",
                 "Your {descriptor} pacing defuses today's {focus} demands.",
+                "You choose {descriptor} adjustments that respect limits.",
             ),
             "neutral": (
                 "You bring {descriptor} care into today's {focus}.",
                 "Your {descriptor} presence steadies today's {focus} routines.",
+                "You tune into {descriptor} signals before you push.",
             ),
         },
         "coaching": (
             "Schedule breathers so your body feels consulted.",
             "Hydrate and stretch before momentum carries you away.",
             "Track one ritual that keeps your system grounded.",
+            "Wind down early; sleep is strategy.",
         ),
         "closers": {
             "support": (
                 "Let gentle structure support your wellbeing.",
                 "Stay loyal to the practices that replenish you.",
+                "Carry the ease forward, even in busy hours.",
             ),
             "challenge": (
                 "Keep adjustments responsive so recovery stays on track.",
                 "Trust the feedback your body keeps sharing.",
+                "Scale effort down; reduce friction on purpose.",
             ),
             "neutral": (
                 "Balance effort with rest so your energy can reset.",
                 "Stay present with the signals that guide your care.",
+                "Let the simple habit be enough today.",
             ),
         },
     },
@@ -333,53 +359,236 @@ STORYLETS: dict[str, dict[str, Any]] = {
             "support": (
                 "You guide {descriptor} awareness through today's {focus}.",
                 "Your {descriptor} clarity shapes today's {focus} choices.",
+                "You align spending with {descriptor} intention.",
             ),
             "challenge": (
                 "You bring {descriptor} patience to today's {focus} decisions.",
                 "Your {descriptor} caution steadies today's {focus} review.",
+                "You keep risk small and {descriptor}.",
             ),
             "neutral": (
                 "You organize {descriptor} strategy around today's {focus}.",
                 "Your {descriptor} pacing makes today's {focus} sustainable.",
+                "You keep perspective {descriptor} as you plan.",
             ),
         },
         "coaching": (
             "Check the numbers twice before you commit.",
             "Match each expense to the feeling it delivers.",
             "Journal one win that proves your plan is working.",
+            "Hold discretionary moves until clarity settles.",
         ),
         "closers": {
             "support": (
                 "Let aligned choices build your long game.",
                 "Trust the budget that keeps breathing room intact.",
+                "Keep momentum but protect reserves.",
             ),
             "challenge": (
                 "Keep big moves on hold until the math confirms it.",
                 "Protect resources by filtering decisions through calm.",
+                "Delay non-essentials; fund what's core.",
             ),
             "neutral": (
                 "Stay curious about where your focus is funding momentum.",
                 "Let steady pacing make each decision easier to trust.",
+                "Refine the plan; don't rush the commit.",
             ),
         },
     },
 }
 
 
+# ---------- Utilities ----------
+
 def _story_seed(*parts: Any) -> int:
-    material = "|".join(str(part) for part in parts if part not in {None, ""})
-    if not material:
-        material = "story"
+    """Stable-ish seed from content for deterministic variety."""
+    material = "|".join(str(part) for part in parts if part not in {None, ""}) or "story"
     digest = hashlib.sha256(material.encode("utf-8")).hexdigest()
     return int(digest[:8], 16)
 
+
+def _sanitize_spaces(text: str) -> str:
+    text = _SPACE_BEFORE_PUNCT.sub(r"\1", text)
+    text = _DANGLING_COMMA.sub(r"\1", text)
+    text = _MULTI_SPACE.sub(" ", text)
+    text = _PUNCT_RUN.sub(lambda m: m.group(1), text)
+    return text.strip()
+
+
+def _ensure_sentence(text: str) -> str:
+    cleaned = _sanitize_spaces(_collapse_repeated_words((text or "").strip()))
+    if not cleaned:
+        return ""
+    if cleaned[-1] not in ".!?":
+        cleaned = f"{cleaned}."
+    return cleaned
+
+
+def _collapse_repeated_words(text: str) -> str:
+    return _REPEATED_WORD_PATTERN.sub(lambda m: m.group(1), text)
+
+
+def fix_indefinite_articles(text: str) -> str:
+    """Switch 'a/an' based on pronunciation heuristics (incl. acronyms)."""
+    def _article(word: str) -> str:
+        if not word:
+            return "a"
+        if word.isupper() and word[0] in _ACRONYM_AN:
+            return "an"
+        lowered = word.lower()
+        if any(lowered.startswith(prefix) for prefix in _SOFT_H_PREFIXES):
+            return "an"
+        if lowered[0] in "aeiou":
+            if any(lowered.startswith(prefix) for prefix in _HARD_VOWEL_PREFIXES):
+                return "a"
+            return "an"
+        return "a"
+
+    def repl(match: re.Match[str]) -> str:
+        article, word = match.group(1), match.group(2)
+        desired = _article(word)
+        if desired == article.lower():
+            return match.group(0)
+        replacement = desired.capitalize() if article[0].isupper() else desired
+        return f"{replacement} {word}"
+
+    return _ARTICLE_PATTERN.sub(repl, text)
+
+
+def _clean_text(text: str, profile_name: str) -> str:
+    cleaned = de_jargon(text or "")
+    return to_you_pov(cleaned, profile_name)
+
+
+def _keywords_from_text(texts: Iterable[str], profile_name: str = "") -> List[str]:
+    tokens: List[str] = []
+    blocked: set[str] = set()
+    if profile_name:
+        blocked.update(re.findall(r"[a-z']+", profile_name.lower()))
+    for text in texts:
+        cleaned = de_jargon(text or "").lower()
+        tokens.extend(re.findall(r"[a-z']+", cleaned))
+    if blocked:
+        tokens = [t for t in tokens if t not in blocked]
+    return tokens
+
+
+def _norm(s: str) -> str:
+    s = unicodedata.normalize("NFKC", s)
+    s = s.replace("’", "'").replace("–", "-").replace("—", "-")
+    return s.casefold().strip()
+
+
+def _stable_index(key: str, n: int) -> int:
+    h = hashlib.blake2b(key.encode("utf-8"), digest_size=4).digest()
+    return int.from_bytes(h, "big") % max(1, n)
+
+
+def _combined_text(*texts: str) -> str:
+    return _norm(" ".join(filter(None, texts)))
+
+
+def _contains_any_phrase(haystack: str, phrases: Iterable[str]) -> bool:
+    h = " " + haystack.lower() + " "
+    for p in phrases:
+        p_clean = " " + p.lower().strip() + " "
+        if p_clean in h:
+            return True
+    return False
+
+
+# ---------- Scoring: descriptor, focus, tone, intensity ----------
+
+def descriptor_from_text(
+    *texts: str,
+    default: str = "steady",
+    profile_name: str = "",
+    recent: Iterable[str] = (),
+) -> str:
+    """
+    Pick a descriptor with anti-repetition and stable variability.
+    - Stable hashing for option selection.
+    - Cleans case/unicode/apostrophes/hyphens.
+    - Curated alternatives for overused descriptors.
+    - Falls back to varied default if nothing found.
+    """
+    recent_set = {_norm(x) for x in recent}
+    key_base = _norm(" ".join(texts)) + "|" + _norm(profile_name or "")
+
+    for token in _keywords_from_text(texts, profile_name=profile_name):
+        tok = _norm(token)
+        if tok.endswith("'s"):
+            tok = tok[:-2]
+        if len(tok) <= 2 or tok.endswith("ly") or tok in STOPWORDS:
+            continue
+        descriptor = _norm(DESCRIPTOR_OVERRIDES.get(tok, tok))
+        if descriptor in _ALTERNATIVES:
+            choices = [c for c in _ALTERNATIVES[descriptor] if _norm(c) not in recent_set] or _ALTERNATIVES[descriptor]
+            idx = _stable_index(key_base + "|" + descriptor, len(choices))
+            return choices[idx]
+        return descriptor
+
+    d = _norm(default)
+    if d in _ALTERNATIVES:
+        choices = [c for c in _ALTERNATIVES[d] if _norm(c) not in recent_set] or _ALTERNATIVES[d]
+        idx = _stable_index(key_base + "|_default", len(choices))
+        return choices[idx]
+    return default
+
+
+def focus_from_text(*texts: str, default: str = "path", profile_name: str = "") -> str:
+    combined = " ".join(filter(None, texts)).lower()
+    # Remove name parts as whole words
+    if profile_name:
+        for part in re.findall(r"[a-z]+", profile_name.lower()):
+            combined = re.sub(rf"\b{re.escape(part)}\b", "", combined)
+    for key, focus in FOCUS_MAP:
+        if re.search(rf"\b{re.escape(key)}\b", combined):
+            return focus
+    return default
+
+
+def tone_from_text(*texts: str) -> str:
+    combined = " ".join(filter(None, texts)).lower()
+    def _count_cues(cues: set[str]) -> int:
+        return sum(len(re.findall(rf"\b{re.escape(cue)}\b", combined)) for cue in cues)
+    pos = _count_cues(POSITIVE_CUES)
+    neg = _count_cues(CHALLENGE_CUES)
+    if neg > pos:
+        return "challenge"
+    if pos > neg:
+        return "support"
+    return "neutral"
+
+
+def intensity_from_text(*texts: str) -> str:
+    """
+    Returns 'high' if eclipse/full-moon/retrograde/etc. cues are present,
+    otherwise 'normal'. Use to add pacing guidance on louder days.
+    """
+    combined = " ".join(filter(None, texts)).lower()
+    return "high" if _contains_any_phrase(combined, INTENSITY_PHRASES) else "normal"
+
+
+def _normalize_tone_label(value: Optional[str]) -> str:
+    if not value:
+        return "neutral"
+    lowered = value.strip().lower()
+    if lowered.startswith("tone:"):
+        lowered = lowered.split(":", 1)[1]
+    if lowered not in {"support", "challenge", "neutral"}:
+        return "neutral"
+    return lowered
+
+
+# ---------- Storylet rendering ----------
 
 def _storylet_pool(area: str, section: str, tone: str, event: Mapping[str, Any] | None = None) -> Sequence[str]:
     # Phase 3: Use transit-specific templates for openers if enabled
     if section == "openers" and event and is_phase3_enabled():
         transit_body = (event.get("transit_body") or "").lower()
         if transit_body:
-            # Get standard fallback templates first
             tone_key = tone if tone in {"support", "challenge", "neutral"} else "neutral"
             area_pool = STORYLETS.get(area, {})
             fallback_options: Sequence[str] = ()
@@ -395,13 +604,10 @@ def _storylet_pool(area: str, section: str, tone: str, event: Mapping[str, Any] 
                     fallback_options = fallback.get(tone_key) or fallback.get("neutral", ()) or ()
                 elif isinstance(fallback, Sequence):
                     fallback_options = fallback
-            
-            # Try to get transit-specific templates
             transit_templates = get_transit_opener(transit_body, fallback_options)
             if transit_templates and transit_templates != tuple(fallback_options):
                 return transit_templates
-    
-    # Standard Phase 2 logic (or Phase 3 fallback)
+
     tone_key = tone if tone in {"support", "challenge", "neutral"} else "neutral"
     area_pool = STORYLETS.get(area, {})
     options: Sequence[str] = ()
@@ -444,112 +650,22 @@ def _render_storylet(
         return default
     try:
         return template.format(**tokens)
-    except (KeyError, ValueError):  # pragma: no cover - defensive formatting
+    except (KeyError, ValueError):
         return default
 
 
-def _clean_text(text: str, profile_name: str) -> str:
-    cleaned = de_jargon(text or "")
-    return to_you_pov(cleaned, profile_name)
-
-
-def _keywords_from_text(texts: Iterable[str], profile_name: str = "") -> list[str]:
-    tokens: list[str] = []
-    blocked = {profile_name.lower()} if profile_name else set()
-    for text in texts:
-        cleaned = de_jargon(text or "").lower()
-        tokens.extend(re.findall(r"[a-z']+", cleaned))
-    if blocked:
-        tokens = [t for t in tokens if t not in blocked]
-    return tokens
-
-
-def descriptor_from_text(*texts: str, default: str = "steady", profile_name: str = "") -> str:
-    for token in _keywords_from_text(texts, profile_name=profile_name):
-        clean_token = token[:-2] if token.endswith("'s") else token
-        if len(clean_token) <= 2 or clean_token.endswith("ly") or clean_token in STOPWORDS:
-            continue
-        return DESCRIPTOR_OVERRIDES.get(clean_token, clean_token)
-    return default
-
-
-def focus_from_text(*texts: str, default: str = "path", profile_name: str = "") -> str:
-    combined = " ".join(filter(None, texts)).lower()
-    if profile_name:
-        combined = combined.replace(profile_name.lower(), "")
-    for key, focus in FOCUS_MAP:
-        if key in combined:
-            return focus
-    return default
-
-
-def tone_from_text(*texts: str) -> str:
-    combined = " ".join(filter(None, texts)).lower()
-    for cue in CHALLENGE_CUES:
-        if cue in combined:
-            return "challenge"
-    for cue in POSITIVE_CUES:
-        if cue in combined:
-            return "support"
-    return "neutral"
-
-
-def _normalize_tone_label(value: str | None) -> str:
-    if not value:
-        return "neutral"
-    lowered = value.strip().lower()
-    if lowered.startswith("tone:"):
-        lowered = lowered.split(":", 1)[1]
-    if lowered not in {"support", "challenge", "neutral"}:
-        return "neutral"
-    return lowered
-
-
-def _article(word: str) -> str:
-    if not word:
-        return "a"
-    lowered = word.lower()
-    if any(lowered.startswith(prefix) for prefix in _SOFT_H_PREFIXES):
-        return "an"
-    if lowered[0] in "aeiou":
-        if any(lowered.startswith(prefix) for prefix in _HARD_VOWEL_PREFIXES):
-            return "a"
-        return "an"
-    return "a"
-
-
-def fix_indefinite_articles(text: str) -> str:
-    def repl(match: re.Match[str]) -> str:
-        article, word = match.group(1), match.group(2)
-        desired = _article(word)
-        if desired == article.lower():
-            return match.group(0)
-        replacement = desired.capitalize() if article[0].isupper() else desired
-        return f"{replacement} {word}"
-
-    return _ARTICLE_PATTERN.sub(repl, text)
-
-
-def _collapse_repeated_words(text: str) -> str:
-    return _REPEATED_WORD_PATTERN.sub(lambda m: m.group(1), text)
-
-
-def _ensure_sentence(text: str) -> str:
-    cleaned = (text or "").strip()
-    if not cleaned:
-        return ""
-    cleaned = _collapse_repeated_words(cleaned)
-    if cleaned[-1] not in ".!?":
-        cleaned = f"{cleaned}."
-    return cleaned
-
+# ---------- Paragraph assembly ----------
 
 def _compose_paragraph(
     lead: str,
     evidence: Sequence[str] | None,
     closing: str | None,
+    *,
+    area: str = "general",
+    events: List[Mapping[str, Any]] | None = None,
+    apply_qa: bool = True,
 ) -> str:
-    parts: list[str] = []
+    parts: List[str] = []
     if lead:
         normalized = fix_indefinite_articles(_ensure_sentence(lead))
         if normalized:
@@ -562,7 +678,29 @@ def _compose_paragraph(
         normalized = fix_indefinite_articles(_ensure_sentence(closing))
         if normalized:
             parts.append(normalized)
-    return " ".join(parts).strip()
+    
+    result = _sanitize_spaces(" ".join(parts).strip())
+    
+    # Apply phrasebank QA polish and driver microcopy integration
+    if apply_qa and result:
+        try:
+            from api.services.option_b_cleaner.phrasebank_integration import (
+                apply_qa_polish,
+                inject_driver_microcopy,
+            )
+            
+            # Apply QA checks and fixes
+            result = apply_qa_polish(result, area=area)
+            
+            # Inject driver microcopy if events present (max 1 per paragraph)
+            if events:
+                result = inject_driver_microcopy(result, events, max_injections=1)
+        
+        except Exception:
+            # If integration fails, return result as-is
+            pass
+    
+    return result
 
 
 def _event_evidence_sentences(
@@ -572,9 +710,10 @@ def _event_evidence_sentences(
     area: str | None = None,
     seed: int | None = None,
 ) -> tuple[str, ...]:
-    sentences: list[str] = []
+    sentences: List[str] = []
     primary = event_phrase(event)
     supporting = event_phrase(supporting_event)
+
     if primary and supporting and supporting != primary:
         templates_by_area = {
             "career": (
@@ -599,13 +738,14 @@ def _event_evidence_sentences(
             ),
         }
         templates = templates_by_area.get(area or "", templates_by_area["career"])
-        base_seed = seed or 0
+        base_seed = (seed or 0)
         template = templates[base_seed % len(templates)]
         sentences.append(template.format(primary=primary, supporting=supporting))
     elif primary:
         sentences.append(primary)
     elif supporting:
         sentences.append(supporting)
+
     return tuple(sentences)
 
 
@@ -627,6 +767,8 @@ def _build_story_paragraph(
     primary_phrase = event_phrase(event)
     supporting_phrase = event_phrase(supporting_event)
     base_seed = _story_seed(area, raw, descriptor, focus, tone, primary_phrase, supporting_phrase)
+
+    # opener
     opener_default_text = opener_default.format(**tokens)
     if force_default_opener:
         opener = opener_default_text
@@ -638,8 +780,10 @@ def _build_story_paragraph(
             base_seed,
             tokens=tokens,
             default=opener_default_text,
-            event=event,  # Pass event for Phase 3 transit-specific templates
+            event=event,
         )
+
+    # evidence
     evidence = list(
         _event_evidence_sentences(
             event,
@@ -648,6 +792,8 @@ def _build_story_paragraph(
             seed=base_seed + 1,
         )
     )
+
+    # coaching (tone-aware)
     coaching = _render_storylet(
         area,
         "coaching",
@@ -658,6 +804,18 @@ def _build_story_paragraph(
     )
     if coaching:
         evidence.append(coaching)
+
+    # If intensity is high, append a pacing hint (once, tone-aware)
+    loud = intensity_from_text(raw, primary_phrase or "", supporting_phrase or "")
+    if loud == "high":
+        if tone == "challenge":
+            evidence.append("Keep margins wide and skip optional commitments.")
+        elif tone == "support":
+            evidence.append("Let the tailwind help—but keep your pacing humane.")
+        else:
+            evidence.append("Stay responsive; re-sequence plans if signals shift.")
+
+    # closing
     default_closing = closing_default.format(**tokens)
     closing = clause.strip() if clause else _render_storylet(
         area,
@@ -667,8 +825,23 @@ def _build_story_paragraph(
         tokens=tokens,
         default=default_closing,
     )
-    return _compose_paragraph(opener, evidence, closing)
+    
+    # Compose with QA and driver microcopy
+    events_list = [event, supporting_event] if event and supporting_event else \
+                  [event] if event else \
+                  [supporting_event] if supporting_event else None
+    
+    return _compose_paragraph(
+        opener, 
+        evidence, 
+        closing, 
+        area=area, 
+        events=events_list,
+        apply_qa=True
+    )
 
+
+# ---------- Lines & sections ----------
 
 def element_modality_line(sign_a: str, sign_b: str) -> str:
     info_a = SIGN_DETAILS.get(sign_a, ("Cardinal", "Air"))
@@ -694,19 +867,21 @@ def build_opening_summary(
     sign_b = signs[1] if len(signs) > 1 else sign_a
     descriptor = descriptor_from_text(theme, raw, profile_name=profile_name)
     focus = focus_from_text(theme, raw, profile_name=profile_name)
-    article = _article(descriptor)
-    closing = clause.strip() if clause else "Keep momentum pointed toward meaningful moves."
-    closing = closing.replace("quiet clarity", "calm focus")
-    closing = closing.rstrip(".")
-    closing_fragment = closing[0].lower() + closing[1:] if closing else ""
+    article = "an" if descriptor and descriptor[0].lower() in "aeiou" else "a"
+
+    # readable closing
+    closing = (clause.strip() if clause else "Keep momentum pointed toward meaningful moves.") or ""
+    closing = closing.replace("quiet clarity", "calm focus").rstrip(".")
+    closing_fragment = (closing[0].lower() + closing[1:]) if closing else ""
+
+    # backdrop
     backdrop = element_modality_line(sign_a, sign_b).rstrip(".")
-    summary = (
-        f"You ride {article} {descriptor} wave toward today's {focus} as {backdrop}"
-    )
+
+    summary = f"You ride {article} {descriptor} wave toward today's {focus} as {backdrop}"
     if closing_fragment:
         summary = f"{summary}, and {closing_fragment}"
     summary = summary.rstrip(", ") + "."
-    return fix_indefinite_articles(summary)
+    return fix_indefinite_articles(_sanitize_spaces(summary))
 
 
 def build_morning_paragraph(
@@ -732,7 +907,7 @@ def build_morning_paragraph(
         ),
         tokens,
     )
-    return sentence or "You set the tone by taking one intentional pause before leaning into steady momentum today."
+    return _ensure_sentence(sentence or "You set the tone by taking one intentional pause before leaning into steady momentum today.")
 
 
 def build_career_paragraph(
@@ -756,7 +931,7 @@ def build_career_paragraph(
         clause=clause,
         event=event,
         supporting_event=supporting_event,
-        opener_default="You turn {descriptor} work into deliberate progress at work.",
+        opener_default="You turn {descriptor} focus into deliberate progress at work.",
         closing_default="Let this focused drive move your intentions into form.",
     )
 
@@ -869,15 +1044,80 @@ def build_finance_paragraph(
 def build_one_line_summary(raw: str, theme: str, profile_name: str = "") -> str:
     descriptor = descriptor_from_text(raw, theme, default="steady", profile_name=profile_name)
     focus = focus_from_text(raw, theme, default="momentum", profile_name=profile_name)
-    return f"Keep your {focus} in view and move forward with balanced intent."
+    return fix_indefinite_articles(_sanitize_spaces(f"Make {descriptor} moves and keep your {focus} in view."))
 
+
+# ---------- Surface polishers ----------
 
 def polished_text(raw: str, profile_name: str) -> str:
+    """
+    Return the first polished sentence from an LLM/raw string:
+    - de-jargon + second-person POV
+    - normalize spacing/punctuation
+    - ensure terminal punctuation
+    """
     cleaned = _clean_text(raw, profile_name)
     sentences = [s.strip() for s in re.split(r"(?<=[.!?])\s+", cleaned) if s.strip()]
     if not sentences:
         return ""
     first = sentences[0]
-    if not first.endswith("."):
-        first += "."
-    return first
+    return _ensure_sentence(first)
+
+
+# ---------- Optional high-level aggregator (non-breaking addition) ----------
+
+def build_daily_narrative(
+    *,
+    theme: str,
+    raw: str,
+    signs: Sequence[str],
+    profile_name: str = "",
+    tone_hints: Mapping[str, str] | None = None,
+    events: Mapping[str, Mapping[str, Any] | None] | None = None,
+) -> Mapping[str, str]:
+    """
+    Convenience aggregator that returns a dict with all major sections rendered.
+    This is opt-in; does not change existing call sites.
+    keys: summary, morning, career, love, health, finance
+    """
+    tone_hints = tone_hints or {}
+    events = events or {}
+    return {
+        "summary": build_opening_summary(theme, raw, signs, profile_name),
+        "morning": build_morning_paragraph(raw, profile_name, theme, events.get("morning")),
+        "career": build_career_paragraph(
+            raw,
+            profile_name=profile_name,
+            tone_hint=tone_hints.get("career"),
+            clause=None,
+            event=events.get("career"),
+            supporting_event=events.get("career_support"),
+        ),
+        "love": build_love_paragraph(
+            raw,
+            profile_name=profile_name,
+            tone_hint=tone_hints.get("love"),
+            clause=None,
+            event=events.get("love"),
+            supporting_event=events.get("love_support"),
+        ),
+        "health": build_health_paragraph(
+            raw,
+            theme,
+            profile_name=profile_name,
+            tone_hint=tone_hints.get("health"),
+            clause=None,
+            event=events.get("health"),
+            supporting_event=events.get("health_support"),
+        ),
+        "finance": build_finance_paragraph(
+            raw,
+            theme,
+            profile_name=profile_name,
+            tone_hint=tone_hints.get("finance"),
+            clause=None,
+            event=events.get("finance"),
+            supporting_event=events.get("finance_support"),
+        ),
+        "one_liner": build_one_line_summary(raw, theme, profile_name),
+    }

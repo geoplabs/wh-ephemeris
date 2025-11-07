@@ -279,6 +279,19 @@ def _keywords_for_bullet(text: str) -> list[str]:
     if not keywords:
         keywords = [w for w in lowered if w not in _STOPWORDS]
     keywords = _dedupe_preserve_order(keywords)
+    
+    # Filter out special event keywords and phrases that shouldn't appear in bullets
+    event_keywords = {
+        "moon", "eclipse", "lunar", "solar", "void", "course", 
+        "supermoon", "micromoon", "blood", "out-of-bounds",
+        "full", "new", "quarter", "waxing", "waning", "total", "partial",
+        "annular", "penumbral", "ingress", "retrograde", "station", "direct",
+        "cazimi", "combust", "beams", "culmination", "release", "revelation",
+        "transformation", "spotlight", "reboot", "destiny", "peak", "tides",
+        "surge", "surface", "chapter", "fated", "shift", "blank", "page"
+    }
+    keywords = [w for w in keywords if w not in event_keywords]
+    
     if len(keywords) > 3:
         general_tail = {"career", "path", "momentum", "today", "energy"}
         trimmed = [w for w in keywords if w not in general_tail]
@@ -852,7 +865,63 @@ def _get_template_placeholders(area: str | None, order: int) -> dict[str, str]:
     }
 
 
-def imperative_bullet(s: str, order: int = 0, mode: str = "do", *, area: str | None = None, asset: PhraseAsset | None = None) -> str:
+def imperative_bullet(
+    s: str, 
+    order: int = 0, 
+    mode: str = "do", 
+    *, 
+    area: str | None = None, 
+    asset: PhraseAsset | None = None,
+    event: dict | None = None,
+    use_phrasebank: bool = True,
+) -> str:
+    # Try phrasebank integration first for enhanced quality
+    if use_phrasebank and area:
+        try:
+            from .phrasebank_integration import get_enhanced_bullets, get_archetype_from_tone
+            
+            # Extract keywords and event info
+            s_clean = de_jargon(s)
+            keywords = _keywords_for_bullet(s_clean)
+            
+            # Determine archetype from text
+            archetype = "support" if "support" in s_clean.lower() else \
+                       "challenge" if any(word in s_clean.lower() for word in ["challenge", "friction", "pressure"]) else \
+                       "neutral"
+            
+            # Determine intensity from event score
+            intensity = "steady"
+            if event and "score" in event:
+                score = abs(float(event.get("score", 0)))
+                if score < 1.0:
+                    intensity = "background"
+                elif score < 2.0:
+                    intensity = "gentle"
+                elif score < 3.5:
+                    intensity = "steady"
+                else:
+                    intensity = "strong"
+            
+            # Get enhanced bullets
+            bullets = get_enhanced_bullets(
+                area=area,
+                mode=mode,
+                keywords=keywords,
+                event=event,
+                archetype=archetype,
+                intensity=intensity,
+                order=order,
+            )
+            
+            # Return first bullet if available
+            if bullets and bullets[0]:
+                return bullets[0]
+        
+        except Exception:
+            # Fall back to original implementation
+            pass
+    
+    # Original implementation (fallback)
     s = de_jargon(s)
     s = re.sub(r"^(?:Try to|You should|Consider|Aim to)\s+", "", s, flags=re.I)
     words = _keywords_for_bullet(s)
