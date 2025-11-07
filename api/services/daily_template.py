@@ -343,9 +343,20 @@ def _append_sentence(base: Any, addition: str) -> str:
     if not addition_text:
         return _ensure_sentence(base_text)
 
-    normalized_addition = addition_text.rstrip(".!?").lower()
-    if normalized_addition and normalized_addition in base_text.lower():
+    # More robust duplicate detection
+    normalized_addition = addition_text.rstrip(".!?").strip().lower()
+    normalized_base = base_text.lower()
+    
+    # Check for full match or substring
+    if normalized_addition in normalized_base:
         return _ensure_sentence(base_text)
+    
+    # Check if most key words from addition are already in base (>70% overlap)
+    addition_words = set(word for word in normalized_addition.split() if len(word) > 4)
+    if addition_words:  # Only check if there are substantial words
+        base_words = set(word for word in normalized_base.split() if len(word) > 4)
+        if base_words and len(addition_words & base_words) / len(addition_words) > 0.7:
+            return _ensure_sentence(base_text)
 
     if base_text:
         base_sentence = _ensure_sentence(base_text)
@@ -405,6 +416,78 @@ def _format_special_event(event: Mapping[str, Any]) -> str:
 
         return _ensure_sentence(f"{phase_label} shapes the emotional tone today")
 
+    # Eclipse-specific formatting with personalization
+    if event_type == "eclipse":
+        eclipse_info = _sanitize_mapping(event.get("eclipse_info"))
+        banner = _coerce_string(eclipse_info.get("banner"))
+        if not banner:
+            category = _coerce_string(eclipse_info.get("eclipse_category"))
+            eclipse_type = _coerce_string(eclipse_info.get("eclipse_type"))
+            if category and eclipse_type:
+                banner = f"{category.title()} Eclipse ({eclipse_type.title()})"
+            else:
+                banner = "Eclipse"
+        
+        tone_line = _coerce_string(eclipse_info.get("tone_line"))
+        personal_boost = eclipse_info.get("personalization_boost", 0)
+        visibility_boost = eclipse_info.get("visibility_boost", 0)
+        
+        parts: List[str] = [banner]
+        
+        if tone_line:
+            parts.append(tone_line.rstrip(".!?"))
+        
+        # Add personalization note if significant
+        if personal_boost >= 0.2:  # 20%+ boost means it activates natal chart
+            parts.append("This eclipse activates your natal chart powerfully")
+        elif visibility_boost > 0:
+            parts.append("Visible from your location")
+        
+        combined = " – ".join(parts) if len(parts) > 1 else (parts[0] if parts else "")
+        return _ensure_sentence(combined or note_sentence or "Major eclipse today")
+
+    # Void-of-Course Moon with time window
+    if event_type == "void_of_course":
+        voc_info = _sanitize_mapping(event.get("voc_info"))
+        banner = _coerce_string(voc_info.get("banner")) or "Void of Course Moon"
+        tone_line = _coerce_string(voc_info.get("tone_line"))
+        
+        # Extract time window for display
+        window = _sanitize_mapping(voc_info.get("window"))
+        time_display = ""
+        if window:
+            start = window.get("start")
+            end = window.get("end")
+            if start and end:
+                try:
+                    from datetime import datetime as dt_class
+                    # Handle both datetime objects and ISO strings
+                    if isinstance(start, dt_class):
+                        start_dt = start
+                    else:
+                        start_str = str(start).replace("Z", "+00:00")
+                        start_dt = dt_class.fromisoformat(start_str)
+                    
+                    if isinstance(end, dt_class):
+                        end_dt = end
+                    else:
+                        end_str = str(end).replace("Z", "+00:00")
+                        end_dt = dt_class.fromisoformat(end_str)
+                    
+                    time_display = f"{start_dt.strftime('%H:%M')}-{end_dt.strftime('%H:%M')} UTC"
+                except Exception:
+                    pass  # Fall back to no time display if parsing fails
+        
+        parts: List[str] = [banner]
+        if time_display:
+            parts.append(f"from {time_display}")
+        if tone_line:
+            parts.append(tone_line.rstrip(".!?"))
+        
+        combined = " ".join(parts) if parts else ""
+        return _ensure_sentence(combined or note_sentence or "Void-of-Course Moon period today")
+
+    # Generic fallback for other special events
     if note_sentence:
         return note_sentence
 

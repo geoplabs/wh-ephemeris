@@ -401,3 +401,186 @@ def test_special_sky_events_skip_when_none_present():
 
     assert updated is fallback
     assert "Special sky watch:" not in updated["opening_summary"]
+
+
+def test_eclipse_with_personalization_formatting():
+    """Test that eclipse events show personalization and visibility boosts."""
+    from datetime import datetime
+    payload = _sample_daily_payload()
+    payload["events"] = [
+        {
+            "event_type": "eclipse",
+            "note": "Total Solar Eclipse - major new chapter begins",
+            "eclipse_info": {
+                "banner": "Solar Eclipse (Total)",
+                "tone_line": "Sun reboot – destiny hands you a blank page.",
+                "eclipse_category": "solar",
+                "eclipse_type": "total",
+                "personalization_boost": 0.4,  # 40% boost
+                "visibility_boost": 0.15,
+            },
+            "score": 3.54,
+        }
+    ]
+    
+    fallback = _build_fallback(payload).model_dump(mode="json")
+    updated = _apply_special_sky_events(fallback, payload)
+    
+    opening = updated["opening_summary"]
+    assert "Solar Eclipse" in opening
+    assert "Sun reboot" in opening
+    assert "activates your natal chart powerfully" in opening  # Personalization mention
+
+
+def test_eclipse_with_visibility_boost():
+    """Test that visible eclipses mention visibility."""
+    payload = _sample_daily_payload()
+    payload["events"] = [
+        {
+            "event_type": "eclipse",
+            "eclipse_info": {
+                "banner": "Lunar Eclipse (Partial)",
+                "tone_line": "Lunar spotlight – revelations surface.",
+                "eclipse_category": "lunar",
+                "eclipse_type": "partial",
+                "personalization_boost": 0.0,  # No personal boost
+                "visibility_boost": 0.15,  # But visible
+            },
+            "score": 1.68,
+        }
+    ]
+    
+    fallback = _build_fallback(payload).model_dump(mode="json")
+    updated = _apply_special_sky_events(fallback, payload)
+    
+    opening = updated["opening_summary"]
+    assert "Lunar Eclipse" in opening
+    assert "Visible from your location" in opening
+
+
+def test_void_of_course_with_time_window():
+    """Test that VoC Moon displays time windows."""
+    from datetime import datetime
+    payload = _sample_daily_payload()
+    voc_start = datetime(2025, 11, 15, 18, 30)
+    voc_end = datetime(2025, 11, 16, 2, 15)
+    payload["events"] = [
+        {
+            "event_type": "void_of_course",
+            "note": "Void-of-course Moon invites gentle pacing.",
+            "voc_info": {
+                "banner": "Void of Course Moon",
+                "tone_line": "Low-signal window – prep/review beats go-time.",
+                "window": {
+                    "start": voc_start,
+                    "end": voc_end,
+                    "total_hours": 7.75,
+                },
+            },
+            "score": -0.3,
+        }
+    ]
+    
+    fallback = _build_fallback(payload).model_dump(mode="json")
+    updated = _apply_special_sky_events(fallback, payload)
+    
+    opening = updated["opening_summary"]
+    assert "Void of Course Moon" in opening or "Void-of-course Moon" in opening
+    assert "18:30-02:15 UTC" in opening  # Time window displayed
+
+
+def test_void_of_course_with_iso_string_times():
+    """Test that VoC Moon handles ISO string dates correctly."""
+    payload = _sample_daily_payload()
+    payload["events"] = [
+        {
+            "event_type": "void_of_course",
+            "voc_info": {
+                "banner": "Void of Course Moon",
+                "tone_line": "Low-signal window.",
+                "window": {
+                    "start": "2025-11-15T14:00:00+00:00",
+                    "end": "2025-11-15T17:30:00+00:00",
+                },
+            },
+            "score": -0.3,
+        }
+    ]
+    
+    fallback = _build_fallback(payload).model_dump(mode="json")
+    updated = _apply_special_sky_events(fallback, payload)
+    
+    opening = updated["opening_summary"]
+    assert "14:00-17:30 UTC" in opening  # Parsed from ISO strings
+
+
+def test_duplicate_detection_with_word_overlap():
+    """Test improved duplicate detection based on word overlap."""
+    base = "The Full Moon brings powerful energy for relationships and growth."
+    addition = "Full Moon brings energy for relationships."  # >70% word overlap
+    
+    result = daily_template._append_sentence(base, addition)
+    
+    # Should NOT append because of high word overlap
+    assert result == base.rstrip() + "."  # Just the base, ensured as sentence
+
+
+def test_duplicate_detection_allows_different_content():
+    """Test that different content is appended."""
+    base = "The Full Moon brings powerful energy for relationships."
+    addition = "Void of Course Moon from 14:00-17:00 UTC."  # Completely different
+    
+    result = daily_template._append_sentence(base, addition)
+    
+    # Should append because content is different
+    assert "Full Moon" in result
+    assert "Void of Course" in result
+    assert result.count(".") >= 2  # Two sentences
+
+
+def test_special_event_priority_sorting():
+    """Test that events are sorted by priority (eclipse > lunar > voc > oob)."""
+    payload = _sample_daily_payload()
+    payload["events"] = [
+        {"event_type": "out_of_bounds", "score": 0.3},
+        {"event_type": "void_of_course", "score": 0.5},
+        {"event_type": "eclipse", "eclipse_info": {"banner": "Solar Eclipse"}, "score": 2.0},
+        {"event_type": "lunar_phase", "phase_name": "full_moon", "score": 1.0},
+    ]
+    
+    mentions = daily_template._special_event_mentions(payload["events"])
+    
+    # Should have max 2 mentions
+    assert len(mentions) <= 2
+    
+    # Eclipse should be first (priority 0)
+    assert "Eclipse" in mentions[0] or "Solar" in mentions[0]
+    
+    # Lunar phase should be second (priority 1)
+    if len(mentions) > 1:
+        assert "Moon" in mentions[1] or "Lunar" in mentions[1]
+
+
+def test_special_event_strength_sorting_within_priority():
+    """Test that within same priority, stronger events come first."""
+    payload = _sample_daily_payload()
+    payload["events"] = [
+        {
+            "event_type": "lunar_phase",
+            "phase_name": "first_quarter",
+            "lunar_phase_info": {"banner": "First Quarter Moon"},
+            "score": 0.5,
+        },
+        {
+            "event_type": "lunar_phase",
+            "phase_name": "full_moon",
+            "lunar_phase_info": {"banner": "Full Moon"},
+            "score": 1.2,
+        },
+    ]
+    
+    mentions = daily_template._special_event_mentions(payload["events"])
+    
+    # Full moon (stronger score 1.2) should appear before first quarter (0.5)
+    assert len(mentions) >= 1
+    assert "Full" in mentions[0]
