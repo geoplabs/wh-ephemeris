@@ -232,6 +232,13 @@ def _parse_response(raw: str) -> Optional[Dict[str, Any]]:
 
 SANITIZED_LIST_LIMIT = 4
 
+_SPECIAL_EVENT_PRIORITY = {
+    "eclipse": 0,
+    "lunar_phase": 1,
+    "void_of_course": 2,
+    "out_of_bounds": 3,
+}
+
 
 def _coerce_string(value: Any) -> str:
     if isinstance(value, str):
@@ -328,6 +335,150 @@ def _ensure_sentence(value: Any) -> str:
     if condensed[-1] not in ".!?":
         condensed = f"{condensed}."
     return condensed
+
+
+def _append_sentence(base: Any, addition: str) -> str:
+    base_text = _coerce_string(base)
+    addition_text = _ensure_sentence(addition)
+    if not addition_text:
+        return _ensure_sentence(base_text)
+
+    normalized_addition = addition_text.rstrip(".!?").lower()
+    if normalized_addition and normalized_addition in base_text.lower():
+        return _ensure_sentence(base_text)
+
+    if base_text:
+        base_sentence = _ensure_sentence(base_text)
+        return f"{base_sentence.rstrip()} {addition_text}"
+
+    return addition_text
+
+
+def _event_strength(event: Mapping[str, Any]) -> float:
+    try:
+        return abs(float(event.get("score", 0.0)))
+    except (TypeError, ValueError):
+        return 0.0
+
+
+def _event_type_label(event: Mapping[str, Any]) -> str:
+    raw_type = _coerce_string(event.get("event_type"))
+    if not raw_type:
+        raw_type = _coerce_string(event.get("aspect"))
+    return raw_type.lower()
+
+
+def _format_special_event(event: Mapping[str, Any]) -> str:
+    event_type = _event_type_label(event)
+    note_sentence = _ensure_sentence(event.get("note"))
+
+    if event_type == "lunar_phase":
+        phase_name = _coerce_string(event.get("phase_name"))
+        if not phase_name:
+            lunar_info = _sanitize_mapping(event.get("lunar_phase_info"))
+            phase_name = _coerce_string(lunar_info.get("phase_name"))
+        phase_label = phase_name.replace("_", " ").title() if phase_name else "Lunar phase"
+
+        special_moon = _sanitize_mapping(event.get("special_moon"))
+        if special_moon.get("has_special_moon"):
+            banner = _coerce_string(special_moon.get("banner"))
+            if not banner:
+                banner = _coerce_string(special_moon.get("type")).replace("_", " ").title()
+            detail = note_sentence.rstrip(".!?") if note_sentence else ""
+            if phase_label and detail.lower().startswith(phase_label.lower()):
+                detail = detail[len(phase_label) :].lstrip(": ,")
+            description = _coerce_string(special_moon.get("description"))
+            if description:
+                description = description.rstrip(".!?")
+            details: List[str] = []
+            if detail:
+                details.append(detail)
+            if description:
+                details.append(description)
+            combined = " – ".join(details) if details else ""
+            label_parts = [part for part in (banner, phase_label) if part]
+            label = " ".join(label_parts) if label_parts else "Special Moon"
+            return _ensure_sentence(f"{label}: {combined}" if combined else label)
+
+        if note_sentence:
+            return note_sentence
+
+        return _ensure_sentence(f"{phase_label} shapes the emotional tone today")
+
+    if note_sentence:
+        return note_sentence
+
+    banner = _coerce_string(event.get("banner"))
+    label = banner or event_type.replace("_", " ").title() or "Special sky event"
+    tone_line = _coerce_string(event.get("tone_line"))
+    description = _coerce_string(event.get("description"))
+    impact = _coerce_string(event.get("impact_level"))
+    detail = tone_line or description or impact or "Expect a noticeable shift today"
+    return _ensure_sentence(f"{label}: {detail}")
+
+
+def _special_event_mentions(events: Sequence[Mapping[str, Any]]) -> List[str]:
+    candidates: List[Dict[str, Any]] = []
+    for raw in events:
+        event = _sanitize_mapping(raw)
+        event_type = _event_type_label(event)
+        special_moon = _sanitize_mapping(event.get("special_moon"))
+        if event_type in _SPECIAL_EVENT_PRIORITY or special_moon.get("has_special_moon"):
+            candidates.append(event)
+
+    if not candidates:
+        return []
+
+    def _sort_key(item: Mapping[str, Any]) -> Tuple[int, float]:
+        event_type = _event_type_label(item)
+        priority = _SPECIAL_EVENT_PRIORITY.get(event_type, 99)
+        return (priority, -_event_strength(item))
+
+    candidates.sort(key=_sort_key)
+
+    mentions: List[str] = []
+    for event in candidates:
+        sentence = _format_special_event(event)
+        if sentence:
+            mentions.append(sentence)
+        if len(mentions) >= 2:
+            break
+    return mentions
+
+
+def _summarize_special_mentions(mentions: Sequence[str]) -> str:
+    if not mentions:
+        return ""
+    first = mentions[0].strip().rstrip(".!?")
+    summary = f"Special sky watch: {first}."
+    for extra in mentions[1:]:
+        summary = f"{summary} {extra.strip()}"
+    return summary
+
+
+def _apply_special_sky_events(
+    payload: Dict[str, Any],
+    daily_payload: Mapping[str, Any],
+) -> Dict[str, Any]:
+    events = daily_payload.get("events")
+    if not isinstance(events, Sequence):
+        events = daily_payload.get("top_events") or []
+
+    mentions = _special_event_mentions(events) if events else []
+    summary = _summarize_special_mentions(mentions)
+    if not summary:
+        return payload
+
+    updated = dict(payload)
+    updated["opening_summary"] = _append_sentence(updated.get("opening_summary"), summary)
+
+    morning = _sanitize_mapping(updated.get("morning_mindset"))
+    morning["paragraph"] = _append_sentence(morning.get("paragraph"), summary)
+    updated["morning_mindset"] = morning
+
+    updated["one_line_summary"] = _append_sentence(updated.get("one_line_summary"), summary)
+
+    return updated
 
 
 def _lower_first(value: Any) -> str:
@@ -1478,6 +1629,18 @@ def generate_daily_template(
             )
         else:
             logger.warning("daily_template_llm_unavailable_fallback", extra={"cache_key": cache_key})
+
+    if generated_payload is not None:
+        try:
+            enriched_payload = _apply_special_sky_events(generated_payload, daily_payload)
+            generated_payload = (
+                DailyTemplatedResponse.model_validate(enriched_payload).model_dump(mode="json")
+            )
+        except Exception:
+            logger.exception(
+                "daily_template_special_events_merge_failed",
+                extra={"date": date},
+            )
 
     if redis_client is not None and generated_payload is not None:
         try:
