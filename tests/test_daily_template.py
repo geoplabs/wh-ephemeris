@@ -458,6 +458,32 @@ def test_eclipse_with_visibility_boost():
     assert "Visible from your location" in opening
 
 
+def test_blood_moon_alias_included_in_summary():
+    payload = _sample_daily_payload()
+    payload["events"] = [
+        {
+            "event_type": "eclipse",
+            "eclipse_info": {
+                "banner": "Blood Moon Lunar Eclipse (Total)",
+                "tone_line": "Blood Moon peak – emotional tides surge.",
+                "aliases": ["Blood Moon"],
+                "eclipse_category": "lunar",
+                "eclipse_type": "total",
+                "personalization_boost": 0.0,
+                "visibility_boost": 0.0,
+            },
+            "score": 2.4,
+        }
+    ]
+
+    fallback = _build_fallback(payload).model_dump(mode="json")
+    updated = _apply_special_sky_events(fallback, payload)
+
+    opening = updated["opening_summary"]
+    assert "Blood Moon" in opening
+    assert "Lunar Eclipse" in opening
+
+
 def test_void_of_course_with_time_window():
     """Test that VoC Moon displays time windows."""
     from datetime import datetime

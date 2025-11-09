@@ -1110,11 +1110,11 @@ def detect_eclipse(
     Detect solar and lunar eclipses.
     
     Solar Eclipse: New Moon near nodes (lat ≤ ~1.5°)
-    Lunar Eclipse: Full Moon near nodes (lat ≤ ~1.0°)
-    
+    Lunar Eclipse: Full Moon near nodes (lat ≤ ~1.3°)
+
     Weights:
-    - Lunar total: +2.0, partial: +1.2
-    - Solar total/annular: +2.2, partial: +1.4
+    - Solar total: +2.2, partial: +1.4 (grazing partial: +1.1)
+    - Lunar total: +2.0, partial: +1.3, penumbral: +0.8
     
     Personalization: +20-40% if within 2° of natal Sun/Moon/ASC/MC
     
@@ -1146,57 +1146,85 @@ def detect_eclipse(
     
     # Check if Moon is near nodes (ecliptic latitude close to 0)
     abs_lat = abs(moon_lat)
-    
-    # Eclipse thresholds (tightened for accuracy)
-    SOLAR_ECLIPSE_LAT = 1.0  # Solar eclipse if lat ≤ 1.0° (was 1.5°)
-    LUNAR_ECLIPSE_LAT = 0.7  # Lunar eclipse if lat ≤ 0.7° (was 1.0°)
-    
+
+    # Eclipse thresholds (expanded for nuanced classification)
+    SOLAR_TOTAL_LAT = 0.5
+    SOLAR_PARTIAL_MAX_LAT = 1.5
+    LUNAR_TOTAL_LAT = 0.3
+    LUNAR_PARTIAL_LAT = 0.9
+    LUNAR_PENUMBRAL_LAT = 1.3
+
     eclipse_info = None
-    
-    if is_new and abs_lat <= SOLAR_ECLIPSE_LAT:
+
+    if is_new and abs_lat <= SOLAR_PARTIAL_MAX_LAT:
         # Solar Eclipse
-        if abs_lat <= 0.5:
-            eclipse_type = "total/annular"
+        if abs_lat <= SOLAR_TOTAL_LAT:
+            eclipse_type = "total"
             base_weight = 2.2
+            description = "Solar Eclipse (Total) - major new chapter"
+            tone_line = "Sun reboot – destiny hands you a blank page."
         else:
             eclipse_type = "partial"
-            base_weight = 1.4
-        
+            # Stronger partials get more weight than grazing ones
+            if abs_lat <= 1.1:
+                base_weight = 1.4
+                description = "Solar Eclipse (Partial) - potent reset energy"
+                tone_line = "Sun shadow – rewrite the rules of engagement."
+            else:
+                base_weight = 1.1
+                description = "Solar Eclipse (Partial) - subtle yet fated course correction"
+                tone_line = "Grazing solar shadow – subtle but meaningful adjustments."
+
+        display_label = eclipse_type.title()
         eclipse_info = {
             "has_eclipse": True,
             "eclipse_category": "solar",
             "eclipse_type": eclipse_type,
             "base_weight": base_weight,
-            "description": f"Solar Eclipse ({eclipse_type}) - major new chapter",
-            "banner": f"Solar Eclipse ({eclipse_type.title()})",
-            "tone_line": "Sun reboot – destiny hands you a blank page.",
+            "description": description,
+            "banner": f"Solar Eclipse ({display_label})",
+            "tone_line": tone_line,
             "impact_level": "very_high",
-            "keywords": ["reset", "breakthrough", "new chapter", "fated shift"],
+            "keywords": ["reset", "breakthrough", "new chapter", "fated shift", eclipse_type],
         }
 
-    elif is_full and abs_lat <= LUNAR_ECLIPSE_LAT:
+    elif is_full and abs_lat <= LUNAR_PENUMBRAL_LAT:
         # Lunar Eclipse
-        if abs_lat <= 0.3:
+        if abs_lat <= LUNAR_TOTAL_LAT:
             eclipse_type = "total"
             base_weight = 2.0
-        else:
+            banner = "Blood Moon Lunar Eclipse (Total)"
+            description = "Blood Moon Lunar Eclipse (Total) - culmination and release"
+            tone_line = "Blood Moon peak – emotional tides surge."
+            impact_level = "very_high"
+            keywords = ["blood moon", "revelation", "culmination", "release", "transformation"]
+        elif abs_lat <= LUNAR_PARTIAL_LAT:
             eclipse_type = "partial"
-            base_weight = 1.2
+            base_weight = 1.3
+            banner = "Lunar Eclipse (Partial)"
+            description = "Lunar Eclipse (Partial) - emotional turning point"
+            tone_line = "Lunar spotlight – revelations surface."
+            impact_level = "very_high"
+            keywords = ["revelation", "culmination", "release", "transformation", "partial eclipse"]
+        else:
+            eclipse_type = "penumbral"
+            base_weight = 0.8
+            banner = "Penumbral Lunar Eclipse"
+            description = "Penumbral Lunar Eclipse - subtle emotional recalibration"
+            tone_line = "Soft lunar shadow – subtle emotional recalibration."
+            impact_level = "high"
+            keywords = ["penumbral", "subtle shift", "culmination", "integration"]
 
         eclipse_info = {
             "has_eclipse": True,
             "eclipse_category": "lunar",
             "eclipse_type": eclipse_type,
             "base_weight": base_weight,
-            "description": f"Lunar Eclipse ({eclipse_type}) - culmination and release",
-            "banner": f"Lunar Eclipse ({eclipse_type.title()})",
-            "tone_line": (
-                "Blood Moon peak – emotional tides surge."
-                if eclipse_type == "total"
-                else "Lunar spotlight – revelations surface."
-            ),
-            "impact_level": "very_high",
-            "keywords": ["revelation", "culmination", "release", "transformation"],
+            "description": description,
+            "banner": banner,
+            "tone_line": tone_line,
+            "impact_level": impact_level,
+            "keywords": keywords,
         }
 
         if eclipse_type == "total":
