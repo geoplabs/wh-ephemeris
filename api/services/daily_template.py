@@ -439,8 +439,16 @@ def _format_special_event(event: Mapping[str, Any]) -> str:
         personal_boost = eclipse_info.get("personalization_boost", 0)
         visibility_boost = eclipse_info.get("visibility_boost", 0)
         
-        parts: List[str] = [banner]
-        
+        aliases = _sanitize_string_list(eclipse_info.get("aliases"))
+        alias_label = aliases[0] if aliases else ""
+
+        parts: List[str] = []
+        if alias_label and alias_label.lower() not in banner.lower():
+            parts.append(alias_label)
+
+        if banner:
+            parts.append(banner)
+
         if tone_line:
             parts.append(tone_line.rstrip(".!?"))
         
