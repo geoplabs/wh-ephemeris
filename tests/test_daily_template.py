@@ -458,7 +458,7 @@ def test_eclipse_with_visibility_boost():
     assert "Visible from your location" in opening
 
 
-def test_partial_lunar_eclipse_does_not_force_blood_moon():
+def test_partial_lunar_eclipse_explains_lack_of_blood_moon():
     payload = _sample_daily_payload()
     payload["events"] = [
         {
@@ -480,7 +480,7 @@ def test_partial_lunar_eclipse_does_not_force_blood_moon():
 
     opening = updated["opening_summary"]
     assert "Lunar Eclipse" in opening
-    assert "Blood Moon" not in opening
+    assert "full Blood Moon effect" in opening
 
 
 def test_total_lunar_eclipse_without_alias_mentions_blood_moon():

@@ -499,8 +499,16 @@ def _format_special_event(event: Mapping[str, Any]) -> str:
             category and category.lower() == "lunar" and "total" in eclipse_type_normalized
         )
 
+        is_partial_lunar = (
+            category and category.lower() == "lunar" and "partial" in eclipse_type_normalized
+        )
+
         if is_total_lunar and not existing_blood_moon_reference:
             detail_candidates.append("Often nicknamed a Blood Moon")
+        elif is_partial_lunar:
+            detail_candidates.append(
+                "This partial eclipse stops short of the full Blood Moon effect"
+            )
 
         seen_details = set()
         filtered_details: List[str] = []
