@@ -224,6 +224,40 @@ class HoraVM(BaseModel):
     end_ts: str
 
 
+class GrihaPraveshWindow(BaseModel):
+    """Time window suitable for Griha Pravesh ceremony."""
+    start_ts: str
+    end_ts: str
+    lagna: str
+    karana_number: int
+    quality: str
+
+
+class GrihaPraveshFactor(BaseModel):
+    """Individual astrological factor assessment for Griha Pravesh."""
+    number: int
+    name: str
+    score: int
+    assessment: str
+
+
+class GrihaPraveshFactors(BaseModel):
+    """All astrological factors for Griha Pravesh assessment."""
+    tithi: GrihaPraveshFactor
+    nakshatra: GrihaPraveshFactor
+    yoga: GrihaPraveshFactor
+    weekday: GrihaPraveshFactor
+
+
+class GrihaPraveshMuhurat(BaseModel):
+    """Griha Pravesh (Housewarming) muhurat analysis."""
+    overall_rating: str
+    overall_score: int
+    favorable_windows: List[GrihaPraveshWindow] = Field(default_factory=list)
+    factors: GrihaPraveshFactors
+    recommendations: List[str] = Field(default_factory=list)
+
+
 class PanchangViewModel(BaseModel):
     header: HeaderVM
     solar: SolarVM
@@ -248,6 +282,7 @@ class PanchangViewModel(BaseModel):
     panchaka_and_lagna: Optional[PanchakaAndLagna] = None
     ritual_notes: List[RitualNote] = Field(default_factory=list)
     horas: Optional[List[HoraVM]] = None
+    griha_pravesh: Optional[GrihaPraveshMuhurat] = None
 
 
 # Simplified daily Panchang for weekly/monthly views

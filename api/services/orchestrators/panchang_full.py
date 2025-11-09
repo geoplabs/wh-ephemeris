@@ -73,6 +73,7 @@ from ..ext_yoga_extended import build_yoga_extended
 from ..ext_nivas_shool import build_nivas_and_shool
 from ..ext_balam import build_balam
 from ..ext_panchaka_lagna import build_panchaka_and_lagna
+from ..griha_pravesh import calculate_griha_pravesh_muhurat
 from ..festivals import festivals_for_date, merge_observances
 from ..ritual_notes import notes_for_day
 from .. import ephem
@@ -499,6 +500,25 @@ def _build_viewmodel_uncached(
             tz,
         )
         vm.ritual_notes = notes_for_day()
+        
+        # Calculate Griha Pravesh muhurat
+        vm.griha_pravesh = calculate_griha_pravesh_muhurat(
+            date=start_of_day,
+            lat=lat,
+            lon=lon,
+            tz=tz,
+            sunrise=sunrise,
+            sunset=sunset,
+            tithi_number=tithi_number,
+            nakshatra_number=nak_no,
+            yoga_number=yoga_number,
+            weekday_index=weekday_index,
+            ayanamsha=ayanamsha,
+            tithi_name=tithi_names.get("aliases", {}).get("en", ""),
+            nakshatra_name=nak_names.get("aliases", {}).get("en", ""),
+            yoga_name=yoga_names.get("aliases", {}).get("en", ""),
+            weekday_name=vara.get("aliases", {}).get("en", ""),
+        )
     else:
         # Even if extensions are disabled, we should still try to compute basic muhurtas
         # Build a minimal muhurtas_extra for basic calculations
