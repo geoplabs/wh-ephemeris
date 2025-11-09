@@ -484,6 +484,27 @@ def test_blood_moon_alias_included_in_summary():
     assert "Lunar Eclipse" in opening
 
 
+def test_eclipse_without_detailed_info_infers_labels():
+    payload = _sample_daily_payload()
+    payload["events"] = [
+        {
+            "event_type": "eclipse",
+            "note": "Eclipse",
+            "eclipse_category": "lunar",
+            "eclipse_type": "total",
+            "aliases": ["Blood Moon"],
+            "score": 1.9,
+        }
+    ]
+
+    fallback = _build_fallback(payload).model_dump(mode="json")
+    updated = _apply_special_sky_events(fallback, payload)
+
+    opening = updated["opening_summary"]
+    assert "Lunar Eclipse (Total)" in opening
+    assert "Blood Moon" in opening
+
+
 def test_void_of_course_with_time_window():
     """Test that VoC Moon displays time windows."""
     from datetime import datetime

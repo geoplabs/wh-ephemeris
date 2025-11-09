@@ -420,47 +420,82 @@ def _format_special_event(event: Mapping[str, Any]) -> str:
     # Eclipse-specific formatting with personalization
     if event_type == "eclipse":
         eclipse_info = _sanitize_mapping(event.get("eclipse_info"))
-        logger.debug("Eclipse formatting", extra={
-            "has_eclipse_info": bool(eclipse_info),
-            "eclipse_info_keys": list(eclipse_info.keys()) if eclipse_info else []
-        })
-        
+        logger.debug(
+            "Eclipse formatting",
+            extra={
+                "has_eclipse_info": bool(eclipse_info),
+                "eclipse_info_keys": list(eclipse_info.keys()) if eclipse_info else [],
+            },
+        )
+
+        raw_note = _coerce_string(event.get("note"))
+        category = _coerce_string(
+            eclipse_info.get("eclipse_category") or event.get("eclipse_category")
+        )
+        eclipse_type = _coerce_string(
+            eclipse_info.get("eclipse_type") or event.get("eclipse_type")
+        )
+
         banner = _coerce_string(eclipse_info.get("banner"))
+        aliases = _sanitize_string_list(eclipse_info.get("aliases"))
+        if not aliases:
+            aliases = _sanitize_string_list(event.get("aliases"))
+
+        alias_label = aliases[0] if aliases else ""
+        if not alias_label and raw_note.lower().count("blood moon"):
+            alias_label = "Blood Moon"
+
         if not banner:
-            # Fallback: try to build from top-level fields if eclipse_info is missing data
-            category = _coerce_string(eclipse_info.get("eclipse_category") or event.get("eclipse_category"))
-            eclipse_type = _coerce_string(eclipse_info.get("eclipse_type") or event.get("eclipse_type"))
-            if category and eclipse_type:
-                banner = f"{category.title()} Eclipse ({eclipse_type.title()})"
-            else:
-                banner = "Eclipse"
-        
+            # Fallback: try to build from available meta-data
+            base_label = "Eclipse"
+            if category:
+                base_label = f"{category.title()} Eclipse"
+            if eclipse_type:
+                base_label = f"{base_label} ({eclipse_type.title()})"
+            banner = base_label
+
         tone_line = _coerce_string(eclipse_info.get("tone_line"))
+        if not tone_line and raw_note and len(raw_note.split()) > 2:
+            tone_line = raw_note
+
+        description = _coerce_string(eclipse_info.get("description"))
         personal_boost = eclipse_info.get("personalization_boost", 0)
         visibility_boost = eclipse_info.get("visibility_boost", 0)
-        
-        aliases = _sanitize_string_list(eclipse_info.get("aliases"))
-        alias_label = aliases[0] if aliases else ""
 
-        parts: List[str] = []
+        headline_parts: List[str] = []
         if alias_label and alias_label.lower() not in banner.lower():
-            parts.append(alias_label)
-
+            headline_parts.append(alias_label)
         if banner:
-            parts.append(banner)
+            headline_parts.append(banner)
+        headline = " ".join(part for part in headline_parts if part) or banner or alias_label or "Eclipse"
 
-        if tone_line:
-            parts.append(tone_line.rstrip(".!?"))
-        
-        # Add personalization note if significant
+        detail_candidates: List[str] = []
+        for text in (tone_line, description):
+            cleaned = _coerce_string(text)
+            if cleaned:
+                detail_candidates.append(cleaned.rstrip(".!?"))
+
+        # Add personalization/visibility notes
         if personal_boost >= 0.2:  # 20%+ boost means it activates natal chart
-            parts.append("This eclipse activates your natal chart powerfully")
+            detail_candidates.append("This eclipse activates your natal chart powerfully")
         elif visibility_boost > 0:
-            parts.append("Visible from your location")
-        
-        combined = " – ".join(parts) if len(parts) > 1 else (parts[0] if parts else "")
+            detail_candidates.append("Visible from your location")
+
+        seen_details = set()
+        filtered_details: List[str] = []
+        for item in detail_candidates:
+            normalized = item.lower()
+            if normalized and normalized not in seen_details:
+                seen_details.add(normalized)
+                filtered_details.append(item)
+
+        combined_parts = [headline] + filtered_details if filtered_details else [headline]
+        combined = " – ".join(part for part in combined_parts if part)
         result = _ensure_sentence(combined or note_sentence or "Major eclipse today")
-        logger.debug("Eclipse formatted", extra={"result": result, "banner": banner, "tone_line": tone_line})
+        logger.debug(
+            "Eclipse formatted",
+            extra={"result": result, "banner": banner, "tone_line": tone_line, "alias": alias_label},
+        )
         return result
 
     # Void-of-Course Moon with time window
