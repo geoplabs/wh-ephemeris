@@ -461,6 +461,7 @@ def _format_special_event(event: Mapping[str, Any]) -> str:
         description = _coerce_string(eclipse_info.get("description"))
         personal_boost = eclipse_info.get("personalization_boost", 0)
         visibility_boost = eclipse_info.get("visibility_boost", 0)
+        eclipse_type_normalized = eclipse_type.lower() if eclipse_type else ""
 
         headline_parts: List[str] = []
         if alias_label and alias_label.lower() not in banner.lower():
@@ -480,6 +481,26 @@ def _format_special_event(event: Mapping[str, Any]) -> str:
             detail_candidates.append("This eclipse activates your natal chart powerfully")
         elif visibility_boost > 0:
             detail_candidates.append("Visible from your location")
+
+        # Total lunar eclipses are popularly nicknamed Blood Moons
+        existing_blood_moon_reference = "blood moon" in " ".join(
+            part.lower()
+            for part in (
+                alias_label,
+                banner,
+                raw_note,
+                eclipse_type,
+                *(detail_candidates or []),
+            )
+            if part
+        )
+
+        is_total_lunar = (
+            category and category.lower() == "lunar" and "total" in eclipse_type_normalized
+        )
+
+        if is_total_lunar and not existing_blood_moon_reference:
+            detail_candidates.append("Often nicknamed a Blood Moon")
 
         seen_details = set()
         filtered_details: List[str] = []
@@ -583,11 +604,24 @@ def _special_event_mentions(events: Sequence[Mapping[str, Any]]) -> List[str]:
 def _summarize_special_mentions(mentions: Sequence[str]) -> str:
     if not mentions:
         return ""
-    first = mentions[0].strip().rstrip(".!?")
-    summary = f"Special sky watch: {first}."
-    for extra in mentions[1:]:
-        summary = f"{summary} {extra.strip()}"
-    return summary
+
+    cleaned_mentions: List[str] = []
+    for item in mentions:
+        text = _coerce_string(item)
+        if text:
+            cleaned_mentions.append(text.strip())
+
+    if not cleaned_mentions:
+        return ""
+
+    first = cleaned_mentions[0].rstrip(".!?")
+    sentences = [f"Special sky watch: {first}."]
+
+    for extra in cleaned_mentions[1:]:
+        if extra:
+            sentences.append(_ensure_sentence(extra))
+
+    return " ".join(sentences)
 
 
 def _apply_special_sky_events(
@@ -610,7 +644,26 @@ def _apply_special_sky_events(
     morning["paragraph"] = _append_sentence(morning.get("paragraph"), summary)
     updated["morning_mindset"] = morning
 
+    updated["theme"] = _append_sentence(updated.get("theme"), summary)
     updated["one_line_summary"] = _append_sentence(updated.get("one_line_summary"), summary)
+
+    career = _sanitize_mapping(updated.get("career"))
+    career["paragraph"] = _append_sentence(career.get("paragraph"), summary)
+    updated["career"] = career
+
+    love = _sanitize_mapping(updated.get("love"))
+    love["paragraph"] = _append_sentence(love.get("paragraph"), summary)
+    love["attached"] = _append_sentence(love.get("attached"), summary)
+    love["single"] = _append_sentence(love.get("single"), summary)
+    updated["love"] = love
+
+    health = _sanitize_mapping(updated.get("health"))
+    health["paragraph"] = _append_sentence(health.get("paragraph"), summary)
+    updated["health"] = health
+
+    finance = _sanitize_mapping(updated.get("finance"))
+    finance["paragraph"] = _append_sentence(finance.get("paragraph"), summary)
+    updated["finance"] = finance
 
     return updated
 

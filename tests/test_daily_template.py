@@ -458,6 +458,56 @@ def test_eclipse_with_visibility_boost():
     assert "Visible from your location" in opening
 
 
+def test_partial_lunar_eclipse_does_not_force_blood_moon():
+    payload = _sample_daily_payload()
+    payload["events"] = [
+        {
+            "event_type": "eclipse",
+            "eclipse_info": {
+                "banner": "Lunar Eclipse (Partial)",
+                "tone_line": "Lunar spotlight – revelations surface.",
+                "eclipse_category": "lunar",
+                "eclipse_type": "partial",
+                "personalization_boost": 0.0,
+                "visibility_boost": 0.0,
+            },
+            "score": 1.2,
+        }
+    ]
+
+    fallback = _build_fallback(payload).model_dump(mode="json")
+    updated = _apply_special_sky_events(fallback, payload)
+
+    opening = updated["opening_summary"]
+    assert "Lunar Eclipse" in opening
+    assert "Blood Moon" not in opening
+
+
+def test_total_lunar_eclipse_without_alias_mentions_blood_moon():
+    payload = _sample_daily_payload()
+    payload["events"] = [
+        {
+            "event_type": "eclipse",
+            "eclipse_info": {
+                "banner": "Lunar Eclipse (Total)",
+                "tone_line": "Emotional tides reach a peak.",
+                "eclipse_category": "lunar",
+                "eclipse_type": "total",
+                "personalization_boost": 0.0,
+                "visibility_boost": 0.0,
+            },
+            "score": 2.0,
+        }
+    ]
+
+    fallback = _build_fallback(payload).model_dump(mode="json")
+    updated = _apply_special_sky_events(fallback, payload)
+
+    opening = updated["opening_summary"]
+    assert "Lunar Eclipse" in opening
+    assert "Blood Moon" in opening
+
+
 def test_blood_moon_alias_included_in_summary():
     payload = _sample_daily_payload()
     payload["events"] = [
@@ -482,6 +532,19 @@ def test_blood_moon_alias_included_in_summary():
     opening = updated["opening_summary"]
     assert "Blood Moon" in opening
     assert "Lunar Eclipse" in opening
+
+
+def test_special_sky_watch_summary_formats_multiple_mentions():
+    mentions = [
+        "Lunar Eclipse (Total) – culmination and release",
+        "Void of Course Moon from 10:00-12:30 UTC",
+    ]
+
+    summary = daily_template._summarize_special_mentions(mentions)
+
+    assert summary.startswith("Special sky watch: Lunar Eclipse (Total) – culmination and release.")
+    assert summary.count(".") >= 2
+    assert "Void of Course Moon" in summary
 
 
 def test_eclipse_without_detailed_info_infers_labels():
@@ -559,6 +622,38 @@ def test_void_of_course_with_iso_string_times():
     
     opening = updated["opening_summary"]
     assert "14:00-17:30 UTC" in opening  # Parsed from ISO strings
+
+
+def test_special_sky_watch_updates_all_perspectives():
+    payload = _sample_daily_payload()
+    payload["events"] = [
+        {
+            "event_type": "eclipse",
+            "eclipse_info": {
+                "banner": "Lunar Eclipse (Total)",
+                "tone_line": "Emotional tides crest and reveal guidance.",
+                "eclipse_category": "lunar",
+                "eclipse_type": "total",
+            },
+            "score": 2.8,
+        }
+    ]
+
+    fallback = _build_fallback(payload).model_dump(mode="json")
+    updated = _apply_special_sky_events(fallback, payload)
+
+    summary_phrase = "Special sky watch"
+
+    assert summary_phrase in updated["theme"]
+    assert summary_phrase in updated["opening_summary"]
+    assert summary_phrase in updated["morning_mindset"]["paragraph"]
+    assert summary_phrase in updated["one_line_summary"]
+    assert summary_phrase in updated["career"]["paragraph"]
+    assert summary_phrase in updated["love"]["paragraph"]
+    assert summary_phrase in updated["love"]["attached"]
+    assert summary_phrase in updated["love"]["single"]
+    assert summary_phrase in updated["health"]["paragraph"]
+    assert summary_phrase in updated["finance"]["paragraph"]
 
 
 def test_duplicate_detection_with_word_overlap():
