@@ -6,6 +6,8 @@ from .charts import ChartInput
 
 
 class YearlyOptions(BaseModel):
+    model_config = ConfigDict(extra="allow")
+
     year: int
     user_id: Optional[str] = None
     profile_name: Optional[str] = None

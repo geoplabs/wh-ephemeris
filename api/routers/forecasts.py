@@ -27,14 +27,14 @@ def compute_daily(
         example={
             "chart_input": {
                 "system": "western",
-                "date": "1990-08-18",
-                "time": "14:32:00",
+                "date": "1990-01-01",
+                "time": "12:00:00",
                 "time_known": True,
-                "place": {"lat": 17.385, "lon": 78.4867, "tz": "Asia/Kolkata"},
+                "place": {"lat": 0.0, "lon": 0.0, "tz": "UTC"},
             },
             "options": {
                 "date": "2024-01-15",
-                "profile_name": "Asha",
+                "profile_name": "Sample User",
                 "areas": ["career", "love", "health"],
             },
         },
@@ -55,14 +55,14 @@ def compute_daily_forecast(
         example={
             "chart_input": {
                 "system": "western",
-                "date": "1990-08-18",
-                "time": "14:32:00",
+                "date": "1990-01-01",
+                "time": "12:00:00",
                 "time_known": True,
-                "place": {"lat": 17.385, "lon": 78.4867, "tz": "Asia/Kolkata"},
+                "place": {"lat": 0.0, "lon": 0.0, "tz": "UTC"},
             },
             "options": {
                 "date": "2024-01-15",
-                "profile_name": "Asha",
+                "profile_name": "Sample User",
                 "use_ai": True,
                 "areas": ["career", "love", "health", "finance"],
             },
@@ -96,12 +96,12 @@ def compute_yearly(
         example={
             "chart_input": {
                 "system": "western",
-                "date": "1990-08-18",
-                "time": "14:32:00",
+                "date": "1990-01-01",
+                "time": "12:00:00",
                 "time_known": True,
-                "place": {"lat": 17.385, "lon": 78.4867, "tz": "Asia/Kolkata"},
+                "place": {"lat": 0.0, "lon": 0.0, "tz": "UTC"},
             },
-            "options": {"year": 1991},
+            "options": {"year": 2025},
         },
     )
 ):
@@ -113,8 +113,11 @@ def compute_yearly(
         _, pdf_url = generate_yearly_pdf(chart_input, options, data)
     except Exception:
         logger.exception("yearly_pdf_generation_failed")
+    base_meta = {"year": req.options.year}
+    payload_meta = data.get("meta") if isinstance(data, dict) else None
+    meta = {**payload_meta, **base_meta} if payload_meta else base_meta
     return YearlyForecastResponse(
-        meta={"year": req.options.year},
+        meta=meta,
         months=data["months"],
         top_events=data["top_events"],
         pdf_download_url=pdf_url,
@@ -128,12 +131,12 @@ def compute_monthly(
         example={
             "chart_input": {
                 "system": "western",
-                "date": "1990-08-18",
-                "time": "14:32:00",
+                "date": "1990-01-01",
+                "time": "12:00:00",
                 "time_known": True,
-                "place": {"lat": 17.385, "lon": 78.4867, "tz": "Asia/Kolkata"},
+                "place": {"lat": 0.0, "lon": 0.0, "tz": "UTC"},
             },
-            "options": {"year": 1990, "month": 9},
+            "options": {"year": 2024, "month": 1},
         },
     )
 ):

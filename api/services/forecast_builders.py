@@ -213,6 +213,11 @@ def _area_focus(area: str, events: List[Dict[str, Any]], fallback_guidance: str)
 
 
 def yearly_payload(chart_input: Dict[str, Any], options: Dict[str, Any]) -> Dict[str, Any]:
+    from .yearly_western import build_yearly_western_payload, is_western_enabled
+
+    if is_western_enabled(chart_input):
+        return build_yearly_western_payload(chart_input, options)
+
     year = options["year"]
     opts = {
         "from_date": f"{year}-01-01",
@@ -265,9 +270,7 @@ def daily_payload(chart_input: Dict[str, Any], options: Dict[str, Any]) -> Dict[
     top_score = top_events[0]["score"] if top_events else 0.0
     profile_name = options.get("profile_name")
     areas = options.get("areas") or ["career", "love", "health", "finance"]
-    fallback_guidance = "Use today to nurture steady momentum." if not profile_name else f"{profile_name}, use today to nurture steady momentum."
-    if not fallback_guidance.endswith("."):
-        fallback_guidance = f"{fallback_guidance}."
+    fallback_guidance = "Use today to nurture steady momentum."
     focus = [_area_focus(area, reference, fallback_guidance) for area in areas]
     headline = "A gentle day to focus on your inner compass"
     guidance = fallback_guidance
