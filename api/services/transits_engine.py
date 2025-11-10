@@ -85,13 +85,21 @@ def _interpretive_note(transit_body: str, natal_body: str, aspect: str, score: f
 def _utc_date(y,m,d,h=12)->datetime:
     return datetime(y,m,d,h,0,0,tzinfo=timezone.utc)
 
-def _daterange_utc(d0:str, d1:str, step_days:int):
-    a = datetime.fromisoformat(d0+"T12:00:00+00:00")
-    b = datetime.fromisoformat(d1+"T12:00:00+00:00")
+def _daterange_utc(d0: str, d1: str, step_days: int, step_hours: Optional[int] = None):
+    """Yield datetimes between two dates at the requested cadence."""
+
+    a = datetime.fromisoformat(d0 + "T12:00:00+00:00")
+    b = datetime.fromisoformat(d1 + "T12:00:00+00:00")
+
+    if step_hours and step_hours > 0:
+        delta = timedelta(hours=step_hours)
+    else:
+        delta = timedelta(days=step_days)
+
     cur = a
     while cur <= b:
         yield cur
-        cur = cur + timedelta(days=step_days)
+        cur = cur + delta
 
 def _severity_score(aspect:str, orb:float, orb_limit:float, t_body:str)->float:
     """Calculate score with proper polarity: negative=supportive, positive=friction."""
@@ -179,8 +187,13 @@ def _calculate_exact_hit_time(
     return exact_time.isoformat().replace("+00:00", "Z")
 
 def _transit_positions(dt: datetime, system: str, ayan: str|None) -> Dict[str,Dict[str,float]]:
-    # compute positions at UTC noon on that date
-    jd = ephem.to_jd_utc(dt.date().isoformat(), "12:00:00", "UTC")
+    # compute positions at the provided UTC timestamp
+    dt_utc = dt.astimezone(timezone.utc)
+    jd = ephem.to_jd_utc(
+        dt_utc.date().isoformat(),
+        dt_utc.time().isoformat(timespec="seconds"),
+        "UTC",
+    )
     sidereal = (system == "vedic")
     pos = ephem.positions_ecliptic(jd, sidereal=sidereal, ayanamsha=(ayan or "lahiri"))
     # Include latitude for eclipse detection
@@ -189,6 +202,7 @@ def _transit_positions(dt: datetime, system: str, ayan: str|None) -> Dict[str,Di
 def compute_transits(chart_input: Dict[str,Any], opts: Dict[str,Any]) -> List[Dict[str,Any]]:
     # options
     obs_from = opts["from_date"]; obs_to = opts["to_date"]
+    step_hours = int(opts.get("step_hours", 0) or 0)
     step = int(opts.get("step_days",1))
     # Default: prioritize fast-moving planets for better caution window calculation
     default_bodies = ["Moon", "Mercury", "Venus", "Sun", "Mars", "Jupiter", "Saturn"]
@@ -212,7 +226,7 @@ def compute_transits(chart_input: Dict[str,Any], opts: Dict[str,Any]) -> List[Di
     ayan = (chart_input.get("options") or {}).get("ayanamsha","lahiri") if sidereal else None
 
     events: List[Dict[str,Any]] = []
-    for dt in _daterange_utc(obs_from, obs_to, step):
+    for dt in _daterange_utc(obs_from, obs_to, step, step_hours if step_hours > 0 else None):
         tr = _transit_positions(dt, chart_input["system"], ayan)
         # restrict to transit_bodies
         T = {k:v for k,v in tr.items() if k in transit_bodies}
@@ -390,7 +404,7 @@ def compute_transits(chart_input: Dict[str,Any], opts: Dict[str,Any]) -> List[Di
     
     # ===== SPECIAL SKY EVENTS (LUNAR CYCLE & ECLIPSES) =====
     # Add these after regular transit aspects
-    for dt in _daterange_utc(obs_from, obs_to, step):
+    for dt in _daterange_utc(obs_from, obs_to, step, step_hours if step_hours > 0 else None):
         tr = _transit_positions(dt, chart_input["system"], ayan)
         
         if "Moon" in tr and "Sun" in tr:
