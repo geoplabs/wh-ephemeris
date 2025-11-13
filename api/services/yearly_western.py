@@ -362,8 +362,9 @@ def _build_config(chart_input: Dict[str, Any], options: Dict[str, Any]) -> Yearl
         max_grid_points=int(performance_opts.get("max_grid_points", 2000)),
     )
 
+    default_output_sections = OutputConfig().sections
     outputs = OutputConfig(
-        sections=tuple(outputs_opts.get("sections", OutputConfig.sections)),
+        sections=tuple(outputs_opts.get("sections", default_output_sections)),
         max_events_per_month=int(outputs_opts.get("max_events_per_month", 12)),
         raw_events=bool(outputs_opts.get("raw_events", True)),
         include_calendar_ics=bool(outputs_opts.get("include_calendar_ics", False)),
@@ -1732,20 +1733,42 @@ class _WesternYearlyEngine:
             months[bucket_key].append(ev.for_month_bucket())
 
         limit = self.config.outputs.max_events_per_month
+        def _intensity_key(value: Dict[str, Any]) -> tuple[float, float, str]:
+            score = value.get("score")
+            score_val = float(score) if isinstance(score, (int, float)) else 0.0
+            magnitude = abs(score_val)
+            orb = value.get("orb")
+            if isinstance(orb, (int, float)):
+                orb_key = -abs(float(orb))
+            else:
+                orb_key = float("-inf")
+            date_key = value.get("date") or ""
+            return (magnitude, orb_key, date_key)
+
+        def _chronological_key(value: Dict[str, Any]) -> tuple[str, float]:
+            date_key = value.get("date") or ""
+            score = value.get("score")
+            magnitude = abs(float(score)) if isinstance(score, (int, float)) else 0.0
+            return (date_key, -magnitude)
+
         for key, evs in list(months.items()):
-            # Select the highest scoring events for the month, then restore
-            # chronological ordering for presentation.  The previous
-            # implementation truncated the list while it was sorted by date,
-            # which meant only the earliest events survived even if later
-            # transits carried higher scores.  This manifested as monthly
-            # payloads dominated by events from the first couple of days.
-            ranked = sorted(evs, key=lambda item: item.get("score", 0), reverse=True)
+            ranked = sorted(evs, key=_intensity_key, reverse=True)
             if limit and len(ranked) > limit:
                 ranked = ranked[:limit]
-            ranked.sort(key=lambda item: (item.get("date"), -item.get("score", 0)))
+            ranked.sort(key=_chronological_key)
             months[key] = ranked
 
-        top_events = sorted(transits_only, key=lambda e: -e.score)[:20]
+        def _event_intensity(ev: _Event) -> tuple[float, float, datetime]:
+            score_val = ev.score if isinstance(ev.score, (int, float)) else 0.0
+            magnitude = abs(score_val)
+            if isinstance(ev.orb, (int, float)):
+                orb_key = -abs(float(ev.orb))
+            else:
+                orb_key = float("-inf")
+            return (magnitude, orb_key, ev.timestamp)
+
+        ranked_top = sorted(transits_only, key=_event_intensity, reverse=True)[:20]
+        top_events = sorted(ranked_top, key=lambda ev: ev.timestamp)
         return dict(months), [ev.for_month_bucket() for ev in top_events]
 
     def _synthesise_sections(self, events: List[_Event]) -> Dict[str, Any]:
