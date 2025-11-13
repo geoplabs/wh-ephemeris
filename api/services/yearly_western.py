@@ -1731,10 +1731,19 @@ class _WesternYearlyEngine:
             bucket_key = ev.timestamp.strftime("%Y-%m")
             months[bucket_key].append(ev.for_month_bucket())
 
-        for evs in months.values():
-            evs.sort(key=lambda item: (item.get("date"), -item.get("score", 0)))
-            if len(evs) > self.config.outputs.max_events_per_month:
-                del evs[self.config.outputs.max_events_per_month :]
+        limit = self.config.outputs.max_events_per_month
+        for key, evs in list(months.items()):
+            # Select the highest scoring events for the month, then restore
+            # chronological ordering for presentation.  The previous
+            # implementation truncated the list while it was sorted by date,
+            # which meant only the earliest events survived even if later
+            # transits carried higher scores.  This manifested as monthly
+            # payloads dominated by events from the first couple of days.
+            ranked = sorted(evs, key=lambda item: item.get("score", 0), reverse=True)
+            if limit and len(ranked) > limit:
+                ranked = ranked[:limit]
+            ranked.sort(key=lambda item: (item.get("date"), -item.get("score", 0)))
+            months[key] = ranked
 
         top_events = sorted(transits_only, key=lambda e: -e.score)[:20]
         return dict(months), [ev.for_month_bucket() for ev in top_events]
