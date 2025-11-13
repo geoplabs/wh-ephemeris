@@ -1,5 +1,6 @@
 import sys
 import types
+from datetime import datetime, timezone
 from typing import Any, Dict
 
 import pytest
@@ -216,3 +217,75 @@ def test_timezone_fallback_warning():
 
     assert "timezone_fallback" in data["meta"]["warnings"]
     assert data["meta"]["timezone"]["resolved"] == "UTC"
+
+
+def test_month_index_preserves_highest_scoring_events():
+    chart = _chart_input_western()
+    config = yearly_western._build_config(chart, _options_full())
+    engine = yearly_western._WesternYearlyEngine(chart, config)
+    engine.config.outputs.max_events_per_month = 2
+
+    def make_event(day: int, score: float) -> yearly_western._Event:
+        ev = yearly_western._Event(
+            stream="transit",
+            type="test",
+            timestamp=datetime(2025, 1, day, tzinfo=timezone.utc),
+            transit_body="Sun",
+            natal_body="Moon",
+            aspect="conjunction",
+            orb=0.1,
+            orb_limit=1.0,
+            score=score,
+            applying=True,
+            tags=set(),
+            info={
+                "note": "test note",
+                "transit_sign": "Capricorn",
+                "natal_sign": "Capricorn",
+                "zodiac": "tropical",
+                "exact_hit_time_utc": None,
+                "transit_motion": "direct",
+                "natal_point_type": "planet",
+            },
+        )
+        ev.event_id = f"ev-{day}"
+        ev.canonical = {}
+        return ev
+
+    events = [make_event(1, 0.7), make_event(15, 0.95), make_event(20, 0.9)]
+    months, _ = engine._build_month_index(events)
+
+    assert months["2025-01"] == [
+        {
+            "date": "2025-01-15",
+            "transit_body": "Sun",
+            "natal_body": "Moon",
+            "aspect": "conjunction",
+            "orb": 0.1,
+            "score": 0.95,
+            "note": "test note",
+            "transit_sign": "Capricorn",
+            "natal_sign": "Capricorn",
+            "zodiac": "tropical",
+            "exact_hit_time_utc": None,
+            "transit_motion": "direct",
+            "natal_point_type": "planet",
+            "event_id": "ev-15",
+        },
+        {
+            "date": "2025-01-20",
+            "transit_body": "Sun",
+            "natal_body": "Moon",
+            "aspect": "conjunction",
+            "orb": 0.1,
+            "score": 0.9,
+            "note": "test note",
+            "transit_sign": "Capricorn",
+            "natal_sign": "Capricorn",
+            "zodiac": "tropical",
+            "exact_hit_time_utc": None,
+            "transit_motion": "direct",
+            "natal_point_type": "planet",
+            "event_id": "ev-20",
+        },
+    ]
