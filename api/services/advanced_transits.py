@@ -11,7 +11,7 @@ This module implements:
 Author: WH Ephemeris Team
 """
 
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from typing import Dict, Any, List, Optional, Tuple
 from . import ephem
 from .constants import sign_name_from_lon
@@ -1094,6 +1094,90 @@ def detect_out_of_bounds_moon(
 
 
 # ============================================================================
+# Internal helpers
+# ============================================================================
+
+def _refine_eclipse_alignment(
+    forecast_datetime: datetime,
+    target_angle: float,
+    search_hours: int = 9,
+) -> Optional[Dict[str, Any]]:
+    """Refine an approximate lunation timestamp toward the exact alignment.
+
+    We occasionally evaluate the Sun/Moon relationship a few hours away from the
+    true New or Full Moon because the transit engine samples the sky at a fixed
+    cadence.  This helper walks forward and backward in one hour increments to
+    locate the closest alignment and returns the updated positional data.  When
+    the Swiss ephemeris is unavailable (such as inside lightweight test doubles)
+    the refinement silently falls back to the original values.
+
+    Args:
+        forecast_datetime: The approximate timestamp supplied by the caller.
+        target_angle: ``0`` for New Moon checks or ``180`` for Full Moon.
+        search_hours: Total hours (in each direction) to scan for a better
+            alignment.  ``9`` hours safely covers half-day sampling cadences.
+
+    Returns:
+        Mapping with refined ``angle``, ``moon_lon``, ``sun_lon``, ``moon_lat``,
+        ``node_lon`` (when available), and the timestamp that produced the
+        closest alignment.  ``None`` when refinement is not possible.
+    """
+
+    if not isinstance(forecast_datetime, datetime):
+        return None
+
+    best: Optional[Tuple[float, float, datetime, Dict[str, float], Dict[str, float], Optional[Dict[str, float]]]] = None
+
+    try:
+        base = forecast_datetime.astimezone(tz=timezone.utc) if forecast_datetime.tzinfo else forecast_datetime.replace(tzinfo=timezone.utc)
+    except Exception:
+        base = forecast_datetime
+
+    for offset in range(-search_hours, search_hours + 1):
+        try:
+            sample_dt = base + timedelta(hours=offset)
+            date_str = sample_dt.strftime("%Y-%m-%d")
+            time_str = sample_dt.strftime("%H:%M:%S")
+            jd = ephem.to_jd_utc(date_str, time_str, "UTC")
+            positions = ephem.positions_ecliptic(jd)
+        except Exception:
+            return None
+
+        sun = positions.get("Sun") if positions else None
+        moon = positions.get("Moon") if positions else None
+        node = positions.get("TrueNode") if positions else None
+
+        if not sun or not moon:
+            continue
+
+        from .aspects import _angle_diff
+
+        sample_angle = abs(_angle_diff(moon.get("lon", 0.0), sun.get("lon", 0.0)))
+        if sample_angle > 180:
+            sample_angle = 360 - sample_angle
+
+        delta = abs(sample_angle - target_angle)
+
+        if best is None or delta < best[0]:
+            best = (delta, sample_angle, sample_dt, moon, sun, node)
+
+    if not best:
+        return None
+
+    delta, sample_angle, sample_dt, moon, sun, node = best
+    result = {
+        "angle": sample_angle,
+        "datetime": sample_dt,
+        "moon_lon": moon.get("lon", 0.0),
+        "moon_lat": moon.get("lat", 0.0),
+        "sun_lon": sun.get("lon", 0.0),
+    }
+    if node:
+        result["node_lon"] = node.get("lon")
+    return result
+
+
+# ============================================================================
 # ECLIPSES (RARE, VERY HIGH IMPACT)
 # ============================================================================
 
@@ -1105,6 +1189,7 @@ def detect_eclipse(
     natal_positions: Optional[Dict[str, float]] = None,
     visible_from_location: Optional[bool] = None,
     visibility_weight: float = 0.15,
+    node_lon: Optional[float] = None,
 ) -> Optional[Dict[str, Any]]:
     """
     Detect solar and lunar eclipses.
@@ -1126,6 +1211,11 @@ def detect_eclipse(
         natal_positions: Dict of natal positions {body: longitude}
         visible_from_location: Whether eclipse is visible at observer's location
         visibility_weight: Optional percent boost (0.10-0.20) applied if visible
+        node_lon: Optional longitude of the lunar node used for
+            additional validation.  When provided, the Moon must be within
+            ~15° of either node for the eclipse to be considered valid.  This
+            extra guard rails the detection so that routine lunations close to
+            the ecliptic no longer create false eclipse events.
         
     Returns:
         Eclipse info or None
@@ -1136,16 +1226,49 @@ def detect_eclipse(
     angle = abs(_angle_diff(moon_lon, sun_lon))
     if angle > 180:
         angle = 360 - angle
-    
+
     # Check if near New or Full Moon (tightened thresholds)
     is_new = angle <= 6  # Within 6° of New Moon (was 10°)
     is_full = abs(angle - 180) <= 6  # Within 6° of Full Moon (was 10°)
-    
+
     if not (is_new or is_full):
         return None
-    
+
+    target_angle = 0.0 if is_new else 180.0
+    angle_to_target = abs(angle - target_angle)
+
+    if angle_to_target > 2.0:
+        refined = _refine_eclipse_alignment(forecast_datetime, target_angle)
+        if refined:
+            forecast_datetime = refined.get("datetime", forecast_datetime)
+            moon_lon = refined.get("moon_lon", moon_lon)
+            sun_lon = refined.get("sun_lon", sun_lon)
+            moon_lat = refined.get("moon_lat", moon_lat)
+            if refined.get("node_lon") is not None:
+                node_lon = refined["node_lon"]
+            angle = refined.get("angle", angle)
+            if angle > 180:
+                angle = 360 - angle
+            angle_to_target = abs(angle - target_angle)
+        if angle_to_target > 2.0:
+            return None
+
     # Check if Moon is near nodes (ecliptic latitude close to 0)
     abs_lat = abs(moon_lat)
+
+    if node_lon is not None:
+        # Consider both ascending and descending nodes
+        node_diff = abs(_angle_diff(moon_lon, node_lon))
+        if node_diff > 180:
+            node_diff = 360 - node_diff
+        south_node = (node_lon + 180.0) % 360
+        south_diff = abs(_angle_diff(moon_lon, south_node))
+        if south_diff > 180:
+            south_diff = 360 - south_diff
+
+        if min(node_diff, south_diff) > 15.0:
+            # Too far from the nodes – this is an ordinary lunation.
+            return None
 
     # Eclipse thresholds (expanded for nuanced classification)
     SOLAR_TOTAL_LAT = 0.5
@@ -1232,7 +1355,21 @@ def detect_eclipse(
 
     if not eclipse_info:
         return None
-    
+
+    try:
+        peak_dt = (
+            forecast_datetime.astimezone(timezone.utc)
+            if isinstance(forecast_datetime, datetime) and forecast_datetime.tzinfo
+            else forecast_datetime.replace(tzinfo=timezone.utc)
+            if isinstance(forecast_datetime, datetime)
+            else None
+        )
+    except Exception:
+        peak_dt = None
+
+    if peak_dt:
+        eclipse_info["peak_datetime_utc"] = peak_dt.isoformat().replace("+00:00", "Z")
+
     # Calculate personalization boost
     personalization_boost = 0.0
     if natal_positions:

@@ -512,17 +512,23 @@ def compute_transits(chart_input: Dict[str,Any], opts: Dict[str,Any]) -> List[Di
             moon_lat = tr["Moon"].get("lat", 0)  # Ecliptic latitude
             natal_lons = {k: v["lon"] for k, v in natal_map.items()}
             
+            node_lon = None
+            node = tr.get("TrueNode") or tr.get("MeanNode")
+            if node:
+                node_lon = node.get("lon")
+
             eclipse = advanced_transits.detect_eclipse(
                 moon["lon"],
                 sun["lon"],
                 moon_lat,
                 dt,
-                natal_lons
+                natal_lons,
+                node_lon=node_lon,
             )
-            
+
             if eclipse:
                 eclipse_score = advanced_transits.calculate_eclipse_score(eclipse)
-                
+
                 eclipse_event = {
                     "date": dt.date().isoformat(),
                     "transit_body": "Moon" if eclipse["eclipse_category"] == "lunar" else "Sun",
@@ -535,6 +541,7 @@ def compute_transits(chart_input: Dict[str,Any], opts: Dict[str,Any]) -> List[Di
                     "note": eclipse["description"],
                     "eclipse_info": eclipse,
                     "event_type": "eclipse",
+                    "zodiac": chart_input.get("zodiac", "tropical"),
                 }
                 events.append(eclipse_event)
     
