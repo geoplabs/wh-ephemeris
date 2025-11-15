@@ -520,6 +520,7 @@ class _Event:
             "event_id": self.event_id,
             "timestamp": self.timestamp.isoformat(),
             "stream": self.stream,
+            "event_kind": self.stream,
             "type": self.type,
             "score": round(self.score, 4),
             "transit_body": self.transit_body,
@@ -584,7 +585,16 @@ class _WesternYearlyEngine:
         payload["meta"] = meta
 
         if self.config.outputs.raw_events:
-            payload["raw_events"] = [ev.for_timeline() for ev in events]
+            raw_events = [ev.for_timeline() for ev in events]
+            payload["raw_events"] = raw_events
+            stream_map: Dict[str, List[Dict[str, Any]]] = defaultdict(list)
+            for item in raw_events:
+                stream_map[item["stream"]].append(item)
+            payload["raw_events_by_stream"] = {
+                stream: entries for stream, entries in stream_map.items()
+            }
+            if stream_map.get("progressed"):
+                payload["progressions"] = list(stream_map["progressed"])
 
         if self.config.outputs.debug:
             payload["debug"] = self._debug_payload(events)
@@ -880,6 +890,8 @@ class _WesternYearlyEngine:
                             "date": hit_dt.date().isoformat(),
                             "note": f"{body} activates {pair} midpoint",
                             "midpoint_of": pair,
+                            "natal_point_type": "midpoint",
+                            "zodiac": TROPICAL_ZODIAC,
                         }
                         events.append(event)
                         last_emit[last_key] = hit_dt
@@ -977,6 +989,13 @@ class _WesternYearlyEngine:
 
         applying = bool(raw_event.get("applying"))
 
+        info = dict(raw_event)
+        zodiac_value = info.get("zodiac")
+        if not zodiac_value:
+            info["zodiac"] = (
+                self.chart_input.get("zodiac", TROPICAL_ZODIAC) or TROPICAL_ZODIAC
+            )
+
         event = _Event(
             stream="transit",
             type=raw_event.get("event_type", "transit"),
@@ -989,20 +1008,19 @@ class _WesternYearlyEngine:
             score=0.0,  # filled below
             applying=applying,
             tags=set(),
-            info=dict(raw_event),
+            info=info,
         )
 
         event.angle = _angle_name(event.natal_body)
-        event.house_change = bool(raw_event.get("ingress_info"))
+        event.house_change = event.type == "ingress"
 
         if event.type == "eclipse":
             event.tags.add("eclipse")
-        if raw_event.get("retrograde_bias", {}).get("has_bias"):
-            event.tags.add("retrograde")
         if raw_event.get("transit_motion") == "retrograde":
             event.tags.add("retrograde")
         if raw_event.get("midpoint_of"):
             event.tags.add("midpoint")
+            event.info.setdefault("natal_point_type", "midpoint")
         if raw_event.get("event_type") == "declination_aspect":
             event.tags.add("declination")
         if event.house_change:
@@ -1010,7 +1028,9 @@ class _WesternYearlyEngine:
         if event.angle:
             event.tags.add("angle")
         if raw_event.get("event_type") == "station":
-            event.tags.update({"retrograde", "station"})
+            event.tags.add("station")
+            if raw_event.get("station_phase") == "station_retrograde":
+                event.tags.add("retrograde")
             event.info.setdefault("station_phase", raw_event.get("station_phase"))
         if raw_event.get("event_type") == "lunar_phase":
             event.tags.add(raw_event.get("phase_name", "lunar_phase"))
@@ -1041,7 +1061,18 @@ class _WesternYearlyEngine:
                 "Jupiter",
                 "Saturn",
             ]
-        return bodies + bodies_extras
+        resolved = []
+        for name in bodies + bodies_extras:
+            if name and name not in resolved:
+                resolved.append(name)
+
+        transits_cfg = self.config.options_raw.setdefault("transits", {})
+        transits_cfg["bodies"] = list(resolved)
+        transits_cfg["bodies_resolved"] = list(resolved)
+        if bodies_extras:
+            transits_cfg["bodies_extras_resolved"] = list(bodies_extras)
+
+        return resolved
 
     def _natal_positions_cached(self) -> Dict[str, Dict[str, float]]:
         if self._natal_cache is None:
@@ -1166,6 +1197,8 @@ class _WesternYearlyEngine:
                         "progressed_lon": prog["lon"],
                         "natal_lon": natal["lon"],
                         "orb": round(orb, 2),
+                        "zodiac": self.chart_input.get("zodiac", TROPICAL_ZODIAC)
+                        or TROPICAL_ZODIAC,
                     }
                     event = _Event(
                         stream="progressed",
@@ -1216,6 +1249,8 @@ class _WesternYearlyEngine:
                 "note": f"Solar arc progression for {body}",
                 "solar_arc": arc,
                 "arc_lon": arc_lon,
+                "zodiac": self.chart_input.get("zodiac", TROPICAL_ZODIAC)
+                or TROPICAL_ZODIAC,
             }
             event = _Event(
                 stream="progressed",
@@ -1262,6 +1297,7 @@ class _WesternYearlyEngine:
             "note": "Solar return snapshot",
             "location": loc,
             "exact_local": sr_local.isoformat(),
+            "zodiac": self.chart_input.get("zodiac", TROPICAL_ZODIAC) or TROPICAL_ZODIAC,
         }
 
         events: List[_Event] = []
@@ -1448,6 +1484,7 @@ class _WesternYearlyEngine:
         info = {
             "note": "House blueprint established",
             "cusps": houses_data,
+            "zodiac": self.chart_input.get("zodiac", TROPICAL_ZODIAC) or TROPICAL_ZODIAC,
         }
         ts = datetime(self.config.year, 1, 1, tzinfo=UTC).astimezone(self._tzinfo)
         blueprint = _Event(
@@ -1513,6 +1550,8 @@ class _WesternYearlyEngine:
                         "note": f"{body} moves from house {prev_house} to {house_num}",
                         "from_house": prev_house,
                         "to_house": house_num,
+                        "zodiac": self.chart_input.get("zodiac", TROPICAL_ZODIAC)
+                        or TROPICAL_ZODIAC,
                     }
                     event = _Event(
                         stream="houses",
@@ -1554,59 +1593,76 @@ class _WesternYearlyEngine:
         planet_class = PLANET_CLASS.get(event.transit_body, "extras")
         planet_weight = scoring.planet_weight.get(planet_class, 0.4)
 
-        orb_factor = max(0.0, 1.0 - min(event.orb / max(event.orb_limit, 1e-6), 1.0))
-        base = aspect_weight * planet_weight * orb_factor
-        score = base
-        breakdown = {"base": round(base, 4), "orb_factor": round(orb_factor, 4)}
+        orb_limit = max(event.orb_limit, 1e-6)
+        orb_ratio = min(abs(event.orb) / orb_limit, 1.0)
+        orb_factor = max(0.0, 1.0 - orb_ratio)
+        base_weight = aspect_weight * planet_weight
+        base = base_weight * orb_factor
+        breakdown = {
+            "base": round(base, 4),
+            "orb_factor": round(orb_factor, 4),
+            "base_weight": round(base_weight, 4),
+        }
+
+        additive_bonus = 0.0
+        multiplier = 1.0
 
         if event.angle and event.angle in self.config.angle_targets:
-            score += scoring.angle_bonus
-            score *= scoring.angle_weights.get(event.angle, 1.0)
+            additive_bonus += scoring.angle_bonus
+            multiplier *= scoring.angle_weights.get(event.angle, 1.0)
             breakdown["angle_bonus"] = scoring.angle_bonus
             breakdown["angle_weight"] = round(
                 scoring.angle_weights.get(event.angle, 1.0), 4
             )
 
         if event.house_change:
-            score += scoring.house_change_bonus
+            additive_bonus += scoring.house_change_bonus
             breakdown["house_change_bonus"] = scoring.house_change_bonus
 
         if "progressed" in event.tags:
-            score += scoring.progressed_bonus
+            additive_bonus += scoring.progressed_bonus
             breakdown["progressed_bonus"] = scoring.progressed_bonus
 
         if "eclipse" in event.tags:
-            score += scoring.eclipse_bonus
+            additive_bonus += scoring.eclipse_bonus
             breakdown["eclipse_bonus"] = scoring.eclipse_bonus
 
         if "midpoint" in event.tags:
-            score += scoring.midpoint_bonus
+            additive_bonus += scoring.midpoint_bonus
             breakdown["midpoint_bonus"] = scoring.midpoint_bonus
 
         if "declination" in event.tags:
-            score += scoring.declination_bonus
+            additive_bonus += scoring.declination_bonus
             breakdown["declination_bonus"] = scoring.declination_bonus
 
+        raw_score = (base + additive_bonus) * multiplier
+
         if "solar_return" in event.tags:
-            score = max(score, 0.75)
+            raw_score = max(raw_score, 0.75)
             breakdown["solar_return_floor"] = 0.75
 
         if "houses" in event.tags:
-            score = max(score, max(0.6, scoring.house_change_bonus))
-            breakdown["house_floor"] = max(0.6, scoring.house_change_bonus)
+            floor = max(0.6, scoring.house_change_bonus)
+            raw_score = max(raw_score, floor)
+            breakdown["house_floor"] = floor
 
         if event.applying:
-            score += scoring.applying_bonus
+            raw_score += scoring.applying_bonus
             breakdown["applying_bonus"] = scoring.applying_bonus
         elif not self.config.applying_only:
-            score += scoring.separating_penalty
+            raw_score += scoring.separating_penalty
             breakdown["separating_penalty"] = scoring.separating_penalty
 
-        score = max(0.0, min(1.0, score))
-        if score < self.config.detection.min_strength:
+        cap = 0.98
+        if abs(event.orb) <= 0.02 and base_weight >= 0.9:
+            cap = 1.0
+        raw_score = max(0.0, min(cap, raw_score))
+        breakdown["cap"] = cap
+
+        if raw_score < self.config.detection.min_strength:
             return 0.0
         event.info.setdefault("score_breakdown", breakdown)
-        return score
+        return raw_score
 
     def _canonical_payload(self, event: _Event) -> Dict[str, Any]:
         place = self.chart_input.get("place", {})
@@ -1703,7 +1759,7 @@ class _WesternYearlyEngine:
 
     def _deduplicate(self, events: List[_Event]) -> List[_Event]:
         deduped: List[_Event] = []
-        tolerance = timedelta(hours=48)
+        tolerance = timedelta(hours=120)
 
         for ev in events:
             placed = False
@@ -1711,14 +1767,53 @@ class _WesternYearlyEngine:
                 if not _events_compatible(existing, ev, tolerance):
                     continue
                 placed = True
-                if ev.score > existing.score:
-                    existing.timestamp = ev.timestamp
-                    existing.score = ev.score
-                    existing.info = {**existing.info, **ev.info}
-                    existing.event_id = ev.event_id
-                    existing.canonical = ev.canonical
+
+                # Maintain a running window of activity around clustered hits.
+                window_data = existing.info.get("window")
+                start_candidates = [existing.timestamp, ev.timestamp]
+                end_candidates = [existing.timestamp, ev.timestamp]
+                if window_data:
+                    try:
+                        start_candidates.append(datetime.fromisoformat(window_data["start"]))
+                        end_candidates.append(datetime.fromisoformat(window_data["end"]))
+                    except (KeyError, ValueError):
+                        pass
+                if ev.info.get("window"):
+                    try:
+                        start_candidates.append(datetime.fromisoformat(ev.info["window"]["start"]))
+                        end_candidates.append(datetime.fromisoformat(ev.info["window"]["end"]))
+                    except (KeyError, ValueError):
+                        pass
+
+                window_start = min(start_candidates)
+                window_end = max(end_candidates)
+                window_payload = {
+                    "start": window_start.isoformat(),
+                    "end": window_end.isoformat(),
+                }
+
+                preserved_sources = list(existing.info.get("sources", []))
+
+                primary, secondary = (ev, existing) if _prefer_event(ev, existing) else (existing, ev)
+
+                existing.timestamp = primary.timestamp
+                existing.orb = primary.orb
+                existing.orb_limit = primary.orb_limit
+                existing.applying = primary.applying
+                existing.info.pop("score_breakdown", None)
+                existing.info = {**secondary.info, **primary.info}
+                existing.info["window"] = window_payload
+                existing.event_id = primary.event_id
+                existing.canonical = primary.canonical
                 existing.tags |= ev.tags
-                existing.info.setdefault("sources", []).append(ev.for_timeline())
+                sources = existing.info.setdefault("sources", [])
+                if preserved_sources:
+                    for item in preserved_sources:
+                        if item not in sources:
+                            sources.append(item)
+                sources.append(ev.for_timeline())
+                recomputed_score = self._score_event(existing)
+                existing.score = max(existing.score, ev.score, recomputed_score)
                 break
             if not placed:
                 deduped.append(ev)
@@ -1983,6 +2078,8 @@ def _refine_house_crossing(
 
 
 def _events_compatible(a: _Event, b: _Event, tolerance: timedelta) -> bool:
+    if a.stream != b.stream:
+        return False
     if a.transit_body != b.transit_body:
         return False
     if (a.natal_body or "") != (b.natal_body or ""):
@@ -1997,6 +2094,16 @@ def _events_compatible(a: _Event, b: _Event, tolerance: timedelta) -> bool:
     if delta > tolerance.total_seconds():
         return False
     return True
+
+
+def _prefer_event(candidate: _Event, current: _Event) -> bool:
+    candidate_orb = abs(candidate.orb)
+    current_orb = abs(current.orb)
+    if candidate_orb != current_orb:
+        return candidate_orb < current_orb
+    if candidate.score != current.score:
+        return candidate.score > current.score
+    return candidate.timestamp < current.timestamp
 
 
 def _finalise_caution_window(window: Dict[str, Any]) -> Dict[str, Any]:

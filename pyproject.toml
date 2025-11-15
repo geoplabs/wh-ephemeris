@@ -2,7 +2,10 @@
 name = "horoscope-cleaner"
 version = "0.1.0"
 requires-python = ">=3.10"
-dependencies = ["jinja2"]
+dependencies = [
+    "jinja2",
+    "pyswisseph",
+]
 
 [tool.ruff]
 line-length = 100
