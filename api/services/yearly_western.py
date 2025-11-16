@@ -48,12 +48,15 @@ from . import advanced_transits
 from .transits_engine import (
     PLANET_EXPRESSIONS,
     _calculate_exact_hit_time,
+    _interpretive_note,
+    _severity_score,
     _transit_positions,
     compute_transits,
 )
 from . import aspects as aspects_svc
-from .constants import SIGN_NAMES, sign_index_from_lon
+from .constants import SIGN_NAMES, sign_index_from_lon, sign_name_from_lon
 from .houses import house_of
+from .transit_math import is_applying
 
 # ---------------------------------------------------------------------------
 # Public helpers
@@ -545,6 +548,7 @@ class _WesternYearlyEngine:
         self._retrograde_windows: Dict[str, Dict[str, Any]] = {}
         self._natal_cache: Optional[Dict[str, Dict[str, float]]] = None
         self._natal_decl_cache: Optional[Dict[str, float]] = None
+        self._precise_position_cache: Dict[str, Dict[str, Dict[str, float]]] = {}
         if self._tzinfo is None:
             # Fall back to UTC while tracking warning.
             self._meta_warnings.append("timezone_resolved_to_utc")
@@ -983,10 +987,6 @@ class _WesternYearlyEngine:
             _angle_name(raw_event.get("natal_body")),
         )
         orb = float(raw_event.get("orb", 0.0))
-        orb_strength = max(0.0, 1.0 - min(orb / max(orb_limit, 1e-6), 1.0))
-        if orb_strength < float(self.config.filters.get("min_orb_strength", 0.0)):
-            return None
-
         applying = bool(raw_event.get("applying"))
 
         info = dict(raw_event)
@@ -995,6 +995,49 @@ class _WesternYearlyEngine:
             info["zodiac"] = (
                 self.chart_input.get("zodiac", TROPICAL_ZODIAC) or TROPICAL_ZODIAC
             )
+
+        precise = self._precise_transit_geometry(raw_event, ts)
+        if precise:
+            orb = round(precise["orb"], 2)
+            if orb > orb_limit:
+                return None
+            applying = precise["applying"]
+            info["phase"] = precise["phase"]
+            info["transit_sign"] = precise["transit_sign"]
+            info["natal_sign"] = precise["natal_sign"]
+            info["transit_motion"] = precise["transit_motion"]
+            info["orb"] = orb
+            info["applying"] = applying
+
+            canonical_aspect = (
+                aspects_svc.canonical_aspect(raw_event.get("aspect", ""))
+                or raw_event.get("aspect", "")
+            )
+            base_score = _severity_score(
+                canonical_aspect,
+                orb,
+                orb_limit,
+                raw_event.get("transit_body", ""),
+            )
+            info["base_score"] = base_score
+            if self._should_refresh_transit_note(raw_event):
+                transit_body = raw_event.get("transit_body", "")
+                natal_body = raw_event.get("natal_body", "")
+                info["note"] = self._format_transit_note(
+                    transit_body,
+                    natal_body,
+                    canonical_aspect,
+                    orb,
+                    applying,
+                    info.get("zodiac", TROPICAL_ZODIAC),
+                    precise["transit_sign"],
+                    precise["natal_sign"],
+                    base_score,
+                )
+
+        orb_strength = max(0.0, 1.0 - min(orb / max(orb_limit, 1e-6), 1.0))
+        if orb_strength < float(self.config.filters.get("min_orb_strength", 0.0)):
+            return None
 
         event = _Event(
             stream="transit",
@@ -1014,9 +1057,13 @@ class _WesternYearlyEngine:
         event.angle = _angle_name(event.natal_body)
         event.house_change = event.type == "ingress"
 
+        motion_state = info.get("transit_motion") or raw_event.get("transit_motion")
+        if motion_state:
+            event.info["transit_motion"] = motion_state
+
         if event.type == "eclipse":
             event.tags.add("eclipse")
-        if raw_event.get("transit_motion") == "retrograde":
+        if motion_state == "retrograde":
             event.tags.add("retrograde")
         if raw_event.get("midpoint_of"):
             event.tags.add("midpoint")
@@ -1152,6 +1199,92 @@ class _WesternYearlyEngine:
         except ValueError:
             return None
         return dt.astimezone(self._tzinfo)
+
+    def _precise_transit_geometry(
+        self, raw_event: Dict[str, Any], ts_local: datetime
+    ) -> Optional[Dict[str, Any]]:
+        if raw_event.get("event_type") not in (None, "transit"):
+            return None
+        transit_body = raw_event.get("transit_body")
+        natal_body = raw_event.get("natal_body")
+        if not transit_body or not natal_body or natal_body == "—":
+            return None
+        canonical_aspect = aspects_svc.canonical_aspect(raw_event.get("aspect", ""))
+        aspect_angle = aspects_svc.MAJOR.get(canonical_aspect)
+        if aspect_angle is None:
+            return None
+        natal_positions = self._natal_positions_cached()
+        natal = natal_positions.get(natal_body)
+        if not natal:
+            return None
+        dt_utc = ts_local.astimezone(UTC)
+        positions = self._positions_at(dt_utc)
+        transit = positions.get(transit_body)
+        if not transit:
+            return None
+        diff = aspects_svc._angle_diff(transit.get("lon", 0.0), natal.get("lon", 0.0))
+        orb = abs(diff - aspect_angle)
+        applying = is_applying(
+            transit.get("lon", 0.0),
+            transit.get("speed_lon", 0.0),
+            natal.get("lon", 0.0),
+            natal.get("speed_lon", 0.0),
+            aspect_angle,
+        )
+        return {
+            "orb": orb,
+            "applying": applying,
+            "phase": "applying" if applying else "separating",
+            "transit_sign": sign_name_from_lon(transit.get("lon", 0.0)),
+            "natal_sign": sign_name_from_lon(natal.get("lon", 0.0)),
+            "transit_motion": "retrograde"
+            if transit.get("speed_lon", 0.0) < 0
+            else "direct",
+        }
+
+    def _positions_at(self, dt_utc: datetime) -> Dict[str, Dict[str, float]]:
+        key = dt_utc.isoformat()
+        cached = self._precise_position_cache.get(key)
+        if cached is None:
+            ayan = None
+            if self.chart_input.get("system") == "vedic":
+                ayan = (self.chart_input.get("options") or {}).get("ayanamsha")
+            cached = _transit_positions(dt_utc, self.chart_input.get("system", "western"), ayan)
+            self._precise_position_cache[key] = cached
+        return cached
+
+    @staticmethod
+    def _should_refresh_transit_note(raw_event: Dict[str, Any]) -> bool:
+        if raw_event.get("event_type") not in (None, "transit"):
+            return False
+        natal_body = raw_event.get("natal_body")
+        transit_body = raw_event.get("transit_body")
+        return bool(natal_body and transit_body and natal_body != "—")
+
+    @staticmethod
+    def _format_transit_note(
+        transit_body: str,
+        natal_body: str,
+        aspect_name: str,
+        orb: float,
+        applying: bool,
+        zodiac: str,
+        transit_sign: str,
+        natal_sign: str,
+        base_score: float,
+    ) -> str:
+        interpretive = _interpretive_note(
+            transit_body,
+            natal_body,
+            aspect_name,
+            base_score,
+        )
+        phase_label = "Applying" if applying else "Separating"
+        return (
+            f"{interpretive} {phase_label} {aspect_name} at {orb:.2f}° orb. "
+            f"{transit_body} (transit, {zodiac}) in {transit_sign}; "
+            f"{natal_body} (natal, {zodiac}) in {natal_sign}."
+        )
 
     # ------------------------------------------------------------------
     # Additional streams
