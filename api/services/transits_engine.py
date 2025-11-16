@@ -123,8 +123,21 @@ def _natal_positions(chart_input: Dict[str,Any]) -> Dict[str,Dict[str,float]]:
     out = {k: {"lon": v["lon"], "speed_lon": v["speed_lon"]} for k,v in pos.items()}
     # add angles if time known
     if chart_input.get("time_known", True):
-        hs = houses_svc.houses(jd, chart_input["place"]["lat"], chart_input["place"]["lon"], 
-                               (chart_input.get("options") or {}).get("house_system","placidus"))
+        house_system = (
+            chart_input.get("house_system")
+            or (chart_input.get("options") or {}).get("house_system")
+        )
+        if not house_system:
+            house_system = "WholeSign" if chart_input.get("system") == "vedic" else "Placidus"
+        hs_key = house_system.lower().replace("-", "_")
+        if hs_key == "wholesign":
+            hs_key = "whole_sign"
+        hs = houses_svc.houses(
+            jd,
+            chart_input["place"]["lat"],
+            chart_input["place"]["lon"],
+            hs_key,
+        )
         out["Ascendant"] = {"lon": hs["asc"], "speed_lon": 0.0}
         out["Midheaven"] = {"lon": hs["mc"],  "speed_lon": 0.0}
     return out
@@ -226,6 +239,16 @@ def compute_transits(chart_input: Dict[str,Any], opts: Dict[str,Any]) -> List[Di
     ayan = (chart_input.get("options") or {}).get("ayanamsha","lahiri") if sidereal else None
 
     events: List[Dict[str,Any]] = []
+    precise_cache: Dict[str, Dict[str, Dict[str, float]]] = {}
+
+    def _positions_at(dt: datetime) -> Dict[str, Dict[str, float]]:
+        key = dt.isoformat()
+        cached = precise_cache.get(key)
+        if cached is None:
+            cached = _transit_positions(dt, chart_input["system"], ayan)
+            precise_cache[key] = cached
+        return cached
+
     for dt in _daterange_utc(obs_from, obs_to, step, step_hours if step_hours > 0 else None):
         tr = _transit_positions(dt, chart_input["system"], ayan)
         # restrict to transit_bodies
@@ -240,8 +263,9 @@ def compute_transits(chart_input: Dict[str,Any], opts: Dict[str,Any]) -> List[Di
                 for a_name, a_exact in aspects_svc.MAJOR.items():
                     if a_name not in requested_aspects:
                         continue
-                    if abs(d - a_exact) <= orb_limit:
-                        orb = round(abs(d - a_exact), 2)
+                    raw_orb = abs(d - a_exact)
+                    if raw_orb <= orb_limit:
+                        orb = round(raw_orb, 2)
                         score = _severity_score(a_name, orb, orb_limit, t_name)
                         applying = is_applying(
                             t_pos["lon"],
@@ -272,6 +296,35 @@ def compute_transits(chart_input: Dict[str,Any], opts: Dict[str,Any]) -> List[Di
                                 a_exact,
                                 dt,
                             )
+                            if exact_hit_time_utc:
+                                try:
+                                    exact_dt = datetime.fromisoformat(
+                                        exact_hit_time_utc.replace("Z", "+00:00")
+                                    )
+                                except ValueError:
+                                    exact_dt = None
+                                if exact_dt:
+                                    exact_positions = _positions_at(exact_dt)
+                                    exact_transit = exact_positions.get(t_name)
+                                    if exact_transit:
+                                        precise_diff = aspects_svc._angle_diff(
+                                            exact_transit["lon"], n_pos["lon"]
+                                        )
+                                        orb = round(abs(precise_diff - a_exact), 2)
+                                        score = _severity_score(
+                                            a_name, orb, orb_limit, t_name
+                                        )
+                                        applying = is_applying(
+                                            exact_transit["lon"],
+                                            exact_transit["speed_lon"],
+                                            n_pos["lon"],
+                                            n_pos["speed_lon"],
+                                            a_exact,
+                                        )
+                                        phase = "applying" if applying else "separating"
+                                        phase_cap = (
+                                            "Applying" if applying else "Separating"
+                                        )
                         
                         # Determine transit motion (retrograde/direct)
                         transit_motion = "retrograde" if t_pos["speed_lon"] < 0 else "direct"
@@ -543,6 +596,10 @@ def compute_transits(chart_input: Dict[str,Any], opts: Dict[str,Any]) -> List[Di
                     "event_type": "eclipse",
                     "zodiac": chart_input.get("zodiac", "tropical"),
                 }
+                if eclipse_event["transit_body"] == "Moon":
+                    eclipse_event["transit_sign"] = sign_name_from_lon(moon["lon"])
+                else:
+                    eclipse_event["transit_sign"] = sign_name_from_lon(sun["lon"])
                 events.append(eclipse_event)
     
     # Sort: Prioritize fast-moving planets, then by date, then by score
