@@ -1,7 +1,7 @@
 import sys
 import types
 from datetime import datetime, timezone
-from typing import Any, Dict
+from typing import Any, Dict, List
 
 import pytest
 
@@ -78,6 +78,34 @@ def _stub_compute_transits(monkeypatch):
     yearly_western._MONTH_CACHE.clear()
     yield
     yearly_western._MONTH_CACHE.clear()
+
+
+def _fake_event(
+    ts: datetime,
+    score: float,
+    *,
+    event_type: str = "transit",
+    transit_body: str = "Mars",
+    aspect: str = "conjunction",
+) -> "yearly_western._Event":
+    event = yearly_western._Event(
+        stream="transit",
+        type=event_type,
+        timestamp=ts,
+        transit_body=transit_body,
+        natal_body="Sun",
+        aspect=aspect,
+        orb=0.5,
+        orb_limit=3.0,
+        score=score,
+        applying=True,
+        tags={"eclipse"} if event_type == "eclipse" else set(),
+        info={"note": "test"},
+    )
+    event_id = f"{transit_body}-{event_type}-{ts.isoformat()}"
+    event.canonical = {"id": event_id}
+    event.event_id = event_id
+    return event
 
 
 def _chart_input_western():
@@ -217,6 +245,56 @@ def test_timezone_fallback_warning():
 
     assert "timezone_fallback" in data["meta"]["warnings"]
     assert data["meta"]["timezone"]["resolved"] == "UTC"
+
+
+def test_top_events_cover_all_months_and_surface_eclipses():
+    chart = _chart_input_western()
+    config = yearly_western._build_config(chart, _options_full())
+    engine = yearly_western._WesternYearlyEngine(chart, config)
+
+    events: List[yearly_western._Event] = []
+    for month in range(1, 13):
+        ts = datetime(2025, month, 5, tzinfo=timezone.utc)
+        events.append(_fake_event(ts, score=float(month)))
+        if month >= 9:
+            for offset in range(3):
+                ts_bonus = datetime(2025, month, 10 + offset, tzinfo=timezone.utc)
+                events.append(
+                    _fake_event(
+                        ts_bonus,
+                        score=45 + (month * 2) + offset,
+                        transit_body="Saturn",
+                    )
+                )
+
+    events.append(
+        _fake_event(
+            datetime(2025, 3, 14, 18, tzinfo=timezone.utc),
+            score=2.4,
+            event_type="eclipse",
+            transit_body="Moon",
+            aspect="eclipse",
+        )
+    )
+    events.append(
+        _fake_event(
+            datetime(2025, 9, 7, 22, tzinfo=timezone.utc),
+            score=2.6,
+            event_type="eclipse",
+            transit_body="Moon",
+            aspect="eclipse",
+        )
+    )
+
+    months, top_events = engine._build_month_index(events)
+
+    assert all(f"2025-{month:02d}" in months for month in range(1, 13))
+    month_keys = {ev["date"][:7] for ev in top_events}
+    assert all(f"2025-{month:02d}" in month_keys for month in range(1, 13))
+
+    assert any(ev["aspect"] == "eclipse" and ev["date"] == "2025-03-14" for ev in top_events)
+    assert any(ev["aspect"] == "eclipse" and ev["date"] == "2025-09-07" for ev in top_events)
+    assert len(top_events) <= 20
 
 
 def test_month_index_preserves_highest_scoring_events():

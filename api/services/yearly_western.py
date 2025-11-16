@@ -31,7 +31,7 @@ import random
 from collections import defaultdict
 from dataclasses import dataclass, field
 from datetime import UTC, datetime, timedelta, timezone
-from typing import Any, Dict, Iterable, List, MutableMapping, Optional, Sequence, Tuple
+from typing import Any, Dict, Iterable, List, MutableMapping, Optional, Sequence, Set, Tuple
 
 from zoneinfo import ZoneInfo
 
@@ -1955,10 +1955,16 @@ class _WesternYearlyEngine:
 
     def _build_month_index(self, events: List[_Event]) -> Tuple[Dict[str, List[Dict[str, Any]]], List[Dict[str, Any]]]:
         months: Dict[str, List[Dict[str, Any]]] = defaultdict(list)
+        month_event_map: Dict[str, List[_Event]] = defaultdict(list)
         transits_only = [ev for ev in events if ev.stream == "transit"]
         for ev in transits_only:
             bucket_key = ev.timestamp.strftime("%Y-%m")
             months[bucket_key].append(ev.for_month_bucket())
+            month_event_map[bucket_key].append(ev)
+
+        for month in range(1, 13):
+            key = f"{self.config.year}-{month:02d}"
+            months.setdefault(key, [])
 
         limit = self.config.outputs.max_events_per_month
         def _intensity_key(value: Dict[str, Any]) -> tuple[float, float, str]:
@@ -1995,9 +2001,49 @@ class _WesternYearlyEngine:
                 orb_key = float("-inf")
             return (magnitude, orb_key, ev.timestamp)
 
-        ranked_top = sorted(transits_only, key=_event_intensity, reverse=True)[:20]
-        top_events = sorted(ranked_top, key=lambda ev: ev.timestamp)
-        return dict(months), [ev.for_month_bucket() for ev in top_events]
+        def _month_best(ev_list: Sequence[_Event]) -> Optional[_Event]:
+            if not ev_list:
+                return None
+
+            def _month_score(ev: _Event) -> Tuple[int, float, float, datetime]:
+                magnitude, orb_key, ts = _event_intensity(ev)
+                eclipse_bonus = 1 if ev.type == "eclipse" else 0
+                return (eclipse_bonus, magnitude, orb_key, ts)
+
+            return max(ev_list, key=_month_score)
+
+        def _event_key(ev: _Event) -> str:
+            return ev.event_id or f"{ev.transit_body}|{ev.natal_body}|{ev.aspect}|{ev.timestamp.isoformat()}"
+
+        forced: List[_Event] = []
+        for month_key in sorted(month_event_map.keys()):
+            candidate = _month_best(month_event_map[month_key])
+            if candidate:
+                forced.append(candidate)
+
+        forced.extend(ev for ev in transits_only if ev.type == "eclipse")
+
+        seen: Set[str] = set()
+        top_event_objs: List[_Event] = []
+
+        def _register(ev: _Event) -> None:
+            key = _event_key(ev)
+            if key in seen:
+                return
+            seen.add(key)
+            top_event_objs.append(ev)
+
+        for ev in sorted(forced, key=lambda item: item.timestamp):
+            _register(ev)
+
+        ranked_top = sorted(transits_only, key=_event_intensity, reverse=True)
+        for ev in ranked_top:
+            if len(top_event_objs) >= 20:
+                break
+            _register(ev)
+
+        top_event_objs.sort(key=lambda ev: ev.timestamp)
+        return dict(months), [ev.for_month_bucket() for ev in top_event_objs]
 
     def _synthesise_sections(self, events: List[_Event]) -> Dict[str, Any]:
         sections: Dict[str, Any] = {}
