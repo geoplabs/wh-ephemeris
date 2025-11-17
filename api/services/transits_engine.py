@@ -582,8 +582,23 @@ def compute_transits(chart_input: Dict[str,Any], opts: Dict[str,Any]) -> List[Di
             if eclipse:
                 eclipse_score = advanced_transits.calculate_eclipse_score(eclipse)
 
+                peak_dt_utc = None
+                peak_iso = eclipse.get("peak_datetime_utc")
+                if isinstance(peak_iso, str):
+                    try:
+                        peak_dt_utc = datetime.fromisoformat(
+                            peak_iso.replace("Z", "+00:00")
+                        ).astimezone(timezone.utc)
+                    except ValueError:
+                        peak_dt_utc = None
+
+                eclipse_dt = peak_dt_utc or dt
+                exact_hit_time_utc = None
+                if peak_dt_utc is not None:
+                    exact_hit_time_utc = peak_dt_utc.isoformat().replace("+00:00", "Z")
+
                 eclipse_event = {
-                    "date": dt.date().isoformat(),
+                    "date": eclipse_dt.date().isoformat(),
                     "transit_body": "Moon" if eclipse["eclipse_category"] == "lunar" else "Sun",
                     "natal_body": "—",  # Special event, not a transit
                     "aspect": "eclipse",
@@ -596,6 +611,10 @@ def compute_transits(chart_input: Dict[str,Any], opts: Dict[str,Any]) -> List[Di
                     "event_type": "eclipse",
                     "zodiac": chart_input.get("zodiac", "tropical"),
                 }
+
+                if exact_hit_time_utc:
+                    eclipse_event["exact_hit_time_utc"] = exact_hit_time_utc
+
                 if eclipse_event["transit_body"] == "Moon":
                     eclipse_event["transit_sign"] = sign_name_from_lon(moon["lon"])
                 else:
