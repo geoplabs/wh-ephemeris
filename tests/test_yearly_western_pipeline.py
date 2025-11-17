@@ -247,18 +247,27 @@ def test_timezone_fallback_warning():
     assert data["meta"]["timezone"]["resolved"] == "UTC"
 
 
-def test_top_events_cover_all_months_and_surface_eclipses():
+@pytest.mark.parametrize(
+    "year,eclipse_dates",
+    [
+        (2025, ["2025-03-14", "2025-09-07"]),
+        (2026, ["2026-03-03", "2026-08-28"]),
+    ],
+)
+def test_top_events_cover_all_months_and_surface_eclipses(year, eclipse_dates):
     chart = _chart_input_western()
-    config = yearly_western._build_config(chart, _options_full())
+    options = _options_full()
+    options["year"] = year
+    config = yearly_western._build_config(chart, options)
     engine = yearly_western._WesternYearlyEngine(chart, config)
 
     events: List[yearly_western._Event] = []
     for month in range(1, 13):
-        ts = datetime(2025, month, 5, tzinfo=timezone.utc)
+        ts = datetime(year, month, 5, tzinfo=timezone.utc)
         events.append(_fake_event(ts, score=float(month)))
         if month >= 9:
             for offset in range(3):
-                ts_bonus = datetime(2025, month, 10 + offset, tzinfo=timezone.utc)
+                ts_bonus = datetime(year, month, 10 + offset, tzinfo=timezone.utc)
                 events.append(
                     _fake_event(
                         ts_bonus,
@@ -267,33 +276,28 @@ def test_top_events_cover_all_months_and_surface_eclipses():
                     )
                 )
 
-    events.append(
-        _fake_event(
-            datetime(2025, 3, 14, 18, tzinfo=timezone.utc),
-            score=2.4,
-            event_type="eclipse",
-            transit_body="Moon",
-            aspect="eclipse",
+    for eclipse_date in eclipse_dates:
+        eclipse_ts = datetime.fromisoformat(f"{eclipse_date}T18:00:00+00:00")
+        events.append(
+            _fake_event(
+                eclipse_ts,
+                score=2.5,
+                event_type="eclipse",
+                transit_body="Moon",
+                aspect="eclipse",
+            )
         )
-    )
-    events.append(
-        _fake_event(
-            datetime(2025, 9, 7, 22, tzinfo=timezone.utc),
-            score=2.6,
-            event_type="eclipse",
-            transit_body="Moon",
-            aspect="eclipse",
-        )
-    )
 
     months, top_events = engine._build_month_index(events)
 
-    assert all(f"2025-{month:02d}" in months for month in range(1, 13))
+    assert all(f"{year}-{month:02d}" in months for month in range(1, 13))
     month_keys = {ev["date"][:7] for ev in top_events}
-    assert all(f"2025-{month:02d}" in month_keys for month in range(1, 13))
+    assert all(f"{year}-{month:02d}" in month_keys for month in range(1, 13))
 
-    assert any(ev["aspect"] == "eclipse" and ev["date"] == "2025-03-14" for ev in top_events)
-    assert any(ev["aspect"] == "eclipse" and ev["date"] == "2025-09-07" for ev in top_events)
+    assert all(
+        any(ev["aspect"] == "eclipse" and ev["date"] == expected for ev in top_events)
+        for expected in eclipse_dates
+    )
     assert len(top_events) <= 20
 
 
