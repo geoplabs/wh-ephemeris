@@ -553,6 +553,9 @@ class _WesternYearlyEngine:
             # Fall back to UTC while tracking warning.
             self._meta_warnings.append("timezone_resolved_to_utc")
             self._tzinfo = ZoneInfo("UTC")
+        
+        # Apply GPU acceleration if enabled (dev only)
+        self._apply_gpu_acceleration()
 
     # ------------------------------------------------------------------
     # Orchestration
@@ -2120,6 +2123,21 @@ class _WesternYearlyEngine:
             "event_count": total_events,
         }
         return meta
+
+    def _apply_gpu_acceleration(self) -> None:
+        """Apply GPU acceleration if enabled (dev only)"""
+        import os
+        if os.getenv("USE_GPU_ACCELERATION", "false").lower() not in ("true", "1", "yes"):
+            return
+        
+        try:
+            from .yearly_western_gpu import apply_gpu_acceleration
+            apply_gpu_acceleration(self)
+        except ImportError:
+            pass  # GPU module not available, continue without acceleration
+        except Exception as e:
+            import logging
+            logging.getLogger(__name__).warning(f"GPU acceleration failed: {e}")
 
     def _debug_payload(self, events: List[_Event]) -> Dict[str, Any]:
         return {
