@@ -51,6 +51,7 @@ def test_yearly_full_json():
     assert "months" in j and len(j["months"]) >= 1
     assert "overview" in j and "key_themes" in j["overview"]
     assert "key_dates" in j and isinstance(j["key_dates"], list)
+    assert j["meta"]["interpretation"]["raw_events_forwarded"] is True
 
 
 def test_yearly_full_pdf_job():

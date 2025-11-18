@@ -58,6 +58,7 @@ def interpret_transits_endpoint(
         req.chart_input.model_dump(),
         {"from": req.window.from_, "to": req.window.to},
         req.options.model_dump(),
+        req.events_by_month or {},
     )
     return TransitsInterpretResponse(**data)
 

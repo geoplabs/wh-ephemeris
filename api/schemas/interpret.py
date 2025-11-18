@@ -38,6 +38,7 @@ class TransitsInterpretRequest(BaseModel):
     chart_input: ChartInput
     window: TransitWindow
     options: TransitOptions = TransitOptions()
+    events_by_month: Dict[str, List[Dict[str, Any]]] | None = None
 
 
 class TransitsInterpretResponse(BaseModel):

@@ -29,20 +29,24 @@ def get_yearly(chart_input: dict, options: dict) -> dict:
     if USE_HTTP:
         return call("/v1/forecasts/yearly", body)
     from ..forecast_builders import yearly_payload
-    data = yearly_payload(chart_input, options)
-    return {"months": data["months"]}
+    return yearly_payload(chart_input, options)
 
 
-def get_interpret(chart_input: dict, window: Tuple[str, str]) -> dict:
+def get_interpret(
+    chart_input: dict, window: Tuple[str, str], events_by_month: dict | None = None
+) -> dict:
     body = {
         "chart_input": chart_input,
         "window": {"from": window[0], "to": window[1]},
         "options": {"tone": "professional", "length": "short", "language": "en"},
+        "events_by_month": events_by_month or {},
     }
     if USE_HTTP:
         return call("/v1/interpret/transits", body)
     from ..narratives.assembler import interpret_transits
-    return interpret_transits(chart_input, body["window"], body["options"])
+    return interpret_transits(
+        chart_input, body["window"], body["options"], events_by_month or {}
+    )
 
 
 def get_dashas(chart_input: dict) -> dict:
@@ -139,24 +143,54 @@ def build_viewmodel(
     house_of_body = {b["name"]: b.get("house") for b in natal.get("bodies", [])}
     planet_activity: Dict[str, int] = {}
     all_events: List[Tuple[str, dict]] = []
-    for m, items in yr["months"].items():
+
+    raw_events = yr.get("raw_events") or []
+    months_source = yr.get("months") or {}
+    if raw_events:
+        for ev in raw_events:
+            ts = ev.get("timestamp") or ""
+            ev["date"] = ev.get("date") or ts[:10]
+            ev["orb"] = ev.get("orb") or (ev.get("details") or {}).get("orb")
+            month = month_key(ev["date"])
+            month_payload = months_source.setdefault(month, [])
+            month_payload.append(ev)
+
+    for m, items in months_source.items():
         for e in items:
             planet_activity[e["transit_body"]] = planet_activity.get(e["transit_body"], 0) + 1
-            nb = e["natal_body"]
+            nb = e.get("natal_body")
             nh = house_of_body.get(nb)
             e["domains"] = domain_tags(nb, nh)
             e["severity"] = severity_from_score(e.get("score", 5))
             all_events.append((m, e))
 
-    if include_interpretation:
-        interp = get_interpret(chart_input, (f"{year}-01-01", f"{year}-12-31"))
-        month_summaries = interp.get("month_summaries", {})
-    else:
-        month_summaries = {}
-
     events_by_month: Dict[str, List[dict]] = {}
     for m, e in all_events:
         events_by_month.setdefault(m, []).append(e)
+
+    interpret_window = (f"{year}-01-01", f"{year}-12-31")
+    events_for_ai: Dict[str, List[Dict[str, Any]]] = {}
+    for m, lst in events_by_month.items():
+        curated = []
+        for ev in sorted(lst, key=lambda x: (-(x.get("score", 0)), x.get("orb", 9.9)))[:8]:
+            curated.append(
+                {
+                    "date": ev["date"],
+                    "label": f"{ev['transit_body']} {ev['aspect']} {ev['natal_body']}",
+                    "domains": ev["domains"],
+                    "severity": ev["severity"],
+                    "score": ev.get("score"),
+                    "window": ev.get("window"),
+                    "peak_date": ev.get("peak_date", ev["date"]),
+                }
+            )
+        events_for_ai[m] = curated
+
+    if include_interpretation:
+        interp = get_interpret(chart_input, interpret_window, events_for_ai)
+        month_summaries = interp.get("month_summaries", {})
+    else:
+        month_summaries = {}
 
     months: Dict[str, Any] = {}
     key_dates: List[Dict[str, Any]] = []
@@ -185,7 +219,7 @@ def build_viewmodel(
                     "transit_body": ev["transit_body"],
                     "natal_body": ev["natal_body"],
                     "aspect": ev["aspect"],
-                    "orb": ev["orb"],
+                    "orb": ev.get("orb"),
                     "applying": ev.get("applying"),
                     "domains": ev["domains"],
                     "severity": ev["severity"],
@@ -266,5 +300,17 @@ def build_viewmodel(
         "key_dates": key_dates,
         "vedic_extras": vedic_extras,
         "assets": {"timeline_svg": None, "calendar_svg": None, "pdf_download_url": None},
+        "meta": {
+            "interpretation": {
+                "included": include_interpretation,
+                "raw_events_forwarded": include_interpretation and bool(events_for_ai),
+                "events_forwarded_per_month": {
+                    k: len(v) for k, v in events_for_ai.items()
+                }
+                if include_interpretation
+                else {},
+                "window": {"from": interpret_window[0], "to": interpret_window[1]},
+            }
+        },
     }
     return vm
