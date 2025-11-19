@@ -9,11 +9,13 @@ import textwrap
 from dataclasses import dataclass, field
 from datetime import datetime
 from pathlib import Path
+from collections import Counter
 from typing import Any, Dict, Iterable, List, Optional, Tuple
 
 from reportlab.lib.pagesizes import A4
 from reportlab.lib.units import cm
 from reportlab.pdfgen import canvas
+from reportlab.lib.utils import ImageReader
 
 logger = logging.getLogger(__name__)
 
@@ -30,6 +32,21 @@ BRAND_COLORS = {
     "text_light": (0.45, 0.45, 0.45),
     "divider": (0.85, 0.85, 0.85),
     "white": (1, 1, 1),
+}
+
+HOUSE_KEYWORDS = {
+    1: "Identity, vitality, first impressions",
+    2: "Resources, income, values",
+    3: "Learning, siblings, daily logistics",
+    4: "Home, roots, family systems",
+    5: "Creativity, dating, children",
+    6: "Routines, health, service",
+    7: "Partnerships, contracts, collaboration",
+    8: "Shared assets, transformation, intimacy",
+    9: "Travel, study, publishing, belief",
+    10: "Career, reputation, public standing",
+    11: "Allies, networks, future goals",
+    12: "Rest, subconscious, spiritual reset",
 }
 
 PAGE_LAYOUT = {
@@ -63,6 +80,14 @@ LIFE_AREA_KEYWORDS = {
     "health": {"health", "wellbeing", "energy", "body", "vitality"},
     "inner": {"spiritual", "healing", "inner", "emotional", "intuition"},
 }
+
+
+def _sanitize_bullet_artifacts(text: str) -> str:
+    if not text:
+        return ""
+    cleaned = text.strip()
+    cleaned = re.sub(r"^[\s•\-*]+", "", cleaned)
+    return cleaned.strip()
 
 MONTH_NAME_ORDER = (
     "December 2024",
@@ -163,6 +188,7 @@ class ContentValidator:
                 cleaned = cleaned[len(prefix) :].lstrip(" ,-.!")
                 break
         cleaned = self._strip_generic_phrases(cleaned)
+        cleaned = self._strip_technical_notation(cleaned)
         allow_previous = bool(month_label and self.allowed_previous_month in month_label and str(self.previous_year) in month_label)
         self._guard_year_mentions(cleaned, allow_previous)
         return cleaned
@@ -171,6 +197,18 @@ class ContentValidator:
         for phrase in GENERIC_BULLET_STRINGS:
             text = re.sub(rf"\b{re.escape(phrase)}\b", "", text, flags=re.IGNORECASE)
         return text.strip()
+
+    def _strip_technical_notation(self, text: str) -> str:
+        text = re.sub(r"\[[^\]]+\]", "", text)
+        text = re.sub(
+            r"(?P<phase>applying|separating)\s+(?P<aspect>[a-z\s]+?)\s+at\s+\d+(?:\.\d+)?°\s+orb",
+            lambda m: f"{m.group('aspect').strip().title()} influence",
+            text,
+            flags=re.IGNORECASE,
+        )
+        text = re.sub(r"\d+(?:\.\d+)?°\s*orb", "", text, flags=re.IGNORECASE)
+        text = text.replace("Applying opposition", "Opposition")
+        return " ".join(text.split())
 
     def _guard_year_mentions(self, text: str, allow_previous: bool) -> None:
         prev = str(self.previous_year)
@@ -257,16 +295,21 @@ def _render_pdf(
 ) -> None:
     width, height = A4
     profile = _extract_profile(meta)
-    _render_cover_page(pdf, width, height, profile, generated_at, state)
+    branding = meta.get("branding") or report.get("branding") or {}
+    _render_cover_page(pdf, width, height, profile, generated_at, state, branding, meta)
     _render_table_of_contents(pdf, width, height, state, profile)
     _render_year_at_glance(pdf, width, height, report.get("year_at_glance") or {}, profile, validator, state)
     _render_usage_primer(pdf, width, height, profile, state)
+    _render_natal_snapshot(pdf, width, height, report, profile, meta, state)
+    _render_methodology_page(pdf, width, height, report, profile, meta, state)
     _render_eclipses(pdf, width, height, report.get("eclipses_and_lunations") or [], profile, state)
+    _render_retrograde_summary(pdf, width, height, report, profile, state)
 
     for month in _ordered_months(report.get("months") or []):
         _render_monthly_section(pdf, width, height, month, profile, validator, state)
 
     _render_appendices(pdf, width, height, report, profile, state)
+    _render_sources_page(pdf, width, height, profile, meta, generated_at, state)
     pdf.save()
 
 
@@ -281,26 +324,43 @@ def _render_cover_page(
     profile: Dict[str, str],
     generated_at: str,
     state: RenderState,
+    branding: Dict[str, Any],
+    meta: Dict[str, Any],
 ) -> None:
     pdf.setFillColorRGB(*BRAND_COLORS["crimson"])
-    pdf.rect(0, height - 12 * cm, width, 12 * cm, fill=True, stroke=False)
+    pdf.rect(0, height - 13 * cm, width, 13 * cm, fill=True, stroke=False)
     pdf.setFillColorRGB(*BRAND_COLORS["white"])
-    pdf.setFont("Helvetica-Bold", 34)
-    pdf.drawCentredString(width / 2, height - 4.5 * cm, f"{profile['year']} Personalized Yearly Forecast")
+    _draw_brand_badge(pdf, width, height, branding)
+    pdf.setFillColorRGB(*BRAND_COLORS["white"])
+    pdf.setFont("Helvetica-Bold", 36)
+    pdf.drawCentredString(width / 2, height - 4.2 * cm, f"{profile['year']} Yearly Forecast")
 
     subtitle = f"Prepared for {profile['name']}"
     if profile.get("sun_sign"):
-        subtitle += f" ({profile['sun_sign']})"
-    subtitle += " • WhatHoroscope.com"
+        subtitle += f" · Sun in {profile['sun_sign']}"
     pdf.setFont("Helvetica", 16)
-    pdf.drawCentredString(width / 2, height - 6.5 * cm, subtitle)
+    pdf.drawCentredString(width / 2, height - 6.2 * cm, subtitle)
 
     pdf.setFont("Helvetica", 11)
     pdf.drawCentredString(
         width / 2,
-        height - 8 * cm,
-        f"Based on natal chart: {profile['birth_date']} • {profile['birth_time']} • {profile['birth_place']}",
+        height - 7.4 * cm,
+        f"Birth data: {profile['birth_date']} • {profile['birth_time']} • {profile['birth_place']}",
     )
+
+    pdf.setFillColorRGB(*BRAND_COLORS["text_dark"])
+    pdf.setFont("Helvetica-Bold", 13)
+    pdf.drawString(PAGE_LAYOUT["margin"], height - 9.5 * cm, "Snapshot")
+    pdf.setFont("Helvetica", 11)
+    snapshot_lines = [
+        f"Client: {profile['name']}",
+        f"Focus Year: {profile['year']}",
+        f"Chart Ref: {meta.get('timezone', {}).get('resolved', 'UTC')}",
+    ]
+    y = height - 10.5 * cm
+    for line in snapshot_lines:
+        pdf.drawString(PAGE_LAYOUT["margin"], y, line)
+        y -= 0.55 * cm
 
     pdf.setFillColorRGB(*BRAND_COLORS["text_light"])
     pdf.setFont("Helvetica", 10)
@@ -309,6 +369,32 @@ def _render_cover_page(
     pdf.showPage()
     state.current_page = 1
     state.current_section = ""
+
+
+def _draw_brand_badge(pdf: canvas.Canvas, width: float, height: float, branding: Dict[str, Any]) -> None:
+    logo_path = branding.get("logo_path") or branding.get("logo_url") or ""
+    drawn = False
+    if logo_path and not logo_path.lower().startswith("http"):
+        try:
+            image = ImageReader(logo_path)
+            pdf.drawImage(
+                image,
+                width / 2 - 1.5 * cm,
+                height - 3.7 * cm,
+                width=3 * cm,
+                height=3 * cm,
+                mask="auto",
+            )
+            drawn = True
+        except Exception:
+            logger.debug("cover_logo_load_failed", exc_info=True)
+    if drawn:
+        return
+    pdf.setFillColorRGB(*BRAND_COLORS["white"])
+    pdf.circle(width / 2, height - 3.2 * cm, 1.2 * cm, fill=True, stroke=False)
+    pdf.setFillColorRGB(*BRAND_COLORS["crimson"])
+    pdf.setFont("Helvetica-Bold", 16)
+    pdf.drawCentredString(width / 2, height - 3.3 * cm, branding.get("monogram", "WH"))
 
 
 def _render_table_of_contents(
@@ -450,7 +536,159 @@ def _render_usage_primer(
     ]
     y = _draw_bullet_list(pdf, bullets, PAGE_LAYOUT["margin"], y, width - 2 * PAGE_LAYOUT["margin"], 10, 14)
 
+    pdf.setFillColorRGB(*BRAND_COLORS["crimson"])
+    pdf.setFont("Helvetica-Bold", 14)
+    pdf.drawString(PAGE_LAYOUT["margin"], y, "Legend & Score Guide")
+    y -= 0.6 * cm
+    pdf.setFillColorRGB(*BRAND_COLORS["text_dark"])
+    legend = [
+        ("High Score Day", "Score ≥ +0.60 — quick wins and launches."),
+        ("Navigate With Care", "Score ≤ -0.40 — slow down, rest, review."),
+        ("Aspect Grid", "Squares/Oppositions = friction · Trines/Sextiles = flow."),
+        ("Rituals & Journal", "Micro-practices that anchor the month's lesson."),
+    ]
+    for label, desc in legend:
+        pdf.setFont("Helvetica-Bold", 10)
+        pdf.drawString(PAGE_LAYOUT["margin"], y, label)
+        pdf.setFont("Helvetica", 10)
+        pdf.drawString(PAGE_LAYOUT["margin"] + 4.2 * cm, y, desc)
+        y -= 0.45 * cm
 
+    y -= 0.2 * cm
+    pdf.setFont("Helvetica-Bold", 11)
+    pdf.drawString(PAGE_LAYOUT["margin"], y, "Score Ranges")
+    y -= 0.5 * cm
+    score_rows = [
+        ("+0.80 to +1.00", "Peak momentum · say yes"),
+        ("+0.40 to +0.79", "Supportive growth"),
+        ("-0.10 to +0.39", "Neutral · focus on maintenance"),
+        ("-0.40 to -0.69", "Sensitive · reduce load"),
+        ("≤ -0.70", "Storm watch · rest, regroup"),
+    ]
+    col_widths = [3.5 * cm, width - 2 * PAGE_LAYOUT["margin"] - 3.5 * cm]
+    _draw_table_row(pdf, ["Score", "Meaning"], PAGE_LAYOUT["margin"], y, col_widths, header=True)
+    y -= 0.6 * cm
+    for score, meaning in score_rows:
+        _draw_table_row(pdf, [score, meaning], PAGE_LAYOUT["margin"], y, col_widths, header=False)
+        y -= 0.5 * cm
+
+
+def _render_natal_snapshot(
+    pdf: canvas.Canvas,
+    width: float,
+    height: float,
+    report: Dict[str, Any],
+    profile: Dict[str, str],
+    meta: Dict[str, Any],
+    state: RenderState,
+) -> None:
+    _start_numbered_page(pdf, width, height, state, profile, "Natal Snapshot", level=1)
+    y = height - 2.5 * cm
+    pdf.setFillColorRGB(*BRAND_COLORS["crimson"])
+    pdf.setFont("Helvetica-Bold", 20)
+    pdf.drawString(PAGE_LAYOUT["margin"], y, "Natal Snapshot & House Themes")
+    y -= 1 * cm
+
+    pdf.setFillColorRGB(*BRAND_COLORS["crimson_light"])
+    box_height = 3 * cm
+    pdf.roundRect(PAGE_LAYOUT["margin"], y - box_height, width - 2 * PAGE_LAYOUT["margin"], box_height, 0.2 * cm, fill=True, stroke=False)
+    pdf.setFillColorRGB(*BRAND_COLORS["crimson_dark"])
+    pdf.setFont("Helvetica-Bold", 12)
+    pdf.drawString(PAGE_LAYOUT["margin"] + 0.4 * cm, y - 0.6 * cm, "Natal Essentials")
+    pdf.setFont("Helvetica", 10)
+    pdf.setFillColorRGB(*BRAND_COLORS["text_dark"])
+    snapshot_lines = [
+        f"Name: {profile['name']}",
+        f"Sun sign: {profile.get('sun_sign', '–')}",
+        f"Birth: {profile['birth_date']} · {profile['birth_time']} · {profile['birth_place']}",
+        f"Time zone: {meta.get('timezone', {}).get('resolved', 'UTC')}",
+    ]
+    cursor = y - 1.2 * cm
+    for line in snapshot_lines:
+        pdf.drawString(PAGE_LAYOUT["margin"] + 0.4 * cm, cursor, line)
+        cursor -= 0.45 * cm
+    y -= box_height + 0.8 * cm
+
+    pdf.setFillColorRGB(*BRAND_COLORS["crimson"])
+    pdf.setFont("Helvetica-Bold", 14)
+    pdf.drawString(PAGE_LAYOUT["margin"], y, "House Themes Map")
+    y -= 0.6 * cm
+    house_focus = _aggregate_house_focus(report.get("appendix_all_events") or [])
+    if not house_focus:
+        pdf.setFillColorRGB(*BRAND_COLORS["text_dark"])
+        pdf.setFont("Helvetica", 10)
+        pdf.drawString(PAGE_LAYOUT["margin"], y, "House emphasis will populate once event data is available.")
+        return
+
+    col_widths = [1.8 * cm, 6 * cm, width - 2 * PAGE_LAYOUT["margin"] - 7.8 * cm]
+    _draw_table_row(pdf, ["House", "Themes", "Activity"], PAGE_LAYOUT["margin"], y, col_widths, header=True)
+    y -= 0.6 * cm
+    for entry in house_focus[:8]:
+        label = f"{entry['house']}"
+        themes = entry["keywords"]
+        activity = entry["intensity"]
+        _draw_table_row(pdf, [label, themes, activity], PAGE_LAYOUT["margin"], y, col_widths, header=False)
+        y -= 0.5 * cm
+
+
+def _render_methodology_page(
+    pdf: canvas.Canvas,
+    width: float,
+    height: float,
+    report: Dict[str, Any],
+    profile: Dict[str, str],
+    meta: Dict[str, Any],
+    state: RenderState,
+) -> None:
+    _start_numbered_page(pdf, width, height, state, profile, "Methodology", level=1)
+    y = height - 2.5 * cm
+    pdf.setFillColorRGB(*BRAND_COLORS["crimson"])
+    pdf.setFont("Helvetica-Bold", 20)
+    pdf.drawString(PAGE_LAYOUT["margin"], y, "Methodology & Scoring")
+    y -= 0.8 * cm
+
+    pdf.setFillColorRGB(*BRAND_COLORS["text_dark"])
+    intro = (
+        "Transits are calculated with WH-Ephemeris, blended with Swiss Ephemeris accuracy, "
+        "and interpreted through the WhatHoroscope narrative engine. Each paragraph you read "
+        "is QA-ed to stay actionable, compassionate, and grounded."
+    )
+    y = _draw_wrapped(pdf, intro, PAGE_LAYOUT["margin"], y, width - 2 * PAGE_LAYOUT["margin"], 11, 16)
+    y -= 0.4 * cm
+
+    pdf.setFillColorRGB(*BRAND_COLORS["crimson"])
+    pdf.setFont("Helvetica-Bold", 13)
+    pdf.drawString(PAGE_LAYOUT["margin"], y, "Scoring Signals")
+    y -= 0.5 * cm
+    scoring_opts = (meta.get("options") or {}).get("scoring") or {}
+    score_lines = []
+    for key, value in scoring_opts.items():
+        label = key.replace("_", " ").title()
+        score_lines.append(f"{label}: {value}")
+    if not score_lines:
+        score_lines = [
+            "Angle bonus: +0.30 when a transit hits ASC/MC/DSC/IC.",
+            "Applying bonus: +0.08 as planets move toward exactness.",
+            "Separating penalty: -0.04 once the aspect releases.",
+        ]
+    pdf.setFillColorRGB(*BRAND_COLORS["text_dark"])
+    y = _draw_bullet_list(pdf, score_lines, PAGE_LAYOUT["margin"], y, width - 2 * PAGE_LAYOUT["margin"], 10, 14)
+
+    total_events = len(report.get("appendix_all_events") or [])
+    pdf.setFont("Helvetica", 10)
+    pdf.drawString(PAGE_LAYOUT["margin"], y + 0.3 * cm, f"Events scored this year: {total_events}")
+    y -= 0.4 * cm
+
+    pdf.setFillColorRGB(*BRAND_COLORS["crimson"])
+    pdf.setFont("Helvetica-Bold", 13)
+    pdf.drawString(PAGE_LAYOUT["margin"], y, "What the numbers mean")
+    y -= 0.5 * cm
+    meaning = (
+        "Scores cap near ±1.00. Values above +0.60 signal green lights and bonus support. "
+        "Anything below -0.40 requests gentler pacing, with -0.80 or lower flagging storm-grade windows."
+    )
+    pdf.setFillColorRGB(*BRAND_COLORS["text_dark"])
+    _draw_wrapped(pdf, meaning, PAGE_LAYOUT["margin"], y, width - 2 * PAGE_LAYOUT["margin"], 10, 14)
 # --------------------------------------------------------------------------------------
 # Eclipses & Lunations data cards
 # --------------------------------------------------------------------------------------
@@ -470,7 +708,20 @@ def _render_eclipses(
     pdf.setFillColorRGB(*BRAND_COLORS["crimson"])
     pdf.setFont("Helvetica-Bold", 20)
     pdf.drawString(PAGE_LAYOUT["margin"], y, "Eclipses & Lunations")
-    y -= 1 * cm
+    y -= 0.8 * cm
+    pdf.setFillColorRGB(*BRAND_COLORS["text_dark"])
+    primer = (
+        "Eclipses accelerate endings and beginnings. Give yourself extra recovery time, "
+        "anchor with grounding rituals, and watch what resurfaces in the life area noted on each card."
+    )
+    y = _draw_wrapped(pdf, primer, PAGE_LAYOUT["margin"], y, width - 2 * PAGE_LAYOUT["margin"], 10, 14)
+    y -= 0.4 * cm
+    primer_bullets = [
+        "Keep schedules light ±3 days around the event.",
+        "Journal what surfaces — themes repeat every ~6 months.",
+        "Act on clarity, not urgency; eclipses reveal the assignment, not the entire plan.",
+    ]
+    y = _draw_bullet_list(pdf, primer_bullets, PAGE_LAYOUT["margin"], y, width - 2 * PAGE_LAYOUT["margin"], 10, 14)
 
     for eclipse in eclipses:
         if y < 4 * cm:
@@ -480,8 +731,67 @@ def _render_eclipses(
             pdf.drawString(PAGE_LAYOUT["margin"], height - 2.5 * cm, "Eclipse Insights (cont.)")
             y = height - 3.5 * cm
 
-        _draw_eclipse_card(pdf, width, y, eclipse)
+        bullets = _build_eclipse_bullets(eclipse)
+        _draw_eclipse_card(pdf, width, y, eclipse, bullets)
         y -= 4.5 * cm
+
+
+def _render_retrograde_summary(
+    pdf: canvas.Canvas,
+    width: float,
+    height: float,
+    report: Dict[str, Any],
+    profile: Dict[str, str],
+    state: RenderState,
+) -> None:
+    windows = _extract_retrograde_windows(report.get("appendix_all_events") or [])
+    if not windows:
+        return
+    _start_numbered_page(pdf, width, height, state, profile, "Retrogrades & Stations", level=1)
+    y = height - 2.5 * cm
+    pdf.setFillColorRGB(*BRAND_COLORS["crimson"])
+    pdf.setFont("Helvetica-Bold", 20)
+    pdf.drawString(PAGE_LAYOUT["margin"], y, "Retrogrades & Stations")
+    y -= 0.8 * cm
+    pdf.setFillColorRGB(*BRAND_COLORS["text_dark"])
+    intro = (
+        "Retrograde periods stretch over several weeks. Use the start date as your cue to review, and the direct station as a "
+        "natural relaunch moment."
+    )
+    y = _draw_wrapped(pdf, intro, PAGE_LAYOUT["margin"], y, width - 2 * PAGE_LAYOUT["margin"], 10, 14)
+    y -= 0.4 * cm
+
+    for window in windows:
+        if y < 4 * cm:
+            _continue_page(pdf, width, height, state, profile)
+            y = height - 2.5 * cm
+        pdf.setFillColorRGB(*BRAND_COLORS["crimson"])
+        pdf.setFont("Helvetica-Bold", 12)
+        span = f"{window['start']} → {window['end'] or 'TBD'}"
+        pdf.drawString(PAGE_LAYOUT["margin"], y, f"{window['body']} retrograde")
+        pdf.setFillColorRGB(*BRAND_COLORS["text_dark"])
+        pdf.setFont("Helvetica", 10)
+        pdf.drawString(PAGE_LAYOUT["margin"], y - 0.5 * cm, f"Window: {span}")
+        y -= 0.9 * cm
+        for station in window.get("stations", []):
+            pdf.drawString(
+                PAGE_LAYOUT["margin"] + 0.4 * cm,
+                y,
+                f"• {station['date']}: {station['label']}",
+            )
+            y -= 0.45 * cm
+        if window.get("notes"):
+            summary = window["notes"]
+            y = _draw_wrapped(
+                pdf,
+                summary,
+                PAGE_LAYOUT["margin"],
+                y,
+                width - 2 * PAGE_LAYOUT["margin"],
+                10,
+                14,
+            )
+        y -= 0.2 * cm
 
 
 # --------------------------------------------------------------------------------------
@@ -654,6 +964,47 @@ def _render_appendices(
             y -= 0.3 * cm
 
 
+def _render_sources_page(
+    pdf: canvas.Canvas,
+    width: float,
+    height: float,
+    profile: Dict[str, str],
+    meta: Dict[str, Any],
+    generated_at: str,
+    state: RenderState,
+) -> None:
+    _start_numbered_page(pdf, width, height, state, profile, "Sources & Credits", level=1)
+    y = height - 2.5 * cm
+    pdf.setFillColorRGB(*BRAND_COLORS["crimson"])
+    pdf.setFont("Helvetica-Bold", 20)
+    pdf.drawString(PAGE_LAYOUT["margin"], y, "Sources & Versioning")
+    y -= 0.8 * cm
+
+    pdf.setFillColorRGB(*BRAND_COLORS["text_dark"])
+    versioning = meta.get("versioning") or {}
+    version_line = f"Engine versions: {versioning.get('ephemeris_version', 'se-2.x')} · {versioning.get('algo_version', 'yh-2025.x')}"
+    pdf.setFont("Helvetica", 10)
+    pdf.drawString(PAGE_LAYOUT["margin"], y, version_line)
+    y -= 0.5 * cm
+    pdf.drawString(PAGE_LAYOUT["margin"], y, f"Generated: {_format_generated_at(generated_at)}")
+    y -= 0.5 * cm
+    pdf.drawString(PAGE_LAYOUT["margin"], y, "Data sources: Swiss Ephemeris, NASA JPL DE430, WhatHoroscope house models.")
+    y -= 0.8 * cm
+
+    pdf.setFillColorRGB(*BRAND_COLORS["crimson"])
+    pdf.setFont("Helvetica-Bold", 13)
+    pdf.drawString(PAGE_LAYOUT["margin"], y, "Credits & Notes")
+    y -= 0.5 * cm
+    pdf.setFillColorRGB(*BRAND_COLORS["text_dark"])
+    bullets = [
+        "Narratives generated by the WhatHoroscope LLM interpreter, reviewed by QA heuristics.",
+        "Scores derive from transit strength, dignities, and bonuses for eclipses, angles, and progressions.",
+        "This report is informational only — not medical, financial, or legal advice.",
+        "© WhatHoroscope. Please do not redistribute without permission.",
+    ]
+    _draw_bullet_list(pdf, bullets, PAGE_LAYOUT["margin"], y, width - 2 * PAGE_LAYOUT["margin"], 10, 14)
+
+
 # --------------------------------------------------------------------------------------
 # Helper drawing functions
 # --------------------------------------------------------------------------------------
@@ -766,7 +1117,7 @@ def _draw_bullet_list(
     return y
 
 
-def _draw_eclipse_card(pdf: canvas.Canvas, width: float, y: float, eclipse: Dict[str, Any]) -> None:
+def _draw_eclipse_card(pdf: canvas.Canvas, width: float, y: float, eclipse: Dict[str, Any], bullets: List[str]) -> None:
     pdf.setFillColorRGB(*BRAND_COLORS["crimson_light"])
     pdf.roundRect(PAGE_LAYOUT["margin"], y - 3.6 * cm, width - 2 * PAGE_LAYOUT["margin"], 3.4 * cm, 0.2 * cm, fill=True, stroke=False)
     pdf.setFillColorRGB(*BRAND_COLORS["crimson"])
@@ -779,11 +1130,30 @@ def _draw_eclipse_card(pdf: canvas.Canvas, width: float, y: float, eclipse: Dict
     house = eclipse.get("house") or eclipse.get("life_area")
     if house:
         pdf.drawString(PAGE_LAYOUT["margin"] + 0.4 * cm, y - 1.2 * cm, f"Life Area: {house}")
-    guidance = eclipse.get("guidance", "")
-    do_lines, dont_lines = _split_do_dont(guidance)
     pdf.setFillColorRGB(*BRAND_COLORS["text_dark"])
-    pdf.drawString(PAGE_LAYOUT["margin"] + 0.4 * cm, y - 1.9 * cm, f"Do: {do_lines}")
-    pdf.drawString(PAGE_LAYOUT["margin"] + 0.4 * cm, y - 2.7 * cm, f"Don't: {dont_lines}")
+    cursor = y - 1.9 * cm
+    for bullet in bullets[:4]:
+        pdf.drawString(PAGE_LAYOUT["margin"] + 0.4 * cm, cursor, f"• {bullet}")
+        cursor -= 0.6 * cm
+
+
+def _build_eclipse_bullets(eclipse: Dict[str, Any]) -> List[str]:
+    bullets: List[str] = []
+    house = eclipse.get("house") or eclipse.get("life_area")
+    if house:
+        bullets.append(f"Tend to {house.lower()} shifts.")
+    sign = eclipse.get("sign")
+    if sign:
+        bullets.append(f"Lean into {sign} traits — do it with that zodiac tone.")
+    guidance = eclipse.get("guidance", "")
+    do_line, dont_line = _split_do_dont(guidance)
+    if do_line:
+        bullets.append(f"Do: {_sanitize_bullet_artifacts(do_line)}")
+    if dont_line:
+        bullets.append(f"Skip: {_sanitize_bullet_artifacts(dont_line)}")
+    if not bullets:
+        bullets = ["Observe, rest, and log insights."]
+    return bullets
 
 
 def _render_key_insight(pdf: canvas.Canvas, width: float, y: float, month: Dict[str, Any]) -> float:
@@ -994,6 +1364,48 @@ def _gather_month_events(month: Dict[str, Any]) -> List[Dict[str, Any]]:
     return events
 
 
+def _aggregate_house_focus(events: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+    counts: Counter[int] = Counter()
+    for event in events:
+        house = _normalize_house(event.get("house"))
+        if house:
+            counts[house] += 1
+    if not counts:
+        return []
+    max_count = max(counts.values())
+    focus = []
+    for house, count in counts.most_common():
+        keywords = HOUSE_KEYWORDS.get(house, "Key life territory")
+        intensity = _intensity_label(count, max_count)
+        focus.append({"house": house, "keywords": keywords, "intensity": intensity})
+    return focus
+
+
+def _normalize_house(value: Any) -> Optional[int]:
+    if isinstance(value, int):
+        return value if 1 <= value <= 12 else None
+    if isinstance(value, str):
+        match = re.search(r"(\d{1,2})", value)
+        if match:
+            num = int(match.group(1))
+            if 1 <= num <= 12:
+                return num
+    return None
+
+
+def _intensity_label(count: int, max_count: int) -> str:
+    if max_count <= 0:
+        return "Trace"
+    ratio = count / max_count
+    if ratio >= 0.75:
+        return "Primary focus"
+    if ratio >= 0.45:
+        return "Active"
+    if ratio >= 0.25:
+        return "Background hum"
+    return "Trace"
+
+
 def _derive_month_themes(month: Dict[str, Any]) -> List[str]:
     events = _gather_month_events(month)
     summary = _summarize_life_areas(events)
@@ -1034,7 +1446,7 @@ def _summarize_high_score_days(days: List[Dict[str, Any]]) -> str:
 def _format_transit_sentence(event: Dict[str, Any]) -> str:
     date = event.get("date") or "TBC"
     transit = f"{event.get('transit_body')} {event.get('aspect')} {event.get('natal_body') or ''}".strip()
-    summary = event.get("user_friendly_summary") or event.get("raw_note") or "brings a noticeable shift."
+    summary = _sanitize_bullet_artifacts(event.get("user_friendly_summary") or event.get("raw_note") or "brings a noticeable shift.")
     return f"{date}: {transit} — {summary}"
 
 
@@ -1047,12 +1459,55 @@ def _split_do_dont(guidance: str) -> Tuple[str, str]:
     return guidance[:90], guidance[90:180] or "Skip rash reactions."
 
 
+def _extract_retrograde_windows(events: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+    buckets: Dict[str, Dict[str, Any]] = {}
+    for event in events:
+        note = " ".join(
+            filter(
+                None,
+                [
+                    event.get("raw_note"),
+                    event.get("user_friendly_summary"),
+                    event.get("title"),
+                ],
+            )
+        )
+        text = note.lower()
+        if "retrograde" not in text and "station" not in text:
+            continue
+        body = event.get("transit_body") or event.get("title") or "Planet"
+        bucket = buckets.setdefault(body, {"start": None, "end": None, "stations": [], "notes": "", "body": body})
+        date = event.get("date") or "TBC"
+        summary = _sanitize_bullet_artifacts(event.get("user_friendly_summary") or event.get("raw_note") or "")
+        if "retrograde" in text:
+            bucket["start"] = bucket["start"] or date
+            bucket["end"] = date
+            if summary:
+                bucket["notes"] = summary
+        if "station" in text:
+            if "retrograde" in text:
+                label = "Station retrograde"
+            elif "direct" in text:
+                label = "Station direct"
+            else:
+                label = "Station"
+            bucket["stations"].append({"date": date, "label": label})
+            if "direct" in text:
+                bucket["end"] = date
+            if "retrograde" in text and not bucket["start"]:
+                bucket["start"] = date
+    windows = [bucket for bucket in buckets.values() if bucket["start"] or bucket["stations"]]
+    return sorted(windows, key=lambda item: item.get("start") or "")
+
+
 def _format_day_callouts(days: List[Dict[str, Any]], top_n: int) -> List[str]:
     sliced = sorted(days, key=lambda ev: -ev.get("score", 0))[:top_n]
     formatted = []
     for ev in sliced:
         label = _format_transit_sentence(ev)
-        formatted.append(label)
+        clean = _sanitize_bullet_artifacts(label)
+        if clean:
+            formatted.append(clean)
     return formatted
 
 
