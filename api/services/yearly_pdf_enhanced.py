@@ -89,6 +89,56 @@ def _sanitize_bullet_artifacts(text: str) -> str:
     cleaned = re.sub(r"^[\s•\-*]+", "", cleaned)
     return cleaned.strip()
 
+
+def _strip_markdown(text: str) -> str:
+    """Remove markdown syntax and convert to plain text for PDF rendering.
+    
+    Markdown → Plain Text conversions:
+    - ### Heading → Heading (remove ### and ####)
+    - **bold** → bold (remove **)
+    - *italic* → italic (remove *)
+    - Numbered lists (1. item) → • item
+    - Bullet lists (- item or * item) → • item
+    - Remove extra blank lines
+    """
+    if not text:
+        return ""
+    
+    lines = text.split('\n')
+    cleaned_lines = []
+    
+    for line in lines:
+        line = line.strip()
+        
+        # Skip empty lines
+        if not line:
+            continue
+        
+        # Convert markdown headings (###, ####, etc.) to plain text
+        # Remove heading markers but keep the text
+        line = re.sub(r'^#{1,6}\s+', '', line)
+        
+        # Convert **bold** to plain text (remove **)
+        line = re.sub(r'\*\*([^*]+)\*\*', r'\1', line)
+        
+        # Convert *italic* to plain text (remove single *)
+        line = re.sub(r'\*([^*]+)\*', r'\1', line)
+        
+        # Convert numbered lists (1. item, 2. item) to bullets
+        line = re.sub(r'^\d+\.\s+', '• ', line)
+        
+        # Convert markdown bullets (- item or * item) to standard bullets
+        line = re.sub(r'^[-*]\s+', '• ', line)
+        
+        # Clean up multiple spaces
+        line = re.sub(r'\s+', ' ', line).strip()
+        
+        if line:
+            cleaned_lines.append(line)
+    
+    # Join with single space instead of newlines for paragraph text
+    return ' '.join(cleaned_lines)
+
 MONTH_NAME_ORDER = (
     "December 2024",
     "January 2025",
@@ -179,7 +229,9 @@ class ContentValidator:
     def clean_text(self, text: str, *, month_label: Optional[str] = None) -> str:
         if not text:
             return ""
-        cleaned = text.strip()
+        # First, strip markdown syntax
+        cleaned = _strip_markdown(text)
+        cleaned = cleaned.strip()
         while "  " in cleaned:
             cleaned = cleaned.replace("  ", " ")
         lower = cleaned.lower()
@@ -218,7 +270,9 @@ class ContentValidator:
     def sanitize_actions(self, actions: List[str]) -> List[str]:
         sanitized: List[str] = []
         for action in actions[:7]:
-            clean = action.strip()
+            # Strip markdown first
+            clean = _strip_markdown(action)
+            clean = clean.strip()
             if clean.endswith("..."):
                 clean = clean.rstrip(".")
             if len(clean) > 140:
@@ -1146,6 +1200,8 @@ def _build_eclipse_bullets(eclipse: Dict[str, Any]) -> List[str]:
     if sign:
         bullets.append(f"Lean into {sign} traits — do it with that zodiac tone.")
     guidance = eclipse.get("guidance", "")
+    # Strip markdown from guidance before processing
+    guidance = _strip_markdown(guidance)
     do_line, dont_line = _split_do_dont(guidance)
     if do_line:
         bullets.append(f"Do: {_sanitize_bullet_artifacts(do_line)}")
