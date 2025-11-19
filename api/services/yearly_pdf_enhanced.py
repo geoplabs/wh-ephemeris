@@ -115,8 +115,9 @@ def _strip_markdown(text: str) -> str:
             continue
         
         # Convert markdown headings (###, ####, etc.) to plain text
-        # Remove heading markers but keep the text
-        line = re.sub(r'^#{1,6}\s+', '', line)
+        # Remove heading markers both at start and anywhere in the line
+        line = re.sub(r'^#{1,6}\s+', '', line)  # At start of line
+        line = re.sub(r'\s*#{1,6}\s+', ' ', line)  # Anywhere else
         
         # Convert **bold** to plain text (remove **)
         line = re.sub(r'\*\*([^*]+)\*\*', r'\1', line)
