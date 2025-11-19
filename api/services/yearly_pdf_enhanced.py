@@ -552,6 +552,8 @@ def _render_year_at_glance(
         pdf.drawString(PAGE_LAYOUT["margin"], y, summary)
         y -= 0.4 * cm
         guidance = event.get("summary", "")
+        # Strip markdown from event guidance
+        guidance = _strip_markdown(guidance)
         y = _draw_wrapped(pdf, guidance, PAGE_LAYOUT["margin"], y, width - 2 * PAGE_LAYOUT["margin"], 10, 14)
         y -= 0.2 * cm
 
@@ -1176,13 +1178,19 @@ def _draw_eclipse_card(pdf: canvas.Canvas, width: float, y: float, eclipse: Dict
     pdf.roundRect(PAGE_LAYOUT["margin"], y - 3.6 * cm, width - 2 * PAGE_LAYOUT["margin"], 3.4 * cm, 0.2 * cm, fill=True, stroke=False)
     pdf.setFillColorRGB(*BRAND_COLORS["crimson"])
     pdf.setFont("Helvetica-Bold", 12)
-    line = f"{eclipse.get('date')} • {eclipse.get('kind')}"
-    if eclipse.get("sign"):
-        line += f" in {eclipse['sign']}"
+    # Strip markdown from all eclipse fields
+    kind = _strip_markdown(eclipse.get('kind', ''))
+    date = eclipse.get('date', '')
+    line = f"{date} • {kind}"
+    sign = eclipse.get("sign")
+    if sign:
+        line += f" in {sign}"
     pdf.drawString(PAGE_LAYOUT["margin"] + 0.4 * cm, y - 0.6 * cm, line)
     pdf.setFont("Helvetica", 10)
     house = eclipse.get("house") or eclipse.get("life_area")
     if house:
+        # Strip markdown from house/life_area
+        house = _strip_markdown(house)
         pdf.drawString(PAGE_LAYOUT["margin"] + 0.4 * cm, y - 1.2 * cm, f"Life Area: {house}")
     pdf.setFillColorRGB(*BRAND_COLORS["text_dark"])
     cursor = y - 1.9 * cm
@@ -1195,9 +1203,13 @@ def _build_eclipse_bullets(eclipse: Dict[str, Any]) -> List[str]:
     bullets: List[str] = []
     house = eclipse.get("house") or eclipse.get("life_area")
     if house:
+        # Strip markdown from house/life_area
+        house = _strip_markdown(house)
         bullets.append(f"Tend to {house.lower()} shifts.")
     sign = eclipse.get("sign")
     if sign:
+        # Strip markdown from sign
+        sign = _strip_markdown(sign)
         bullets.append(f"Lean into {sign} traits — do it with that zodiac tone.")
     guidance = eclipse.get("guidance", "")
     # Strip markdown from guidance before processing
@@ -1218,6 +1230,8 @@ def _render_key_insight(pdf: canvas.Canvas, width: float, y: float, month: Dict[
         overview = month.get("overview", "")
         sentences = re.split(r"(?<=[.!?]) +", overview)
         insight = sentences[0].strip() if sentences else "Use this month to anchor your next bold step."
+    # Strip markdown from insight
+    insight = _strip_markdown(insight)
     pdf.setFillColorRGB(*BRAND_COLORS["crimson_light"])
     pdf.roundRect(PAGE_LAYOUT["margin"], y - 1.6 * cm, width - 2 * PAGE_LAYOUT["margin"], 1.4 * cm, 0.2 * cm, fill=True, stroke=False)
     pdf.setFillColorRGB(*BRAND_COLORS["crimson_dark"])
@@ -1251,8 +1265,12 @@ def _render_key_dates_table(
             break
         transit = f"{ev.get('transit_body')} {ev.get('aspect')} {ev.get('natal_body') or ''}".strip()
         theme = ev.get("life_area") or _infer_life_area(ev) or "Focus"
+        # Strip markdown from theme
+        theme = _strip_markdown(theme)
         score = f"{ev.get('score', 0):.2f}"
         guidance = ev.get("user_friendly_summary") or ev.get("raw_note", "")
+        # Strip markdown from guidance
+        guidance = _strip_markdown(guidance)
         row = [ev.get("date", ""), transit, theme, score, guidance[:90]]
         _draw_table_row(pdf, row, PAGE_LAYOUT["margin"], y, col_widths)
         y -= 0.5 * cm
@@ -1472,9 +1490,11 @@ def _derive_month_themes(month: Dict[str, Any]) -> List[str]:
 
 def _format_top_event_line(event: Dict[str, Any]) -> str:
     date = event.get("date") or "Date TBC"
-    title = event.get("title") or "Transit"
+    title = _strip_markdown(event.get("title") or "Transit")
     theme = event.get("tags") or []
-    theme_str = " • ".join(theme[:2]) if theme else "Impact"
+    # Strip markdown from theme tags
+    theme_clean = [_strip_markdown(str(t)) for t in theme[:2]] if theme else []
+    theme_str = " • ".join(theme_clean) if theme_clean else "Impact"
     score = event.get("score")
     score_str = f" (Score: {score:.2f})" if isinstance(score, (int, float)) else ""
     return f"{date} • {title} • {theme_str}{score_str}"
