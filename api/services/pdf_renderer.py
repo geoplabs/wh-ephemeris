@@ -18,8 +18,176 @@ else:  # pragma: no cover - default to ReportLab
     HAVE_WEASY = False
 
 
+def _render_story_yearly(out_path: Path, payload: Dict[str, Any]) -> None:
+    """Render an interpreted yearly report using ReportLab fallback."""
+
+    from reportlab.lib.pagesizes import A4  # type: ignore
+    from reportlab.pdfgen import canvas  # type: ignore
+    from reportlab.lib.units import cm  # type: ignore
+    import textwrap
+
+    report = payload.get("report") or {}
+    meta = report.get("meta") or {}
+    year = meta.get("year") or meta.get("target_year") or "Yearly Forecast"
+    generated_at = payload.get("generated_at")
+
+    def draw_wrapped(cvs: Any, text: str, x: float, y: float, width: float, leading: float = 12) -> float:
+        cvs.setFont("Helvetica", 10)
+        lines = []
+        for paragraph in filter(None, (text or "").split("\n")):
+            lines.extend(textwrap.wrap(paragraph, width=int(width / 5)))
+            lines.append("")
+        for line in lines:
+            cvs.drawString(x, y, line)
+            y -= leading
+        return y
+
+    c = canvas.Canvas(str(out_path), pagesize=A4)
+    W, H = A4
+    c.setTitle(f"{year} Story Report")
+
+    # Cover / header
+    c.setFont("Helvetica-Bold", 18)
+    c.drawString(2 * cm, H - 2 * cm, f"{year} Story-Level Forecast")
+    profile = meta.get("profile_name") or meta.get("user_id")
+    if profile:
+        c.setFont("Helvetica", 12)
+        c.drawString(2 * cm, H - 3 * cm, f"For: {profile}")
+    if generated_at:
+        c.setFont("Helvetica", 10)
+        c.drawString(2 * cm, H - 3.8 * cm, f"Generated: {generated_at}")
+
+    c.showPage()
+
+    # Year at a glance
+    yag = report.get("year_at_glance") or {}
+    c.setFont("Helvetica-Bold", 16)
+    c.drawString(2 * cm, H - 2 * cm, "Year at a Glance")
+    y = H - 3 * cm
+    commentary = yag.get("commentary") or "Stay curious and steady throughout the year."
+    y = draw_wrapped(c, commentary, 2 * cm, y, W - 4 * cm)
+    c.setFont("Helvetica-Bold", 12)
+    c.drawString(2 * cm, y, "Top Events")
+    y -= 0.4 * cm
+    c.setFont("Helvetica", 10)
+    for ev in yag.get("top_events", [])[:6]:
+        summary = ev.get("summary") or "Key turning point"
+        c.drawString(2 * cm, y, f"- {ev.get('date') or ''} {ev.get('title')}: {summary}")
+        y -= 0.45 * cm
+        if y < 3 * cm:
+            c.showPage()
+            y = H - 2 * cm
+
+    # Eclipses & Lunations
+    c.showPage()
+    c.setFont("Helvetica-Bold", 16)
+    c.drawString(2 * cm, H - 2 * cm, "Eclipses & Lunations")
+    y = H - 3 * cm
+    for ec in report.get("eclipses_and_lunations", [])[:10]:
+        c.setFont("Helvetica-Bold", 11)
+        c.drawString(2 * cm, y, f"{ec.get('date')}: {ec.get('kind')}")
+        y -= 0.35 * cm
+        y = draw_wrapped(c, ec.get("guidance") or "Reflect and stay grounded.", 2 * cm, y, W - 4 * cm)
+        y -= 0.2 * cm
+        if y < 3 * cm:
+            c.showPage()
+            y = H - 2 * cm
+
+    # Monthly sections
+    for month in report.get("months", [])[:12]:
+        c.showPage()
+        c.setFont("Helvetica-Bold", 16)
+        c.drawString(2 * cm, H - 2 * cm, str(month.get("month")))
+        y = H - 3 * cm
+
+        y = draw_wrapped(c, "Overview: " + (month.get("overview") or ""), 2 * cm, y, W - 4 * cm)
+        y = draw_wrapped(c, "Career & Finance: " + (month.get("career_and_finance") or ""), 2 * cm, y, W - 4 * cm)
+        y = draw_wrapped(c, "Relationships & Family: " + (month.get("relationships_and_family") or ""), 2 * cm, y, W - 4 * cm)
+        y = draw_wrapped(c, "Health & Energy: " + (month.get("health_and_energy") or ""), 2 * cm, y, W - 4 * cm)
+
+        c.setFont("Helvetica-Bold", 12)
+        c.drawString(2 * cm, y, "Planner Actions")
+        y -= 0.4 * cm
+        c.setFont("Helvetica", 10)
+        for action in month.get("planner_actions", [])[:6]:
+            c.drawString(2 * cm, y, f"• {action}")
+            y -= 0.35 * cm
+            if y < 3 * cm:
+                c.showPage()
+                y = H - 2 * cm
+                c.setFont("Helvetica", 10)
+
+        c.setFont("Helvetica-Bold", 12)
+        c.drawString(2 * cm, y, "High Score Days")
+        y -= 0.4 * cm
+        c.setFont("Helvetica", 10)
+        for ev in month.get("high_score_days", [])[:6]:
+            c.drawString(2 * cm, y, f"- {ev.get('date')}: {ev.get('transit_body')} to {ev.get('natal_body')} ({ev.get('aspect')})")
+            y -= 0.35 * cm
+            if y < 3 * cm:
+                c.showPage()
+                y = H - 2 * cm
+                c.setFont("Helvetica", 10)
+
+        c.setFont("Helvetica-Bold", 12)
+        c.drawString(2 * cm, y, "Caution Days")
+        y -= 0.4 * cm
+        c.setFont("Helvetica", 10)
+        for ev in month.get("caution_days", [])[:6]:
+            c.drawString(2 * cm, y, f"- {ev.get('date')}: {ev.get('transit_body')} to {ev.get('natal_body')} ({ev.get('aspect')})")
+            y -= 0.35 * cm
+            if y < 3 * cm:
+                c.showPage()
+                y = H - 2 * cm
+                c.setFont("Helvetica", 10)
+
+    # Appendices
+    c.showPage()
+    c.setFont("Helvetica-Bold", 16)
+    c.drawString(2 * cm, H - 2 * cm, "Appendix A: All Events")
+    y = H - 3 * cm
+    c.setFont("Helvetica", 10)
+    for ev in report.get("appendix_all_events", [])[:60]:
+        text = f"{ev.get('date')}: {ev.get('transit_body')} to {ev.get('natal_body')} ({ev.get('aspect')}) {ev.get('user_friendly_summary') or ''}"
+        y = draw_wrapped(c, text, 2 * cm, y, W - 4 * cm, leading=11)
+        if y < 3 * cm:
+            c.showPage()
+            y = H - 2 * cm
+
+    c.showPage()
+    c.setFont("Helvetica-Bold", 16)
+    c.drawString(2 * cm, H - 2 * cm, "Appendix B: Glossary")
+    y = H - 3 * cm
+    c.setFont("Helvetica", 10)
+    for term, definition in (report.get("glossary") or {}).items():
+        y = draw_wrapped(c, f"{term}: {definition}", 2 * cm, y, W - 4 * cm, leading=11)
+        if y < 3 * cm:
+            c.showPage()
+            y = H - 2 * cm
+
+    c.showPage()
+    c.setFont("Helvetica-Bold", 16)
+    c.drawString(2 * cm, H - 2 * cm, "Appendix C: Interpretation Index")
+    y = H - 3 * cm
+    c.setFont("Helvetica", 10)
+    for term, definition in (report.get("interpretation_index") or {}).items():
+        y = draw_wrapped(c, f"{term}: {definition}", 2 * cm, y, W - 4 * cm, leading=11)
+        if y < 3 * cm:
+            c.showPage()
+            y = H - 2 * cm
+
+    c.showPage()
+    c.save()
+
+
 def _render_reportlab(out_path: Path, payload: Dict[str, Any]) -> None:
     """Render a minimal PDF using ReportLab."""
+
+    # If the payload already contains a structured report (story-level yearly),
+    # render a more narrative PDF instead of the natal snapshot fallback.
+    if "report" in payload:
+        _render_story_yearly(out_path, payload)
+        return
 
     from reportlab.lib.pagesizes import A4  # type: ignore
     from reportlab.pdfgen import canvas  # type: ignore

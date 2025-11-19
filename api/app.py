@@ -20,6 +20,7 @@ from .routers import remedies as remedies_router
 from .routers import interpret as interpret_router
 from .routers import natal as natal_router
 from .routers import yearly as yearly_router
+from .routers import yearly_forecast_report as yearly_report_router
 from .routers import monthly as monthly_router
 from .routers import panchang as panchang_router
 from .jobs.render_report import ensure_worker_started
@@ -81,6 +82,7 @@ app.include_router(remedies_router.router)
 app.include_router(interpret_router.router)
 app.include_router(natal_router.router)
 app.include_router(yearly_router.router)
+app.include_router(yearly_report_router.router)
 app.include_router(monthly_router.router)
 app.include_router(panchang_router.router)
 
