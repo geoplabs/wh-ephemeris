@@ -15,6 +15,8 @@ from .forecast_builders import yearly_payload
 from .forecast_reports import _ensure_storage_path, _owner_segment, _report_storage_key, _resolve_download_url
 from .pdf_renderer import render_western_natal_pdf
 from .yearly_interpreter import interpret_yearly_forecast
+from .yearly_qa_editor import qa_edit_yearly_report
+from .yearly_pdf_enhanced import render_enhanced_yearly_pdf
 from ..schemas.yearly_forecast_report import (
     YearlyForecastReport,
     YearlyForecastReportResponse,
@@ -58,8 +60,20 @@ def _custom_upload(local_path: Path, storage_key: str, s3_options: Dict[str, Any
 
 
 async def build_interpreted_yearly_report(req: YearlyForecastRequest) -> YearlyForecastReport:
+    """Build interpreted yearly report with QA editing applied."""
+    # Get raw forecast data
     raw = await compute_yearly_forecast(req.chart_input.model_dump(), req.options.model_dump())
-    return await interpret_yearly_forecast(raw)
+    
+    # Interpret with LLM
+    report = await interpret_yearly_forecast(raw)
+    
+    # Apply QA editing to polish narratives
+    logger.info("Applying QA editor to yearly forecast narratives")
+    edited_report_dict = qa_edit_yearly_report(report.model_dump())
+    
+    # Convert back to Pydantic model
+    from ..schemas.yearly_forecast_report import YearlyForecastReport as ReportModel
+    return ReportModel(**edited_report_dict)
 
 
 def _resolve_storage(report_id: str, chart_input: Dict[str, Any], options: Dict[str, Any]) -> tuple[Path, str]:
@@ -70,13 +84,20 @@ def _resolve_storage(report_id: str, chart_input: Dict[str, Any], options: Dict[
 async def render_yearly_report_pdf(
     report: YearlyForecastReport, chart_input: Dict[str, Any], options: Dict[str, Any]
 ) -> str:
-    """Render the interpreted report to PDF and return a download URL."""
+    """Render the interpreted report to PDF with enhanced formatting and return a download URL."""
 
     report_id = f"yrf_story_{options.get('year')}_{uuid.uuid4().hex[:8]}"
     out_path, default_key = _resolve_storage(report_id, chart_input, options)
     context = {"report": report.model_dump(), "generated_at": datetime.utcnow().isoformat()}
 
-    render_western_natal_pdf(context, str(out_path), template_name="yearly_v2.html.j2")
+    # Use enhanced PDF renderer for better readability
+    logger.info("Rendering enhanced yearly PDF with improved formatting")
+    try:
+        render_enhanced_yearly_pdf(context, str(out_path))
+    except Exception as e:
+        # Fallback to basic renderer if enhanced fails
+        logger.warning(f"Enhanced PDF rendering failed, falling back to basic: {e}")
+        render_western_natal_pdf(context, str(out_path), template_name="yearly_v2.html.j2")
 
     outputs = options.get("outputs") or {}
     s3_options = outputs.get("s3") if isinstance(outputs, dict) else {}
@@ -93,7 +114,7 @@ async def render_yearly_report_pdf(
         except Exception:
             logger.debug("noop_replace_after_render", exc_info=True)
 
-    base_url = options.get("base_url") if isinstance(outputs, dict) else None
+    base_url = options.get("base_url") if isinstance(options, dict) else None
     if uploaded and s3_options.get("public") and s3_options.get("bucket"):
         bucket = s3_options.get("bucket")
         return f"https://{bucket}.s3.amazonaws.com/{storage_key}"
