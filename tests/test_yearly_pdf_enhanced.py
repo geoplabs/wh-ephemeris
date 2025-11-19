@@ -4,7 +4,11 @@ import pytest
 
 pytest.importorskip("reportlab")
 
-from api.services.yearly_pdf_enhanced import ContentValidator, render_enhanced_yearly_pdf
+from api.services.yearly_pdf_enhanced import (
+    ContentValidator,
+    _format_day_callouts,
+    render_enhanced_yearly_pdf,
+)
 
 
 def test_content_validator_blocks_wrong_year():
@@ -18,6 +22,14 @@ def test_content_validator_blocks_wrong_year():
         assert "wrong year" in str(exc)
     else:
         raise AssertionError("Expected ValueError for wrong year reference")
+
+
+def test_content_validator_strips_technical_notation():
+    validator = ContentValidator(target_year=2025)
+    text = "Applying opposition at 0.63° orb [angle] opens a doorway."
+    cleaned = validator.clean_text(text, month_label="January 2025")
+    assert "orb" not in cleaned.lower()
+    assert "[angle]" not in cleaned
 
 
 def test_render_enhanced_yearly_pdf_generates_file(tmp_path):
@@ -114,3 +126,27 @@ def test_render_enhanced_yearly_pdf_generates_file(tmp_path):
     pdf_path = render_enhanced_yearly_pdf(payload, str(out))
     assert Path(pdf_path).exists()
     assert Path(pdf_path).read_bytes().startswith(b"%PDF")
+
+
+def test_format_day_callouts_filters_lonely_bullets():
+    days = [
+        {
+            "date": "2025-01-02",
+            "transit_body": "Sun",
+            "natal_body": "Moon",
+            "aspect": "trine",
+            "score": 0.9,
+            "user_friendly_summary": "• Bold momentum",
+        },
+        {
+            "date": "2025-01-03",
+            "transit_body": "Venus",
+            "natal_body": "Mars",
+            "aspect": "square",
+            "score": 0.4,
+            "user_friendly_summary": "•",
+        },
+    ]
+    formatted = _format_day_callouts(days, top_n=2)
+    assert all("•" not in entry.lstrip()[:1] for entry in formatted)
+    assert formatted
