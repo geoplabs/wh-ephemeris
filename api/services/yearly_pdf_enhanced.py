@@ -116,8 +116,8 @@ def _strip_markdown(text: str) -> str:
         
         # Convert markdown headings (###, ####, etc.) to plain text
         # Remove heading markers both at start and anywhere in the line
-        line = re.sub(r'^#{1,6}\s+', '', line)  # At start of line
-        line = re.sub(r'\s*#{1,6}\s+', ' ', line)  # Anywhere else
+        line = re.sub(r'^#{1,6}\s*', '', line)  # At start (space optional)
+        line = re.sub(r'\s*#{1,6}\s*', ' ', line)  # Anywhere else (spaces optional)
         
         # Convert **bold** to plain text (remove **)
         line = re.sub(r'\*\*([^*]+)\*\*', r'\1', line)
@@ -1401,7 +1401,10 @@ def _render_energy_callouts(
 # --------------------------------------------------------------------------------------
 
 def _prepare_report(report: Dict[str, Any], validator: ContentValidator) -> Dict[str, Any]:
+    """Clean ALL text fields in the report to remove markdown and apply guardrails."""
     cleaned = dict(report)
+    
+    # Clean monthly sections
     cleaned["months"] = [
         {
             **month,
@@ -1411,11 +1414,54 @@ def _prepare_report(report: Dict[str, Any], validator: ContentValidator) -> Dict
                 month.get("relationships_and_family", ""), month_label=month.get("month")
             ),
             "health_and_energy": validator.clean_text(month.get("health_and_energy", ""), month_label=month.get("month")),
+            "key_insight": validator.clean_text(month.get("key_insight", ""), month_label=month.get("month")),
+            "planner_actions": validator.sanitize_actions(month.get("planner_actions", [])),
         }
         for month in report.get("months", [])
     ]
+    
+    # Clean year at a glance
     yag = report.get("year_at_glance") or {}
-    cleaned["year_at_glance"] = {**yag, "commentary": validator.clean_text(yag.get("commentary", ""))}
+    cleaned_top_events = []
+    for event in yag.get("top_events", []):
+        cleaned_top_events.append({
+            **event,
+            "title": _strip_markdown(event.get("title", "")),
+            "summary": _strip_markdown(event.get("summary", "")),
+            "tags": [_strip_markdown(str(tag)) for tag in (event.get("tags", []) or [])]
+        })
+    
+    cleaned["year_at_glance"] = {
+        **yag, 
+        "commentary": validator.clean_text(yag.get("commentary", "")),
+        "top_events": cleaned_top_events
+    }
+    
+    # Clean eclipses and lunations - THIS WAS MISSING!
+    cleaned_eclipses = []
+    for eclipse in report.get("eclipses_and_lunations", []):
+        cleaned_eclipses.append({
+            **eclipse,
+            "kind": _strip_markdown(eclipse.get("kind", "")),
+            "sign": _strip_markdown(eclipse.get("sign", "")),
+            "house": _strip_markdown(eclipse.get("house", "")),
+            "life_area": _strip_markdown(eclipse.get("life_area", "")),
+            "guidance": _strip_markdown(eclipse.get("guidance", ""))
+        })
+    cleaned["eclipses_and_lunations"] = cleaned_eclipses
+    
+    # Clean appendix events
+    if "appendix_all_events" in report:
+        cleaned_events = []
+        for event in report.get("appendix_all_events", []):
+            cleaned_events.append({
+                **event,
+                "user_friendly_summary": _strip_markdown(event.get("user_friendly_summary", "")),
+                "raw_note": _strip_markdown(event.get("raw_note", "")),
+                "life_area": _strip_markdown(event.get("life_area", ""))
+            })
+        cleaned["appendix_all_events"] = cleaned_events
+    
     return cleaned
 
 
