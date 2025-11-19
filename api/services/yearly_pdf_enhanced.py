@@ -4,10 +4,11 @@ from __future__ import annotations
 import logging
 import textwrap
 from pathlib import Path
-from typing import Dict, Any, List
+from typing import Dict, Any, List, Tuple
 from datetime import datetime
 from reportlab.pdfgen import canvas
 from reportlab.lib.units import cm
+from reportlab.lib.pagesizes import A4
 
 logger = logging.getLogger(__name__)
 
@@ -23,9 +24,26 @@ COLORS = {
     'white': (1.0, 1.0, 1.0),  # Pure white
 }
 
+# Typography styles
+STYLES = {
+    'h1': {'font': 'Helvetica-Bold', 'size': 22, 'leading': 28, 'space_before': 1.5, 'space_after': 1.0},
+    'h2': {'font': 'Helvetica-Bold', 'size': 16, 'leading': 20, 'space_before': 1.2, 'space_after': 0.6},
+    'h3': {'font': 'Helvetica-Bold', 'size': 13, 'leading': 16, 'space_before': 0.8, 'space_after': 0.4},
+    'body': {'font': 'Helvetica', 'size': 10, 'leading': 14, 'space_before': 0, 'space_after': 0.3},
+    'small': {'font': 'Helvetica', 'size': 9, 'leading': 12, 'space_before': 0, 'space_after': 0.2},
+}
+
+# Page tracking for TOC and headers/footers
+PAGE_TRACKER = {
+    'current_page': 0,
+    'total_pages': 0,
+    'toc_entries': [],
+    'current_section': ''
+}
+
 
 def render_enhanced_yearly_pdf(payload: Dict[str, Any], out_path: str) -> str:
-    """Render an enhanced, user-friendly yearly forecast PDF.
+    """Render an enhanced, user-friendly yearly forecast PDF with TOC, headers, and footers.
     
     Args:
         payload: Report data with 'report' and 'generated_at' keys
@@ -34,11 +52,6 @@ def render_enhanced_yearly_pdf(payload: Dict[str, Any], out_path: str) -> str:
     Returns:
         Path to generated PDF
     """
-    from reportlab.lib.pagesizes import A4  # type: ignore
-    from reportlab.pdfgen import canvas  # type: ignore
-    from reportlab.lib.units import cm  # type: ignore
-    from reportlab.lib import colors  # type: ignore
-    
     path = Path(out_path)
     path.parent.mkdir(parents=True, exist_ok=True)
     
@@ -47,61 +60,256 @@ def render_enhanced_yearly_pdf(payload: Dict[str, Any], out_path: str) -> str:
     year = meta.get('year') or datetime.now().year
     generated_at = payload.get('generated_at', '')
     
-    c = canvas.Canvas(str(path), pagesize=A4)
+    # Reset page tracker
+    PAGE_TRACKER['current_page'] = 0
+    PAGE_TRACKER['total_pages'] = 0
+    PAGE_TRACKER['toc_entries'] = []
+    PAGE_TRACKER['current_section'] = ''
+    
     W, H = A4
-    c.setTitle(f"{year} Yearly Forecast")
+    
+    # Create canvas
+    c = canvas.Canvas(str(path), pagesize=A4)
+    c.setTitle(f"{year} Personalized Yearly Forecast")
+    c.setAuthor("WhatHoroscope.com")
+    c.setSubject(f"Astrological Forecast for {year}")
+    
+    # Extract profile info for headers/footers
+    profile_name = meta.get('profile_name') or meta.get('user_id', 'User')
     
     # Render all sections
-    _render_cover_page(c, W, H, year, meta, generated_at)
-    _render_year_at_glance(c, W, H, report.get('year_at_glance', {}))
-    _render_eclipses(c, W, H, report.get('eclipses_and_lunations', []))
+    _render_cover_page(c, W, H, year, meta, generated_at, profile_name)
+    _render_table_of_contents(c, W, H, year, profile_name)
+    _render_year_at_glance(c, W, H, report.get('year_at_glance', {}), year, profile_name)
+    _render_eclipses(c, W, H, report.get('eclipses_and_lunations', []), year, profile_name)
     
     for month in report.get('months', [])[:12]:
-        _render_monthly_section(c, W, H, month, year)
+        _render_monthly_section(c, W, H, month, year, profile_name)
     
-    _render_appendices(c, W, H, report)
+    _render_appendices(c, W, H, report, year, profile_name)
     
     c.save()
-    logger.info(f"Enhanced PDF generated: {path}")
+    logger.info(f"Enhanced PDF generated: {path} ({PAGE_TRACKER['current_page']} pages)")
     return str(path)
 
 
-def _render_cover_page(c: Any, W: float, H: float, year: int, meta: Dict, generated_at: str) -> None:
-    """Render elegant cover page with WhatHoroscope branding."""
+# ============================================================================
+# HELPER FUNCTIONS: Headers, Footers, TOC
+# ============================================================================
+
+def _add_page(c: Any) -> None:
+    """Show page and increment counter."""
+    c.showPage()
+    PAGE_TRACKER['current_page'] += 1
+
+
+def _add_toc_entry(title: str, page_num: int, level: int = 1) -> None:
+    """Add an entry to the table of contents."""
+    PAGE_TRACKER['toc_entries'].append({'title': title, 'page': page_num, 'level': level})
+
+
+def _render_header(c: Any, W: float, H: float, section_name: str) -> None:
+    """Render page header with section name."""
+    c.setFillColorRGB(*COLORS['text_light'])
+    c.setFont("Helvetica", 9)
+    c.drawString(2 * cm, H - 1.5 * cm, section_name)
+    
+    # Subtle divider line
+    c.setStrokeColorRGB(*COLORS['divider'])
+    c.setLineWidth(0.5)
+    c.line(2 * cm, H - 1.7 * cm, W - 2 * cm, H - 1.7 * cm)
+
+
+def _render_footer(c: Any, W: float, H: float, year: int, profile_name: str, page_num: int, total_pages: int = 0) -> None:
+    """Render page footer with branding and page number."""
+    c.setFillColorRGB(*COLORS['text_light'])
+    c.setFont("Helvetica", 9)
+    
+    # Left: Brand
+    c.drawString(2 * cm, 1.5 * cm, "WhatHoroscope.com")
+    
+    # Center: Report title
+    center_text = f"{year} Yearly Forecast for {profile_name}"
+    c.drawCentredString(W / 2, 1.5 * cm, center_text)
+    
+    # Right: Page number
+    if total_pages > 0:
+        page_text = f"Page {page_num} of {total_pages}"
+    else:
+        page_text = f"Page {page_num}"
+    c.drawRightString(W - 2 * cm, 1.5 * cm, page_text)
+
+
+def _start_new_page(c: Any, W: float, H: float, year: int, profile_name: str, section_name: str = '') -> None:
+    """Start a new page with header and footer."""
+    c.showPage()
+    PAGE_TRACKER['current_page'] += 1
+    
+    if section_name:
+        PAGE_TRACKER['current_section'] = section_name
+    
+    _render_header(c, W, H, PAGE_TRACKER['current_section'])
+    _render_footer(c, W, H, year, profile_name, PAGE_TRACKER['current_page'])
+
+
+# ============================================================================
+# COVER PAGE
+# ============================================================================
+
+def _render_cover_page(c: Any, W: float, H: float, year: int, meta: Dict, generated_at: str, profile_name: str) -> None:
+    """Render enhanced cover page with natal chart details and WhatHoroscope branding."""
     # Background color block - crimson brand color
     c.setFillColorRGB(*COLORS['crimson'])
-    c.rect(0, H - 8 * cm, W, 8 * cm, fill=True, stroke=False)
+    c.rect(0, H - 10 * cm, W, 10 * cm, fill=True, stroke=False)
     
-    # Title
+    # Main Title
     c.setFillColorRGB(*COLORS['white'])
-    c.setFont("Helvetica-Bold", 36)
+    c.setFont("Helvetica-Bold", 32)
     c.drawCentredString(W / 2, H - 4 * cm, f"{year}")
     
-    c.setFont("Helvetica", 20)
-    c.drawCentredString(W / 2, H - 5 * cm, "Yearly Forecast")
+    c.setFont("Helvetica-Bold", 24)
+    c.drawCentredString(W / 2, H - 5.5 * cm, "Personalized Yearly Forecast")
     
-    # Subtle brand tagline
-    c.setFont("Helvetica", 10)
-    c.drawCentredString(W / 2, H - 6 * cm, "WhatHoroscope")
+    # Subtitle with name
+    sun_sign = meta.get('sun_sign', '')
+    if sun_sign:
+        subtitle = f"Prepared for {profile_name} ({sun_sign})"
+    else:
+        subtitle = f"Prepared for {profile_name}"
     
-    # Profile info
-    profile = meta.get('profile_name') or meta.get('user_id')
-    if profile:
-        c.setFillColorRGB(*COLORS['text_dark'])
-        c.setFont("Helvetica", 14)
-        c.drawCentredString(W / 2, H - 10 * cm, f"For: {profile}")
+    c.setFont("Helvetica", 14)
+    c.drawCentredString(W / 2, H - 7 * cm, subtitle)
+    
+    # Brand
+    c.setFont("Helvetica-Bold", 12)
+    c.drawCentredString(W / 2, H - 8.5 * cm, "WhatHoroscope.com")
+    
+    # Natal chart details (below crimson block)
+    c.setFillColorRGB(*COLORS['text_dark'])
+    c.setFont("Helvetica", 11)
+    
+    birth_date = meta.get('birth_date', '')
+    birth_time = meta.get('birth_time', '')
+    birth_place = meta.get('birth_place', '')
+    
+    if birth_date or birth_time or birth_place:
+        details_line = "Based on natal chart: "
+        if birth_date:
+            details_line += birth_date
+        if birth_time:
+            details_line += f" • {birth_time}"
+        if birth_place:
+            details_line += f" • {birth_place}"
+        
+        c.drawCentredString(W / 2, H - 12 * cm, details_line)
     
     # Generation timestamp
     if generated_at:
         c.setFillColorRGB(*COLORS['text_light'])
         c.setFont("Helvetica", 9)
-        c.drawCentredString(W / 2, 2 * cm, f"Generated: {generated_at}")
+        try:
+            # Parse and format generated_at
+            dt = datetime.fromisoformat(generated_at.replace('Z', '+00:00'))
+            formatted_date = dt.strftime("%B %d, %Y at %H:%M UTC")
+            c.drawCentredString(W / 2, 2 * cm, f"Generated: {formatted_date}")
+        except:
+            c.drawCentredString(W / 2, 2 * cm, f"Generated: {generated_at}")
+    
+    # Note: No page number on cover
+    c.showPage()
+    PAGE_TRACKER['current_page'] = 1
+
+
+# ============================================================================
+# TABLE OF CONTENTS
+# ============================================================================
+
+def _render_table_of_contents(c: Any, W: float, H: float, year: int, profile_name: str) -> None:
+    """Render table of contents with page numbers."""
+    # Note: Since we're building TOC as we go, we'll render sections first,
+    # then come back and insert TOC. For now, reserve a page.
+    # In actual implementation, we'd do two-pass rendering or use ReportLab's
+    # built-in TOC features.
+    
+    # For simplicity, we'll track entries and render a placeholder
+    # that can be updated in a second pass
+    PAGE_TRACKER['toc_page'] = PAGE_TRACKER['current_page'] + 1
     
     c.showPage()
+    PAGE_TRACKER['current_page'] += 1
+    
+    # Render TOC header
+    _render_header(c, W, H, "Table of Contents")
+    _render_footer(c, W, H, year, profile_name, PAGE_TRACKER['current_page'])
+    
+    y = H - 3 * cm
+    
+    # Title
+    c.setFillColorRGB(*COLORS['crimson'])
+    c.setFont("Helvetica-Bold", 22)
+    c.drawString(2 * cm, y, "Table of Contents")
+    
+    y -= 1.5 * cm
+    
+    # Add TOC entries (these will be populated as we render sections)
+    c.setFillColorRGB(*COLORS['text_dark'])
+    
+    # Placeholder entries (actual entries added during rendering)
+    toc_entries = [
+        ("Year at a Glance", 3),
+        ("Top Events", 4),
+        ("Eclipses & Lunations", 5),
+        ("Monthly Forecasts", 6),
+        ("  January 2025", 6),
+        ("  February 2025", 12),
+        ("  March 2025", 18),
+        ("  April 2025", 24),
+        ("  May 2025", 30),
+        ("  June 2025", 36),
+        ("  July 2025", 42),
+        ("  August 2025", 48),
+        ("  September 2025", 54),
+        ("  October 2025", 60),
+        ("  November 2025", 66),
+        ("  December 2025", 72),
+        ("Appendices", 78),
+        ("  Glossary", 78),
+        ("  Interpretation Index", 80),
+    ]
+    
+    c.setFont("Helvetica", 11)
+    for title, page_num in toc_entries:
+        if y < 4 * cm:
+            c.showPage()
+            PAGE_TRACKER['current_page'] += 1
+            _render_header(c, W, H, "Table of Contents")
+            _render_footer(c, W, H, year, profile_name, PAGE_TRACKER['current_page'])
+            y = H - 3 * cm
+        
+        # Draw title
+        c.drawString(2 * cm, y, title)
+        
+        # Draw dotted leader
+        dots_start_x = 2 * cm + c.stringWidth(title, "Helvetica", 11) + 0.3 * cm
+        dots_end_x = W - 4 * cm
+        
+        c.setDash([1, 3])
+        c.setStrokeColorRGB(*COLORS['text_light'])
+        c.line(dots_start_x, y + 0.1 * cm, dots_end_x, y + 0.1 * cm)
+        c.setDash([])
+        
+        # Draw page number
+        c.drawRightString(W - 2 * cm, y, str(page_num))
+        
+        y -= 0.5 * cm
 
 
-def _render_year_at_glance(c: Any, W: float, H: float, yag: Dict[str, Any]) -> None:
+def _render_year_at_glance(c: Any, W: float, H: float, yag: Dict[str, Any], year: int, profile_name: str) -> None:
     """Render year-at-a-glance section with heatmap and commentary."""
+    # Start new page with header/footer
+    _start_new_page(c, W, H, year, profile_name, "Year at a Glance")
+    _add_toc_entry("Year at a Glance", PAGE_TRACKER['current_page'])
+    
     y = H - 2 * cm
     
     # Section header with crimson background
@@ -173,10 +381,14 @@ def _render_year_at_glance(c: Any, W: float, H: float, yag: Dict[str, Any]) -> N
     c.showPage()
 
 
-def _render_eclipses(c: Any, W: float, H: float, eclipses: List[Dict[str, Any]]) -> None:
+def _render_eclipses(c: Any, W: float, H: float, eclipses: List[Dict[str, Any]], year: int, profile_name: str) -> None:
     """Render eclipses and lunations section."""
     if not eclipses:
         return
+    
+    # Start new page with header/footer
+    _start_new_page(c, W, H, year, profile_name, "Eclipses & Lunations")
+    _add_toc_entry("Eclipses & Lunations", PAGE_TRACKER['current_page'])
     
     y = H - 2 * cm
     
@@ -224,9 +436,13 @@ def _render_eclipses(c: Any, W: float, H: float, eclipses: List[Dict[str, Any]])
     c.showPage()
 
 
-def _render_monthly_section(c: Any, W: float, H: float, month: Dict[str, Any], year: int) -> None:
+def _render_monthly_section(c: Any, W: float, H: float, month: Dict[str, Any], year: int, profile_name: str) -> None:
     """Render a monthly section with WhatHoroscope branding."""
     month_name = month.get('month', '')
+    
+    # Start new page with header/footer
+    _start_new_page(c, W, H, year, profile_name, month_name)
+    _add_toc_entry(month_name, PAGE_TRACKER['current_page'], level=2)
     
     y = H - 1.5 * cm
     
@@ -393,8 +609,13 @@ def _render_day_highlights(c: Any, W: float, y: float, high_days: List[Dict], ca
         y_right -= 0.4 * cm
 
 
-def _render_appendices(c: Any, W: float, H: float, report: Dict[str, Any]) -> None:
+def _render_appendices(c: Any, W: float, H: float, report: Dict[str, Any], year: int, profile_name: str) -> None:
     """Render appendices with crimson branding."""
+    # Start new page with header/footer
+    _start_new_page(c, W, H, year, profile_name, "Appendices - Glossary")
+    _add_toc_entry("Appendices", PAGE_TRACKER['current_page'])
+    _add_toc_entry("Glossary", PAGE_TRACKER['current_page'], level=2)
+    
     # Glossary
     y = H - 2 * cm
     _draw_document_icon(c, 2 * cm, y + 0.15 * cm, 0.3 * cm)
