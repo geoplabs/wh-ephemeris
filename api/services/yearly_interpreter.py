@@ -279,7 +279,7 @@ async def interpret_yearly_forecast(raw_result: Dict[str, Any]) -> YearlyForecas
 
     if eclipses and eclipse_text:
         # distribute same guidance across eclipses
-        eclipses = [e.copy(update={"guidance": eclipse_text}) for e in eclipses]
+        eclipses = [e.model_copy(update={"guidance": eclipse_text}) for e in eclipses]
 
     return YearlyForecastReport(
         meta=raw_result.get("meta", {}),

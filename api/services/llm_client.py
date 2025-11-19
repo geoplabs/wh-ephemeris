@@ -32,7 +32,7 @@ async def generate_section_text(
     """Generate text for a report section using the OpenAI chat completions API."""
 
     client = _client()
-    model_name = model or os.getenv("OPENAI_MODEL", "gpt-4.1-mini")
+    model_name = model or os.getenv("OPENAI_MODEL", "gpt-4o-mini")
     try:
         result = await client.chat.completions.create(
             model=model_name,

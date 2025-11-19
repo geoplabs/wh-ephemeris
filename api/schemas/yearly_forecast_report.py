@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from datetime import date
+from datetime import date as Date
 from typing import Any, Dict, List, Optional
 
 from pydantic import BaseModel, Field
@@ -15,7 +15,7 @@ class YearlyForecastRequest(BaseYearlyForecastRequest):
 
 
 class EventSummary(BaseModel):
-    date: date
+    date: Date
     transit_body: str
     natal_body: Optional[str] = None
     aspect: Optional[str] = None
@@ -27,14 +27,14 @@ class EventSummary(BaseModel):
 
 class TopEventSummary(BaseModel):
     title: str
-    date: Optional[date] = None
+    date: Optional[Date] = None
     summary: str
     score: Optional[float] = None
     tags: List[str] = Field(default_factory=list)
 
 
 class EclipseSummary(BaseModel):
-    date: date
+    date: Date
     kind: str
     sign: Optional[str] = None
     house: Optional[str] = None
