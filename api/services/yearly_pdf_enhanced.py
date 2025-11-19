@@ -331,6 +331,7 @@ def _render_cover_page(
     pdf.rect(0, height - 13 * cm, width, 13 * cm, fill=True, stroke=False)
     pdf.setFillColorRGB(*BRAND_COLORS["white"])
     _draw_brand_badge(pdf, width, height, branding)
+    pdf.setFillColorRGB(*BRAND_COLORS["white"])
     pdf.setFont("Helvetica-Bold", 36)
     pdf.drawCentredString(width / 2, height - 4.2 * cm, f"{profile['year']} Yearly Forecast")
 
