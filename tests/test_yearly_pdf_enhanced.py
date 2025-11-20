@@ -7,6 +7,7 @@ pytest.importorskip("reportlab")
 from api.services.yearly_pdf_enhanced import (
     ContentValidator,
     _format_day_callouts,
+    _strip_markdown,
     render_enhanced_yearly_pdf,
 )
 
@@ -22,6 +23,17 @@ def test_content_validator_blocks_wrong_year():
         assert "wrong year" in str(exc)
     else:
         raise AssertionError("Expected ValueError for wrong year reference")
+
+
+def test_strip_markdown_removes_headings_and_bold_markers():
+    raw = (
+        "Eclipses & Lunations 2026-02-17 — eclipse: ### Short Guide to Eclipses and Lunations for 2026 "
+        "#### Solar Eclipse (Partial) - February 17, 2026 - **Theme**: Potent Reset Energy"
+    )
+    cleaned = _strip_markdown(raw)
+    assert "#" not in cleaned
+    assert "*" not in cleaned
+    assert "Short Guide to Eclipses and Lunations for 2026" in cleaned
 
 
 def test_content_validator_strips_technical_notation():
