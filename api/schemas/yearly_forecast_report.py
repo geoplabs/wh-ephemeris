@@ -38,7 +38,6 @@ class EclipseSummary(BaseModel):
     kind: str
     sign: Optional[str] = None
     house: Optional[str] = None
-    guidance: str
 
 
 class MonthlySection(BaseModel):
@@ -63,6 +62,7 @@ class YearAtGlance(BaseModel):
 class YearlyForecastReport(BaseModel):
     meta: Dict[str, Any]
     year_at_glance: YearAtGlance
+    eclipse_guidance: str = ""  # Full LLM-generated guide (markdown) - rendered once
     eclipses_and_lunations: List[EclipseSummary] = Field(default_factory=list)
     months: List[MonthlySection]
     appendix_all_events: List[EventSummary] = Field(default_factory=list)

@@ -93,7 +93,6 @@ def _extract_eclipses(events: Iterable[EventSummary]) -> List[EclipseSummary]:
                     kind=ev.aspect or "eclipse",
                     sign=None,
                     house=None,
-                    guidance=ev.user_friendly_summary or ev.raw_note or "Stay observant and grounded.",
                 )
             )
     return eclipses
@@ -286,13 +285,11 @@ async def interpret_yearly_forecast(raw_result: Dict[str, Any]) -> YearlyForecas
         commentary=year_overview_text or _fallback_paragraph("Year overview"),
     )
 
-    if eclipses and eclipse_text:
-        # distribute same guidance across eclipses
-        eclipses = [e.model_copy(update={"guidance": eclipse_text}) for e in eclipses]
-
+    # Store eclipse guidance once (not duplicated for each eclipse)
     return YearlyForecastReport(
         meta=raw_result.get("meta", {}),
         year_at_glance=year_at_glance,
+        eclipse_guidance=eclipse_text if eclipse_text else "",
         eclipses_and_lunations=eclipses,
         months=sorted(month_sections, key=lambda m: m.month),
         appendix_all_events=sorted(all_events_flat, key=lambda ev: ev.date),

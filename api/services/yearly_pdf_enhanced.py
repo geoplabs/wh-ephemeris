@@ -361,7 +361,12 @@ def _render_pdf(
     _render_usage_primer(pdf, width, height, profile, state)
     _render_natal_snapshot(pdf, width, height, report, profile, meta, state)
     _render_methodology_page(pdf, width, height, report, profile, meta, state)
-    _render_eclipses(pdf, width, height, report.get("eclipses_and_lunations") or [], profile, state)
+    _render_eclipses(
+        pdf, width, height, 
+        report.get("eclipses_and_lunations") or [], 
+        profile, state,
+        eclipse_guidance=report.get("eclipse_guidance", "")
+    )
     _render_retrograde_summary(pdf, width, height, report, profile, state)
 
     for month in _ordered_months(report.get("months") or []):
@@ -761,6 +766,7 @@ def _render_eclipses(
     eclipses: List[Dict[str, Any]],
     profile: Dict[str, str],
     state: RenderState,
+    eclipse_guidance: str = "",
 ) -> None:
     if not eclipses:
         return
@@ -771,35 +777,34 @@ def _render_eclipses(
     pdf.drawString(PAGE_LAYOUT["margin"], y, "Eclipses & Lunations")
     y -= 0.8 * cm
     pdf.setFillColorRGB(*BRAND_COLORS["text_dark"])
-    primer = (
-        "Eclipses accelerate endings and beginnings. Give yourself extra recovery time, "
-        "anchor with grounding rituals, and watch what resurfaces in the life area noted on each card."
-    )
-    y = _draw_wrapped(pdf, primer, PAGE_LAYOUT["margin"], y, width - 2 * PAGE_LAYOUT["margin"], 10, 14)
-    y -= 0.4 * cm
-    primer_bullets = [
-        "Keep schedules light ±3 days around the event.",
-        "Journal what surfaces — themes repeat every ~6 months.",
-        "Act on clarity, not urgency; eclipses reveal the assignment, not the entire plan.",
-    ]
-    y = _draw_bullet_list(pdf, primer_bullets, PAGE_LAYOUT["margin"], y, width - 2 * PAGE_LAYOUT["margin"], 10, 14)
-    y -= 0.6 * cm
     
     # Render full eclipse guidance narrative (LLM-generated with markdown)
-    if eclipses:
-        eclipse_guidance = eclipses[0].get("guidance", "")
-        if eclipse_guidance and len(eclipse_guidance) > 100:  # Only if substantial guidance exists
-            pdf.setFillColorRGB(*BRAND_COLORS["text_dark"])
-            y = _parse_and_render_markdown(
-                pdf, 
-                eclipse_guidance, 
-                PAGE_LAYOUT["margin"], 
-                y, 
-                width - 2 * PAGE_LAYOUT["margin"],
-                base_font_size=10,
-                line_height=14
-            )
-            y -= 1.0 * cm
+    if eclipse_guidance:
+        y = _parse_and_render_markdown(
+            pdf, 
+            eclipse_guidance, 
+            PAGE_LAYOUT["margin"], 
+            y, 
+            width - 2 * PAGE_LAYOUT["margin"],
+            base_font_size=10,
+            line_height=14
+        )
+        y -= 1.0 * cm
+    else:
+        # Fallback primer if no LLM guidance
+        primer = (
+            "Eclipses accelerate endings and beginnings. Give yourself extra recovery time, "
+            "anchor with grounding rituals, and watch what resurfaces in the life area noted on each card."
+        )
+        y = _draw_wrapped(pdf, primer, PAGE_LAYOUT["margin"], y, width - 2 * PAGE_LAYOUT["margin"], 10, 14)
+        y -= 0.4 * cm
+        primer_bullets = [
+            "Keep schedules light ±3 days around the event.",
+            "Journal what surfaces — themes repeat every ~6 months.",
+            "Act on clarity, not urgency; eclipses reveal the assignment, not the entire plan.",
+        ]
+        y = _draw_bullet_list(pdf, primer_bullets, PAGE_LAYOUT["margin"], y, width - 2 * PAGE_LAYOUT["margin"], 10, 14)
+        y -= 0.6 * cm
 
     for eclipse in eclipses:
         if y < 4 * cm:
@@ -1439,14 +1444,8 @@ def _build_eclipse_bullets(eclipse: Dict[str, Any]) -> List[str]:
         # Strip markdown from sign
         sign = _strip_markdown(sign)
         bullets.append(f"Lean into {sign} traits — do it with that zodiac tone.")
-    guidance = eclipse.get("guidance", "")
-    # Strip markdown from guidance before processing
-    guidance = _strip_markdown(guidance)
-    do_line, dont_line = _split_do_dont(guidance)
-    if do_line:
-        bullets.append(f"Do: {_sanitize_bullet_artifacts(do_line)}")
-    if dont_line:
-        bullets.append(f"Skip: {_sanitize_bullet_artifacts(dont_line)}")
+    
+    # No longer using per-eclipse guidance - it's now stored once at report level
     if not bullets:
         bullets = ["Observe, rest, and log insights."]
     return bullets
@@ -1664,8 +1663,7 @@ def _prepare_report(report: Dict[str, Any], validator: ContentValidator) -> Dict
         "top_events": cleaned_top_events
     }
     
-    # Clean eclipses and lunations
-    # NOTE: Keep markdown in 'guidance' field - it will be parsed and formatted during rendering
+    # Clean eclipses and lunations (guidance is now stored at report level)
     cleaned_eclipses = []
     for eclipse in report.get("eclipses_and_lunations", []):
         cleaned_eclipses.append({
@@ -1674,9 +1672,12 @@ def _prepare_report(report: Dict[str, Any], validator: ContentValidator) -> Dict
             "sign": _strip_markdown(eclipse.get("sign", "")),  # Short label - strip markdown
             "house": _strip_markdown(eclipse.get("house", "")),  # Short label - strip markdown
             "life_area": _strip_markdown(eclipse.get("life_area", "")),  # Short label - strip markdown
-            # "guidance" is NOT stripped - it's narrative text with markdown formatting
         })
     cleaned["eclipses_and_lunations"] = cleaned_eclipses
+    
+    # Eclipse guidance is stored once at report level (not duplicated per eclipse)
+    # Keep markdown in eclipse_guidance - it will be parsed and formatted during rendering
+    # No stripping needed here
     
     # Clean appendix events
     if "appendix_all_events" in report:
