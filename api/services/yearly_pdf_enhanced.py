@@ -235,9 +235,8 @@ class ContentValidator:
     def clean_text(self, text: str, *, month_label: Optional[str] = None) -> str:
         if not text:
             return ""
-        # First, strip markdown syntax
-        cleaned = _strip_markdown(text)
-        cleaned = cleaned.strip()
+        # NOTE: We no longer strip markdown - it will be parsed and formatted by _parse_and_render_markdown()
+        cleaned = text.strip()
         while "  " in cleaned:
             cleaned = cleaned.replace("  ", " ")
         lower = cleaned.lower()
@@ -522,7 +521,7 @@ def _render_year_at_glance(
 
     commentary = validator.clean_text(data.get("commentary", ""))
     if commentary:
-        y = _draw_wrapped(pdf, commentary, PAGE_LAYOUT["margin"], y, width - 2 * PAGE_LAYOUT["margin"], 12, 16)
+        y = _parse_and_render_markdown(pdf, commentary, PAGE_LAYOUT["margin"], y, width - 2 * PAGE_LAYOUT["margin"], 12, 16)
         state.record_paragraph_events("Year at a Glance", commentary, data.get("top_events", []))
         y -= 0.4 * cm
 
@@ -784,6 +783,23 @@ def _render_eclipses(
         "Act on clarity, not urgency; eclipses reveal the assignment, not the entire plan.",
     ]
     y = _draw_bullet_list(pdf, primer_bullets, PAGE_LAYOUT["margin"], y, width - 2 * PAGE_LAYOUT["margin"], 10, 14)
+    y -= 0.6 * cm
+    
+    # Render full eclipse guidance narrative (LLM-generated with markdown)
+    if eclipses:
+        eclipse_guidance = eclipses[0].get("guidance", "")
+        if eclipse_guidance and len(eclipse_guidance) > 100:  # Only if substantial guidance exists
+            pdf.setFillColorRGB(*BRAND_COLORS["text_dark"])
+            y = _parse_and_render_markdown(
+                pdf, 
+                eclipse_guidance, 
+                PAGE_LAYOUT["margin"], 
+                y, 
+                width - 2 * PAGE_LAYOUT["margin"],
+                base_font_size=10,
+                line_height=14
+            )
+            y -= 1.0 * cm
 
     for eclipse in eclipses:
         if y < 4 * cm:
@@ -890,7 +906,7 @@ def _render_monthly_section(
         events,
     )
     pdf.setFillColorRGB(*BRAND_COLORS["text_dark"])
-    y = _draw_wrapped(pdf, overview_text, PAGE_LAYOUT["margin"], y, width - 2 * PAGE_LAYOUT["margin"], 11, 16)
+    y = _parse_and_render_markdown(pdf, overview_text, PAGE_LAYOUT["margin"], y, width - 2 * PAGE_LAYOUT["margin"], 11, 16)
     state.record_paragraph_events(section_title, overview_text, events[:3])
     y -= 0.5 * cm
 
@@ -1141,6 +1157,212 @@ def _register_section(state: RenderState, pdf: canvas.Canvas, title: str, level:
     state.register_section(title, level, pdf if not state.collecting else None)
 
 
+def _parse_and_render_markdown(
+    pdf: canvas.Canvas,
+    text: str,
+    x: float,
+    y: float,
+    max_width: float,
+    base_font_size: int = 10,
+    line_height: int = 14,
+) -> float:
+    """Parse markdown text and render with proper formatting.
+    
+    Supports:
+    - # H1, ## H2, ### H3, #### H4 headings
+    - **bold** text
+    - __bold__ text
+    - *italic* text (rendered as regular for simplicity)
+    - _italic_ text (rendered as regular for simplicity)
+    - - bullet lists
+    - Paragraph breaks (double newline)
+    
+    Returns: new y position after rendering
+    """
+    if not text:
+        return y
+    
+    current_y = y
+    lines = text.split('\n')
+    i = 0
+    
+    while i < len(lines):
+        line = lines[i].strip()
+        
+        # Skip empty lines but add spacing
+        if not line:
+            current_y -= line_height * 0.5
+            i += 1
+            continue
+        
+        # Check for headings
+        heading_match = re.match(r'^(#{1,6})\s+(.+)$', line)
+        if heading_match:
+            level = len(heading_match.group(1))
+            heading_text = heading_match.group(2).strip()
+            
+            # Add spacing before heading
+            if i > 0:
+                current_y -= line_height * 0.8
+            
+            # Render heading with appropriate style
+            if level == 1:  # # H1
+                pdf.setFillColorRGB(*BRAND_COLORS["crimson"])
+                pdf.setFont("Helvetica-Bold", 18)
+                current_y = _draw_wrapped(pdf, heading_text, x, current_y, max_width, 18, 22)
+                pdf.setFillColorRGB(*BRAND_COLORS["text_dark"])
+            elif level == 2:  # ## H2
+                pdf.setFillColorRGB(*BRAND_COLORS["crimson"])
+                pdf.setFont("Helvetica-Bold", 14)
+                current_y = _draw_wrapped(pdf, heading_text, x, current_y, max_width, 14, 18)
+                pdf.setFillColorRGB(*BRAND_COLORS["text_dark"])
+            elif level == 3:  # ### H3
+                pdf.setFillColorRGB(*BRAND_COLORS["crimson"])
+                pdf.setFont("Helvetica-Bold", 12)
+                current_y = _draw_wrapped(pdf, heading_text, x, current_y, max_width, 12, 16)
+                pdf.setFillColorRGB(*BRAND_COLORS["text_dark"])
+            else:  # #### H4+
+                pdf.setFont("Helvetica-Bold", 11)
+                current_y = _draw_wrapped(pdf, heading_text, x, current_y, max_width, 11, 14)
+            
+            current_y -= line_height * 0.3
+            i += 1
+            continue
+        
+        # Check for bullet list
+        bullet_match = re.match(r'^[-*]\s+(.+)$', line)
+        if bullet_match:
+            bullet_text = bullet_match.group(1).strip()
+            # Parse inline formatting in bullet text
+            formatted_text = _parse_inline_formatting(bullet_text)
+            pdf.setFont("Helvetica", base_font_size)
+            # Render bullet with text
+            current_y = _render_bullet_with_formatting(pdf, formatted_text, x, current_y, max_width, base_font_size, line_height)
+            i += 1
+            continue
+        
+        # Regular paragraph - parse inline formatting
+        formatted_text = _parse_inline_formatting(line)
+        pdf.setFont("Helvetica", base_font_size)
+        current_y = _render_paragraph_with_formatting(pdf, formatted_text, x, current_y, max_width, base_font_size, line_height)
+        
+        i += 1
+    
+    return current_y
+
+
+def _parse_inline_formatting(text: str) -> List[Tuple[str, str]]:
+    """Parse inline markdown formatting and return list of (text, style) tuples.
+    
+    Returns: [(text, style), ...] where style is 'bold', 'regular', etc.
+    """
+    segments = []
+    current_pos = 0
+    
+    # Pattern to match **bold** or __bold__
+    bold_pattern = re.compile(r'(\*\*|__)(.+?)\1')
+    
+    for match in bold_pattern.finditer(text):
+        # Add text before match as regular
+        if match.start() > current_pos:
+            segments.append((text[current_pos:match.start()], 'regular'))
+        # Add matched text as bold
+        segments.append((match.group(2), 'bold'))
+        current_pos = match.end()
+    
+    # Add remaining text as regular
+    if current_pos < len(text):
+        segments.append((text[current_pos:], 'regular'))
+    
+    return segments if segments else [(text, 'regular')]
+
+
+def _render_paragraph_with_formatting(
+    pdf: canvas.Canvas,
+    formatted_segments: List[Tuple[str, str]],
+    x: float,
+    y: float,
+    max_width: float,
+    font_size: int,
+    line_height: int,
+) -> float:
+    """Render a paragraph with mixed formatting (bold, regular)."""
+    current_y = y
+    current_line = []
+    current_width = 0
+    
+    for text, style in formatted_segments:
+        # Set font based on style
+        if style == 'bold':
+            pdf.setFont("Helvetica-Bold", font_size)
+        else:
+            pdf.setFont("Helvetica", font_size)
+        
+        # Split text into words
+        words = text.split()
+        for word in words:
+            word_width = pdf.stringWidth(word + ' ', pdf._fontname, font_size)
+            
+            # Check if word fits on current line
+            if current_width + word_width > max_width and current_line:
+                # Render current line
+                current_y = _render_line_segments(pdf, current_line, x, current_y, font_size, line_height)
+                current_line = []
+                current_width = 0
+            
+            current_line.append((word + ' ', style))
+            current_width += word_width
+    
+    # Render remaining line
+    if current_line:
+        current_y = _render_line_segments(pdf, current_line, x, current_y, font_size, line_height)
+    
+    return current_y - line_height * 0.3
+
+
+def _render_bullet_with_formatting(
+    pdf: canvas.Canvas,
+    formatted_segments: List[Tuple[str, str]],
+    x: float,
+    y: float,
+    max_width: float,
+    font_size: int,
+    line_height: int,
+) -> float:
+    """Render a bullet point with mixed formatting."""
+    # Draw bullet
+    pdf.setFont("Helvetica", font_size)
+    pdf.drawString(x, y, "•")
+    
+    # Render text with indentation
+    return _render_paragraph_with_formatting(
+        pdf, formatted_segments, x + 0.5 * cm, y, max_width - 0.5 * cm, font_size, line_height
+    )
+
+
+def _render_line_segments(
+    pdf: canvas.Canvas,
+    segments: List[Tuple[str, str]],
+    x: float,
+    y: float,
+    font_size: int,
+    line_height: int,
+) -> float:
+    """Render a line with mixed bold/regular segments."""
+    current_x = x
+    
+    for text, style in segments:
+        if style == 'bold':
+            pdf.setFont("Helvetica-Bold", font_size)
+        else:
+            pdf.setFont("Helvetica", font_size)
+        
+        pdf.drawString(current_x, y, text)
+        current_x += pdf.stringWidth(text, pdf._fontname, font_size)
+    
+    return y - line_height
+
+
 def _draw_wrapped(
     pdf: canvas.Canvas,
     text: str,
@@ -1344,7 +1566,7 @@ def _render_subsection_text(
     pdf.drawString(PAGE_LAYOUT["margin"], y, title)
     y -= 0.5 * cm
     pdf.setFillColorRGB(*BRAND_COLORS["text_dark"])
-    y = _draw_wrapped(pdf, text, PAGE_LAYOUT["margin"], y, width - 2 * PAGE_LAYOUT["margin"], 10, 14)
+    y = _parse_and_render_markdown(pdf, text, PAGE_LAYOUT["margin"], y, width - 2 * PAGE_LAYOUT["margin"], 10, 14)
     state.record_paragraph_events(section_name, text, events[:2])
     return y - 0.3 * cm
 
@@ -1442,16 +1664,17 @@ def _prepare_report(report: Dict[str, Any], validator: ContentValidator) -> Dict
         "top_events": cleaned_top_events
     }
     
-    # Clean eclipses and lunations - THIS WAS MISSING!
+    # Clean eclipses and lunations
+    # NOTE: Keep markdown in 'guidance' field - it will be parsed and formatted during rendering
     cleaned_eclipses = []
     for eclipse in report.get("eclipses_and_lunations", []):
         cleaned_eclipses.append({
             **eclipse,
-            "kind": _strip_markdown(eclipse.get("kind", "")),
-            "sign": _strip_markdown(eclipse.get("sign", "")),
-            "house": _strip_markdown(eclipse.get("house", "")),
-            "life_area": _strip_markdown(eclipse.get("life_area", "")),
-            "guidance": _strip_markdown(eclipse.get("guidance", ""))
+            "kind": _strip_markdown(eclipse.get("kind", "")),  # Short label - strip markdown
+            "sign": _strip_markdown(eclipse.get("sign", "")),  # Short label - strip markdown
+            "house": _strip_markdown(eclipse.get("house", "")),  # Short label - strip markdown
+            "life_area": _strip_markdown(eclipse.get("life_area", "")),  # Short label - strip markdown
+            # "guidance" is NOT stripped - it's narrative text with markdown formatting
         })
     cleaned["eclipses_and_lunations"] = cleaned_eclipses
     

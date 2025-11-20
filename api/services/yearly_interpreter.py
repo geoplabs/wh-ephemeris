@@ -161,58 +161,17 @@ def build_rituals_prompt(month_key: str, key_themes: Set[str], hot_days: List[Ev
     )
 
 
-def _strip_markdown(text: str) -> str:
-    """Strip all markdown syntax from LLM-generated text.
-    
-    Removes: ###, ####, **, __, *, _, numbered/bulleted lists, code blocks.
-    Preserves: Plain text content and sentence structure.
-    """
-    if not text:
-        return ""
-    
-    lines = []
-    for line in text.split('\n'):
-        line = line.strip()
-        if not line:
-            continue
-        
-        # Remove markdown headings (###, ####, etc.) at start or anywhere in line
-        line = re.sub(r'^#{1,6}\s*', '', line)
-        line = re.sub(r'\s*#{1,6}\s*', ' ', line)
-        
-        # Remove bold: **text** or __text__
-        line = re.sub(r'\*\*([^*]+)\*\*', r'\1', line)
-        line = re.sub(r'__([^_]+)__', r'\1', line)
-        
-        # Remove italic: *text* or _text_ (but preserve single * or _ in middle of words)
-        line = re.sub(r'\*([^*]+)\*', r'\1', line)
-        line = re.sub(r'\b_([^_]+)_\b', r'\1', line)
-        
-        # Convert numbered lists to plain text
-        line = re.sub(r'^\d+\.\s+', '', line)
-        
-        # Convert bulleted lists to plain text (remove - or * at start)
-        line = re.sub(r'^[-*]\s+', '', line)
-        
-        # Remove leftover markdown artifacts
-        line = re.sub(r'(\*{2,}|#{2,}|`{2,}|_{2,})', ' ', line)
-        
-        # Clean up multiple spaces
-        line = re.sub(r'\s+', ' ', line).strip()
-        
-        if line:
-            lines.append(line)
-    
-    # Join with paragraph breaks for readability
-    return '\n\n'.join(lines) if lines else ""
-
-
 async def _call_llm(user_prompt: str, max_tokens: int = 800) -> str:
-    """Call LLM and automatically strip markdown from response."""
+    """Call LLM and return markdown-formatted response.
+    
+    Markdown will be parsed and formatted by the PDF renderer:
+    - **bold** → bold text
+    - ### heading → H3 style
+    - #### heading → H4 style
+    - Newlines preserved for paragraph breaks
+    """
     try:
-        response = await generate_section_text(SYSTEM_PROMPT, user_prompt, max_tokens=max_tokens)
-        # Strip markdown from ALL LLM responses immediately
-        return _strip_markdown(response)
+        return await generate_section_text(SYSTEM_PROMPT, user_prompt, max_tokens=max_tokens)
     except LLMUnavailableError:
         return ""
 
