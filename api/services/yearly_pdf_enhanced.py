@@ -106,37 +106,42 @@ def _strip_markdown(text: str) -> str:
     
     lines = text.split('\n')
     cleaned_lines = []
-    
+
     for line in lines:
         line = line.strip()
-        
+
         # Skip empty lines
         if not line:
             continue
-        
+
         # Convert markdown headings (###, ####, etc.) to plain text
         # Remove heading markers both at start and anywhere in the line
         line = re.sub(r'^#{1,6}\s*', '', line)  # At start (space optional)
         line = re.sub(r'\s*#{1,6}\s*', ' ', line)  # Anywhere else (spaces optional)
-        
-        # Convert **bold** to plain text (remove **)
+
+        # Convert **bold** or __bold__ to plain text (remove markers)
         line = re.sub(r'\*\*([^*]+)\*\*', r'\1', line)
-        
-        # Convert *italic* to plain text (remove single *)
+        line = re.sub(r'__([^_]+)__', r'\1', line)
+
+        # Convert *italic* or _italic_ to plain text (remove markers)
         line = re.sub(r'\*([^*]+)\*', r'\1', line)
-        
+        line = re.sub(r'_([^_]+)_', r'\1', line)
+
         # Convert numbered lists (1. item, 2. item) to bullets
         line = re.sub(r'^\d+\.\s+', '• ', line)
-        
+
         # Convert markdown bullets (- item or * item) to standard bullets
         line = re.sub(r'^[-*]\s+', '• ', line)
-        
+
+        # Remove any leftover repeated markdown markers like **, ###, or ```
+        line = re.sub(r'(\*{2,}|#{2,}|`{2,})', ' ', line)
+
         # Clean up multiple spaces
         line = re.sub(r'\s+', ' ', line).strip()
-        
+
         if line:
             cleaned_lines.append(line)
-    
+
     # Join with single space instead of newlines for paragraph text
     return ' '.join(cleaned_lines)
 
