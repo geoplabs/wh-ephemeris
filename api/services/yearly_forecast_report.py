@@ -96,7 +96,10 @@ async def render_yearly_report_pdf(
         render_enhanced_yearly_pdf(context, str(out_path))
     except Exception as e:
         # Fallback to basic renderer if enhanced fails
-        logger.warning(f"Enhanced PDF rendering failed, falling back to basic: {e}")
+        import traceback
+        logger.error(f"Enhanced PDF rendering failed: {e}")
+        logger.error(f"Full traceback: {traceback.format_exc()}")
+        logger.warning(f"Falling back to basic renderer")
         render_western_natal_pdf(context, str(out_path), template_name="yearly_v2.html.j2")
 
     outputs = options.get("outputs") or {}

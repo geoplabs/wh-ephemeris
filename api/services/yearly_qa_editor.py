@@ -134,14 +134,25 @@ def qa_edit_monthly_section(section: Dict[str, Any]) -> Dict[str, Any]:
     if 'overview' in edited:
         edited['overview'] = polish_narrative_text(edited['overview'], area='general')
     
+    # Core life areas
     if 'career_and_finance' in edited:
         edited['career_and_finance'] = polish_narrative_text(edited['career_and_finance'], area='career')
     
-    if 'relationships_and_family' in edited:
-        edited['relationships_and_family'] = polish_narrative_text(edited['relationships_and_family'], area='love')
+    if 'love_and_romance' in edited:
+        edited['love_and_romance'] = polish_narrative_text(edited['love_and_romance'], area='love')
     
-    if 'health_and_energy' in edited:
-        edited['health_and_energy'] = polish_narrative_text(edited['health_and_energy'], area='health')
+    if 'home_and_family' in edited:
+        edited['home_and_family'] = polish_narrative_text(edited['home_and_family'], area='family')
+    
+    if 'health_and_routines' in edited:
+        edited['health_and_routines'] = polish_narrative_text(edited['health_and_routines'], area='health')
+    
+    # Growth areas
+    if 'growth_and_learning' in edited:
+        edited['growth_and_learning'] = polish_narrative_text(edited['growth_and_learning'], area='education')
+    
+    if 'inner_work' in edited:
+        edited['inner_work'] = polish_narrative_text(edited['inner_work'], area='spiritual')
     
     if 'rituals_and_journal' in edited:
         edited['rituals_and_journal'] = polish_narrative_text(edited['rituals_and_journal'], area='general')

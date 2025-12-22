@@ -17,6 +17,7 @@ from .panchang_algos import (
     compute_nakshatra,
     compute_yoga,
 )
+from .muhurta import compute_muhurta_blocks
 
 
 # Auspicious elements for Griha Pravesh
@@ -155,9 +156,18 @@ def calculate_griha_pravesh_muhurat(
     """
     Calculate Griha Pravesh muhurat for a given date.
     
+    Considers all traditional factors including:
+    - Tithi (Lunar day) - favorable and avoid lists
+    - Nakshatra (Lunar mansion) - auspicious nakshatras
+    - Yoga (Nitya Yoga) - favorable yogas
+    - Weekday - suitable days for home-related activities
+    - Lagna (Ascendant) - favorable rising signs
+    - Karana - avoids Bhadra/Vishti
+    - Inauspicious periods - filters out Rahu Kalam, Gulika Kalam, and Yamaganda
+    
     Returns a dictionary with:
     - overall_rating: "excellent", "good", "fair", "poor", "avoid"
-    - favorable_windows: List of time windows suitable for ceremony
+    - favorable_windows: List of time windows suitable for ceremony (all inauspicious periods filtered)
     - factors: Breakdown of each astrological factor
     - recommendations: Textual recommendations
     """
@@ -269,6 +279,46 @@ def _evaluate_weekday(weekday_index: int) -> int:
         return 1
 
 
+def _time_overlaps_with_period(
+    check_start: datetime,
+    check_end: datetime,
+    period_start: datetime,
+    period_end: datetime,
+) -> bool:
+    """Check if a time range overlaps with an inauspicious period."""
+    # Periods overlap if one starts before the other ends
+    return check_start < period_end and check_end > period_start
+
+
+def _is_in_inauspicious_period(
+    check_start: datetime,
+    check_end: datetime,
+    muhurta_blocks: Dict[str, Tuple[datetime, datetime]],
+) -> Tuple[bool, Optional[str]]:
+    """
+    Check if a time window falls within any inauspicious period.
+    
+    Returns:
+        Tuple of (is_inauspicious, reason)
+    """
+    # Check Rahu Kalam
+    rahu_start, rahu_end = muhurta_blocks["rahu_kal"]
+    if _time_overlaps_with_period(check_start, check_end, rahu_start, rahu_end):
+        return True, "Rahu Kalam"
+    
+    # Check Gulika Kalam
+    gulika_start, gulika_end = muhurta_blocks["gulika_kal"]
+    if _time_overlaps_with_period(check_start, check_end, gulika_start, gulika_end):
+        return True, "Gulika Kalam"
+    
+    # Check Yamaganda
+    yamaganda_start, yamaganda_end = muhurta_blocks["yamaganda"]
+    if _time_overlaps_with_period(check_start, check_end, yamaganda_start, yamaganda_end):
+        return True, "Yamaganda"
+    
+    return False, None
+
+
 def _find_favorable_windows(
     date: datetime,
     lat: float,
@@ -279,16 +329,22 @@ def _find_favorable_windows(
     ayanamsha: str,
 ) -> List[Dict[str, Any]]:
     """
-    Find favorable time windows during the day considering Lagna and Karana.
+    Find favorable time windows during the day considering Lagna, Karana, 
+    and inauspicious periods (Rahu Kalam, Gulika Kalam, Yamaganda).
     Checks hourly from sunrise to sunset.
     """
     windows = []
+    
+    # Calculate inauspicious time blocks for the day
+    weekday_name = sunrise.strftime("%A")
+    muhurta_blocks = compute_muhurta_blocks(sunrise, sunset, weekday_name)
     
     # Check every hour from sunrise to sunset
     current = sunrise
     while current < sunset:
         # Calculate for this hour
         jd = current.astimezone(tz).timestamp() / 86400.0 + 2440587.5
+        window_end = min(current + timedelta(hours=1), sunset)
         
         # Get Lagna
         lagna_sign, lagna_lon = _get_ascendant(jd, lat, lon)
@@ -300,10 +356,14 @@ def _find_favorable_windows(
         # Check if this hour is favorable
         is_favorable_lagna = lagna_sign in FAVORABLE_LAGNAS
         
-        if is_favorable_lagna and not is_bhadra:
+        # Check for inauspicious periods (Rahu Kalam, Gulika, Yamaganda)
+        is_inauspicious, inauspicious_reason = _is_in_inauspicious_period(
+            current, window_end, muhurta_blocks
+        )
+        
+        # Only add window if ALL conditions are favorable
+        if is_favorable_lagna and not is_bhadra and not is_inauspicious:
             # This is a good window
-            window_end = min(current + timedelta(hours=1), sunset)
-            
             # Calculate quality rating
             quality = "excellent" if lagna_sign in ["Cancer", "Taurus", "Leo"] else "good"
             
@@ -367,11 +427,16 @@ def _generate_recommendations(
     if tithi_score < 0 or nakshatra_score < 0 or yoga_score < 0:
         recommendations.append("⚠️ This date has inauspicious factors. Consider choosing another date.")
     elif len(windows) == 0:
-        recommendations.append("⚠️ No favorable time windows available due to Bhadra Karana or unfavorable Lagna.")
+        recommendations.append(
+            "⚠️ No favorable time windows available. Filtered out periods include: "
+            "Rahu Kalam, Gulika Kalam, Yamaganda, Bhadra Karana, and unfavorable Lagna."
+        )
     elif tithi_score >= 2 and nakshatra_score >= 2 and yoga_score >= 2 and len(windows) >= 2:
         recommendations.append("✅ This is an excellent date for Griha Pravesh ceremony!")
+        recommendations.append("ℹ️ All recommended times avoid Rahu Kalam and other inauspicious periods.")
     elif len(windows) >= 1:
         recommendations.append("✓ This date is suitable for Griha Pravesh with careful timing.")
+        recommendations.append("ℹ️ Recommended times avoid Rahu Kalam, Gulika Kalam, and Yamaganda.")
     
     # Specific recommendations for each factor
     if tithi_score < 0:

@@ -38,6 +38,7 @@ class EclipseSummary(BaseModel):
     kind: str
     sign: Optional[str] = None
     house: Optional[str] = None
+    guidance: str = ""  # Specific guidance for THIS eclipse (not general lunation guidance)
 
 
 class MonthlySection(BaseModel):
@@ -45,9 +46,17 @@ class MonthlySection(BaseModel):
     overview: str
     high_score_days: List[EventSummary] = Field(default_factory=list)
     caution_days: List[EventSummary] = Field(default_factory=list)
-    career_and_finance: str
-    relationships_and_family: str
-    health_and_energy: str
+    
+    # Core life areas (always generated)
+    career_and_finance: str  # Work, public life, money, resources (career + money themes)
+    love_and_romance: str  # Dating, partnerships, romance (love theme)
+    home_and_family: str  # Home, family, roots, community (home_family + community_goals themes)
+    health_and_routines: str  # Health, wellness, daily life (health_routines theme)
+    
+    # Growth areas (combined)
+    growth_and_learning: str  # Study, travel, creativity, mindset (study_travel + mindset_communication + creativity_children themes)
+    inner_work: str  # Spirituality, inner work, innovation (inner_spiritual + innovation themes)
+    
     aspect_grid: List[Dict[str, Any]] = Field(default_factory=list)
     rituals_and_journal: str
     planner_actions: List[str] = Field(default_factory=list)

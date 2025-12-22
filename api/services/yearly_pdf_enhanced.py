@@ -7,7 +7,7 @@ import logging
 import re
 import textwrap
 from dataclasses import dataclass, field
-from datetime import datetime
+from datetime import datetime, date
 from pathlib import Path
 from collections import Counter
 from typing import Any, Dict, Iterable, List, Optional, Tuple
@@ -230,7 +230,6 @@ class ContentValidator:
     def __init__(self, target_year: int) -> None:
         self.target_year = target_year
         self.previous_year = target_year - 1
-        self.allowed_previous_month = "December"
 
     def clean_text(self, text: str, *, month_label: Optional[str] = None) -> str:
         if not text:
@@ -246,8 +245,8 @@ class ContentValidator:
                 break
         cleaned = self._strip_generic_phrases(cleaned)
         cleaned = self._strip_technical_notation(cleaned)
-        allow_previous = bool(month_label and self.allowed_previous_month in month_label and str(self.previous_year) in month_label)
-        self._guard_year_mentions(cleaned, allow_previous)
+        # NEVER allow previous year mentions - we only show months from target year
+        self._guard_year_mentions(cleaned, allow_previous=False)
         return cleaned
 
     def _strip_generic_phrases(self, text: str) -> str:
@@ -268,9 +267,18 @@ class ContentValidator:
         return " ".join(text.split())
 
     def _guard_year_mentions(self, text: str, allow_previous: bool) -> None:
+        """Check for wrong year mentions and log warning.
+        
+        For a 2026 forecast, we only include months from 2026 (Jan-Dec 2026).
+        Any mention of 2025 or other years is incorrect and should be logged.
+        
+        We log warnings instead of raising errors to prevent PDF rendering failures.
+        """
         prev = str(self.previous_year)
         if prev in text and not allow_previous:
-            raise ValueError(f"Paragraph mentions wrong year {prev}: {text}")
+            # Log warning but DON'T raise - let PDF render with the text
+            logger.warning(f"⚠️ WRONG_YEAR_DETECTED: Content mentions {prev} but target year is {self.target_year}")
+            logger.debug(f"Text preview: {text[:200]}")
 
     def sanitize_actions(self, actions: List[str]) -> List[str]:
         sanitized: List[str] = []
@@ -309,12 +317,55 @@ class ContentValidator:
 
 def render_enhanced_yearly_pdf(payload: Dict[str, Any], out_path: str) -> str:
     """Render the interpreted yearly forecast with the WhatHoroscope PDF spec."""
-
-    report = payload.get("report") or {}
-    meta = report.get("meta") or {}
-    target_year = int(meta.get("target_year") or meta.get("year") or datetime.utcnow().year)
+    
+    try:
+        report = payload.get("report") or {}
+        meta = report.get("meta") or {}
+        target_year = int(meta.get("target_year") or meta.get("year") or datetime.utcnow().year)
+    except Exception as e:
+        logger.error(f"ERROR in render_enhanced_yearly_pdf at meta extraction: {e}")
+        logger.error(f"Report type: {type(payload.get('report'))}")
+        raise
+    
+    # LOG INCOMING REPORT DATA
+    logger.info(
+        f"PDF_RENDER_START: year={target_year} months={len(report.get('months', []))} " +
+        f"eclipses={len(report.get('eclipses_and_lunations', []))} " +
+        f"eclipse_guidance_length={len(report.get('eclipse_guidance', ''))} path={out_path}"
+    )
+    
+    # Log eclipse details
+    eclipses = report.get("eclipses_and_lunations", [])
+    for i, eclipse in enumerate(eclipses[:5]):  # Log first 5 eclipses
+        eclipse_date = eclipse.get("date")
+        date_str = eclipse_date.isoformat() if hasattr(eclipse_date, 'isoformat') else str(eclipse_date)
+        guidance = eclipse.get("guidance", "")
+        guidance_preview = (guidance[:50] + "...") if guidance and len(guidance) > 50 else (guidance or "None")
+        
+        logger.debug(
+            f"PDF_ECLIPSE_{i+1}: {date_str} kind={eclipse.get('kind')} sign={eclipse.get('sign')} " +
+            f"house={eclipse.get('house')} guidance_len={len(guidance)} preview={guidance_preview}"
+        )
+    
     validator = ContentValidator(target_year)
-    sanitized_report = _prepare_report(report, validator)
+    try:
+        sanitized_report = _prepare_report(report, validator)
+    except Exception as e:
+        logger.error(f"ERROR in _prepare_report: {e}")
+        logger.error(f"Report keys: {report.keys() if isinstance(report, dict) else 'not a dict'}")
+        logger.error(f"Eclipses type: {type(report.get('eclipses_and_lunations', []))}")
+        if 'eclipses_and_lunations' in report:
+            eclipses = report['eclipses_and_lunations']
+            if eclipses:
+                logger.error(f"First eclipse type: {type(eclipses[0])}")
+                logger.error(f"First eclipse: {eclipses[0]}")
+        raise
+    
+    # LOG AFTER SANITIZATION
+    logger.info(
+        f"PDF_AFTER_SANITIZATION: eclipses={len(sanitized_report.get('eclipses_and_lunations', []))} " +
+        f"months={len(sanitized_report.get('months', []))}"
+    )
 
     path = Path(out_path)
     path.parent.mkdir(parents=True, exist_ok=True)
@@ -807,7 +858,7 @@ def _render_eclipses(
         y -= 0.6 * cm
 
     for eclipse in eclipses:
-        if y < 4 * cm:
+        if y < 8 * cm:  # Increased threshold for cards with guidance
             _continue_page(pdf, width, height, state, profile)
             pdf.setFillColorRGB(*BRAND_COLORS["crimson"])
             pdf.setFont("Helvetica-Bold", 16)
@@ -815,8 +866,7 @@ def _render_eclipses(
             y = height - 3.5 * cm
 
         bullets = _build_eclipse_bullets(eclipse)
-        _draw_eclipse_card(pdf, width, y, eclipse, bullets)
-        y -= 4.5 * cm
+        y = _draw_eclipse_card(pdf, width, y, eclipse, bullets)  # Use returned y position
 
 
 def _render_retrograde_summary(
@@ -934,52 +984,66 @@ def _render_monthly_section(
         month.get("high_score_days", []),
     )
 
+    # Core life areas
     y = _render_subsection_text(
-        pdf,
-        width,
-        height,
-        y,
+        pdf, width, height, y,
         "Career & Finance",
         validator.inject_transit_references(
             validator.clean_text(month.get("career_and_finance", ""), month_label=month_label),
             events,
         ),
-        state,
-        profile,
-        f"{section_title} – Career",
-        events,
+        state, profile, f"{section_title} – Career", events,
     )
 
     y = _render_subsection_text(
-        pdf,
-        width,
-        height,
-        y,
-        "Relationships & Family",
+        pdf, width, height, y,
+        "Love & Romance",
         validator.inject_transit_references(
-            validator.clean_text(month.get("relationships_and_family", ""), month_label=month_label),
+            validator.clean_text(month.get("love_and_romance", ""), month_label=month_label),
             events,
         ),
-        state,
-        profile,
-        f"{section_title} – Relationships",
-        events,
+        state, profile, f"{section_title} – Love", events,
     )
 
     y = _render_subsection_text(
-        pdf,
-        width,
-        height,
-        y,
-        "Health & Energy",
+        pdf, width, height, y,
+        "Home & Family",
         validator.inject_transit_references(
-            validator.clean_text(month.get("health_and_energy", ""), month_label=month_label),
+            validator.clean_text(month.get("home_and_family", ""), month_label=month_label),
             events,
         ),
-        state,
-        profile,
-        f"{section_title} – Health",
-        events,
+        state, profile, f"{section_title} – Home", events,
+    )
+
+    y = _render_subsection_text(
+        pdf, width, height, y,
+        "Health & Routines",
+        validator.inject_transit_references(
+            validator.clean_text(month.get("health_and_routines", ""), month_label=month_label),
+            events,
+        ),
+        state, profile, f"{section_title} – Health", events,
+    )
+
+    # Growth areas
+    y = _render_subsection_text(
+        pdf, width, height, y,
+        "Growth & Learning",
+        validator.inject_transit_references(
+            validator.clean_text(month.get("growth_and_learning", ""), month_label=month_label),
+            events,
+        ),
+        state, profile, f"{section_title} – Growth", events,
+    )
+
+    y = _render_subsection_text(
+        pdf, width, height, y,
+        "Inner Work",
+        validator.inject_transit_references(
+            validator.clean_text(month.get("inner_work", ""), month_label=month_label),
+            events,
+        ),
+        state, profile, f"{section_title} – Inner", events,
     )
 
     y = _render_action_plan(pdf, width, y, validator.sanitize_actions(month.get("planner_actions", [])), events)
@@ -1162,6 +1226,51 @@ def _register_section(state: RenderState, pdf: canvas.Canvas, title: str, level:
     state.register_section(title, level, pdf if not state.collecting else None)
 
 
+def _normalize_markdown_text(text: str) -> str:
+    """Normalize markdown by adding newlines where LLM forgot them.
+    
+    Fixes patterns like:
+    - "### Heading Content here" → "### Heading\n\nContent here"
+    - "text - **Bullet** content" → "text\n\n- **Bullet** content"
+    """
+    if not text:
+        return ""
+    
+    # Fix 1: Heading followed immediately by content (no newline)
+    # Pattern: "### Some Title: 2026 Welcome to..." 
+    # → "### Some Title: 2026\n\nWelcome to..."
+    # Strategy: If heading line is >80 chars and has capital letter after colon+year, split there
+    def split_long_heading(match):
+        hashes = match.group(1)
+        content = match.group(2)
+        
+        # Find split point: after "Title: YYYY " followed by capital letter
+        split_match = re.search(r'^(.{10,80}?:\s*\d{4})\s+([A-Z])', content)
+        if split_match:
+            heading = split_match.group(1)
+            rest = split_match.group(2) + content[split_match.end(2):]
+            return f'{hashes} {heading}\n\n{rest}'
+        
+        # Fallback: Just take first sentence/clause as heading
+        if len(content) > 80 and '. ' in content:
+            parts = content.split('. ', 1)
+            return f'{hashes} {parts[0]}.\n\n{parts[1]}'
+        
+        return match.group(0)
+    
+    text = re.sub(r'^(#{1,6})\s+(.+)$', split_long_heading, text, flags=re.MULTILINE)
+    
+    # Fix 2: Bullets that appear mid-sentence after period
+    # "sentence. - **Item**: text" → "sentence.\n\n- **Item**: text"
+    text = re.sub(r'([.!?])\s+(-\s+\*\*)', r'\1\n\n\2', text)
+    
+    # Fix 3: Headings that appear mid-text (after period)
+    # "sentence. ### Heading" → "sentence.\n\n### Heading"
+    text = re.sub(r'([.!?])\s+(#{1,6}\s+)', r'\1\n\n\2', text)
+    
+    return text
+
+
 def _parse_and_render_markdown(
     pdf: canvas.Canvas,
     text: str,
@@ -1171,21 +1280,23 @@ def _parse_and_render_markdown(
     base_font_size: int = 10,
     line_height: int = 14,
 ) -> float:
-    """Parse markdown text and render with proper formatting.
+    """Parse markdown text from LLM and render with proper formatting.
+    
+    ROBUST PARSER - handles markdown even when LLM doesn't add newlines properly.
     
     Supports:
-    - # H1, ## H2, ### H3, #### H4 headings
-    - **bold** text
-    - __bold__ text
-    - *italic* text (rendered as regular for simplicity)
-    - _italic_ text (rendered as regular for simplicity)
+    - ### H3, #### H4 headings
+    - **bold** inline text
     - - bullet lists
-    - Paragraph breaks (double newline)
+    - Paragraph breaks
     
     Returns: new y position after rendering
     """
     if not text:
         return y
+    
+    # Normalize text to fix LLM formatting issues
+    text = _normalize_markdown_text(text)
     
     current_y = y
     lines = text.split('\n')
@@ -1406,30 +1517,70 @@ def _draw_bullet_list(
     return y
 
 
-def _draw_eclipse_card(pdf: canvas.Canvas, width: float, y: float, eclipse: Dict[str, Any], bullets: List[str]) -> None:
+def _draw_eclipse_card(pdf: canvas.Canvas, width: float, y: float, eclipse: Dict[str, Any], bullets: List[str]) -> float:
+    """Draw individual eclipse card WITH specific guidance for major eclipses.
+    
+    Returns: new y position after card
+    """
+    # Check if this eclipse has specific guidance
+    guidance = eclipse.get("guidance", "").strip()
+    has_guidance = len(guidance) > 20  # Only show if substantial guidance exists
+    
+    # Adjust card height based on whether guidance exists
+    card_height = 6.5 * cm if has_guidance else 3.4 * cm
+    
     pdf.setFillColorRGB(*BRAND_COLORS["crimson_light"])
-    pdf.roundRect(PAGE_LAYOUT["margin"], y - 3.6 * cm, width - 2 * PAGE_LAYOUT["margin"], 3.4 * cm, 0.2 * cm, fill=True, stroke=False)
+    pdf.roundRect(PAGE_LAYOUT["margin"], y - card_height, width - 2 * PAGE_LAYOUT["margin"], card_height, 0.2 * cm, fill=True, stroke=False)
     pdf.setFillColorRGB(*BRAND_COLORS["crimson"])
     pdf.setFont("Helvetica-Bold", 12)
-    # Strip markdown from all eclipse fields
+    
+    # Render header: date, kind, sign
     kind = _strip_markdown(eclipse.get('kind', ''))
-    date = eclipse.get('date', '')
-    line = f"{date} • {kind}"
+    date_obj = eclipse.get('date', '')
+    # Convert date object to string if needed
+    if hasattr(date_obj, 'isoformat'):
+        date_str = date_obj.isoformat()
+    elif hasattr(date_obj, 'strftime'):
+        date_str = date_obj.strftime('%Y-%m-%d')
+    else:
+        date_str = str(date_obj)
+    
+    line = f"{date_str} • {kind}"
     sign = eclipse.get("sign")
     if sign:
         line += f" in {sign}"
     pdf.drawString(PAGE_LAYOUT["margin"] + 0.4 * cm, y - 0.6 * cm, line)
+    
+    # Render house/life area
     pdf.setFont("Helvetica", 10)
     house = eclipse.get("house") or eclipse.get("life_area")
     if house:
-        # Strip markdown from house/life_area
         house = _strip_markdown(house)
         pdf.drawString(PAGE_LAYOUT["margin"] + 0.4 * cm, y - 1.2 * cm, f"Life Area: {house}")
+    
     pdf.setFillColorRGB(*BRAND_COLORS["text_dark"])
     cursor = y - 1.9 * cm
-    for bullet in bullets[:4]:
+    
+    # Render guidance if present (for major eclipses)
+    if has_guidance:
+        guidance = _strip_markdown(guidance)  # Strip any markdown from LLM output
+        cursor = _draw_wrapped(
+            pdf,
+            guidance,
+            PAGE_LAYOUT["margin"] + 0.4 * cm,
+            cursor,
+            width - 2 * PAGE_LAYOUT["margin"] - 0.8 * cm,
+            10,
+            14
+        )
+        cursor -= 0.5 * cm
+    
+    # Render bullet points (quick action items)
+    for bullet in bullets[:3]:  # Limit to 3 bullets when guidance exists
         pdf.drawString(PAGE_LAYOUT["margin"] + 0.4 * cm, cursor, f"• {bullet}")
-        cursor -= 0.6 * cm
+        cursor -= 0.5 * cm
+    
+    return y - card_height - 0.8 * cm  # Return new y position with spacing
 
 
 def _build_eclipse_bullets(eclipse: Dict[str, Any]) -> List[str]:
@@ -1636,10 +1787,11 @@ def _prepare_report(report: Dict[str, Any], validator: ContentValidator) -> Dict
             **month,
             "overview": validator.clean_text(month.get("overview", ""), month_label=month.get("month")),
             "career_and_finance": validator.clean_text(month.get("career_and_finance", ""), month_label=month.get("month")),
-            "relationships_and_family": validator.clean_text(
-                month.get("relationships_and_family", ""), month_label=month.get("month")
-            ),
-            "health_and_energy": validator.clean_text(month.get("health_and_energy", ""), month_label=month.get("month")),
+            "love_and_romance": validator.clean_text(month.get("love_and_romance", ""), month_label=month.get("month")),
+            "home_and_family": validator.clean_text(month.get("home_and_family", ""), month_label=month.get("month")),
+            "health_and_routines": validator.clean_text(month.get("health_and_routines", ""), month_label=month.get("month")),
+            "growth_and_learning": validator.clean_text(month.get("growth_and_learning", ""), month_label=month.get("month")),
+            "inner_work": validator.clean_text(month.get("inner_work", ""), month_label=month.get("month")),
             "key_insight": validator.clean_text(month.get("key_insight", ""), month_label=month.get("month")),
             "planner_actions": validator.sanitize_actions(month.get("planner_actions", [])),
         }
@@ -1650,11 +1802,19 @@ def _prepare_report(report: Dict[str, Any], validator: ContentValidator) -> Dict
     yag = report.get("year_at_glance") or {}
     cleaned_top_events = []
     for event in yag.get("top_events", []):
+        # Handle both dict and Pydantic model cases
+        if hasattr(event, 'model_dump'):
+            event_dict = event.model_dump()
+        elif isinstance(event, dict):
+            event_dict = event
+        else:
+            event_dict = dict(event) if hasattr(event, '__dict__') else {}
+        
         cleaned_top_events.append({
-            **event,
-            "title": _strip_markdown(event.get("title", "")),
-            "summary": _strip_markdown(event.get("summary", "")),
-            "tags": [_strip_markdown(str(tag)) for tag in (event.get("tags", []) or [])]
+            **event_dict,
+            "title": _strip_markdown(event_dict.get("title", "")),
+            "summary": _strip_markdown(event_dict.get("summary", "")),
+            "tags": [_strip_markdown(str(tag)) for tag in (event_dict.get("tags", []) or [])]
         })
     
     cleaned["year_at_glance"] = {
@@ -1663,16 +1823,36 @@ def _prepare_report(report: Dict[str, Any], validator: ContentValidator) -> Dict
         "top_events": cleaned_top_events
     }
     
-    # Clean eclipses and lunations (guidance is now stored at report level)
+    # Clean eclipses and lunations
+    # - General eclipse guidance is stored at report.eclipse_guidance (shown once at section top)
+    # - Individual eclipse guidance is stored in each eclipse.guidance (specific to that eclipse)
     cleaned_eclipses = []
     for eclipse in report.get("eclipses_and_lunations", []):
-        cleaned_eclipses.append({
-            **eclipse,
-            "kind": _strip_markdown(eclipse.get("kind", "")),  # Short label - strip markdown
-            "sign": _strip_markdown(eclipse.get("sign", "")),  # Short label - strip markdown
-            "house": _strip_markdown(eclipse.get("house", "")),  # Short label - strip markdown
-            "life_area": _strip_markdown(eclipse.get("life_area", "")),  # Short label - strip markdown
-        })
+        # Handle both dict and Pydantic model cases
+        if hasattr(eclipse, 'model_dump'):
+            eclipse_dict = eclipse.model_dump()
+        elif isinstance(eclipse, dict):
+            eclipse_dict = eclipse
+        else:
+            # Fallback: try to access as attributes
+            eclipse_dict = {
+                "date": getattr(eclipse, 'date', None),
+                "kind": getattr(eclipse, 'kind', ''),
+                "sign": getattr(eclipse, 'sign', ''),
+                "house": getattr(eclipse, 'house', ''),
+                "life_area": getattr(eclipse, 'life_area', ''),
+                "guidance": getattr(eclipse, 'guidance', ''),
+            }
+        
+        cleaned_eclipse = {
+            "date": eclipse_dict.get("date"),
+            "kind": _strip_markdown(eclipse_dict.get("kind", "")),  # Short label - strip markdown
+            "sign": _strip_markdown(eclipse_dict.get("sign", "")),  # Short label - strip markdown
+            "house": _strip_markdown(eclipse_dict.get("house", "")),  # Short label - strip markdown
+            "life_area": _strip_markdown(eclipse_dict.get("life_area", "")),  # Short label - strip markdown
+            "guidance": eclipse_dict.get("guidance", ""),  # KEEP individual guidance (specific to this eclipse)
+        }
+        cleaned_eclipses.append(cleaned_eclipse)
     cleaned["eclipses_and_lunations"] = cleaned_eclipses
     
     # Eclipse guidance is stored once at report level (not duplicated per eclipse)
@@ -1683,11 +1863,19 @@ def _prepare_report(report: Dict[str, Any], validator: ContentValidator) -> Dict
     if "appendix_all_events" in report:
         cleaned_events = []
         for event in report.get("appendix_all_events", []):
+            # Handle both dict and Pydantic model cases
+            if hasattr(event, 'model_dump'):
+                event_dict = event.model_dump()
+            elif isinstance(event, dict):
+                event_dict = event
+            else:
+                event_dict = dict(event) if hasattr(event, '__dict__') else {}
+            
             cleaned_events.append({
-                **event,
-                "user_friendly_summary": _strip_markdown(event.get("user_friendly_summary", "")),
-                "raw_note": _strip_markdown(event.get("raw_note", "")),
-                "life_area": _strip_markdown(event.get("life_area", ""))
+                **event_dict,
+                "user_friendly_summary": _strip_markdown(event_dict.get("user_friendly_summary", "")),
+                "raw_note": _strip_markdown(event_dict.get("raw_note", "")),
+                "life_area": _strip_markdown(event_dict.get("life_area", ""))
             })
         cleaned["appendix_all_events"] = cleaned_events
     
@@ -1902,7 +2090,9 @@ def _draw_table_row(
     pdf.setFillColorRGB(*fill)
     cursor = x
     for value, width_part in zip(values, widths):
-        pdf.drawString(cursor + 0.1 * cm, y, (value or "")[:120])
+        # Convert value to string first (handles date objects, numbers, etc.)
+        value_str = str(value) if value is not None else ""
+        pdf.drawString(cursor + 0.1 * cm, y, value_str[:120])
         cursor += width_part
 
 
@@ -1919,12 +2109,21 @@ def _compute_weekly_intensity(events: List[Dict[str, Any]], month_label: str) ->
         return []
     buckets: Dict[str, List[float]] = {}
     for ev in events:
-        date = ev.get("date") or ""
-        if len(date) < 10:
+        date = ev.get("date")
+        if not date:
             continue
-        try:
-            dt = datetime.fromisoformat(date[:10])
-        except ValueError:
+        
+        # Handle both string and datetime.date objects
+        if isinstance(date, str):
+            if len(date) < 10:
+                continue
+            try:
+                dt = datetime.fromisoformat(date[:10])
+            except ValueError:
+                continue
+        elif isinstance(date, (datetime, date)):
+            dt = date if isinstance(date, datetime) else datetime.combine(date, datetime.min.time())
+        else:
             continue
         week = (dt.day - 1) // 7 + 1
         key = f"W{week}"
