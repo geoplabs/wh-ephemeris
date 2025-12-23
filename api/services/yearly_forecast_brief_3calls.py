@@ -545,9 +545,11 @@ def build_response_from_llm_outputs(
         sample_events = months_data[sample_month]
         logger.info(f"DEBUG: Sample month '{sample_month}' has {len(sample_events)} events")
     
-    # Build overview - extract main themes from top events
+    # Build overview - extract main themes from top events (deduplicated)
     main_themes = []
-    for event in top_events[:5]:
+    seen_themes = set()  # Track duplicates
+    
+    for event in top_events[:15]:  # Check more events to ensure we get 5 unique
         transit_body = event.get("transit_body", "")
         natal_body = event.get("natal_body", "")
         aspect = event.get("aspect", "")
@@ -568,8 +570,14 @@ def build_response_from_llm_outputs(
                 # Fallback: use transit_body and aspect
                 theme = f"{transit_body} {aspect}".strip()
         
-        if theme:  # Only add non-empty themes
+        # Only add if non-empty and not a duplicate
+        if theme and theme not in seen_themes:
             main_themes.append(theme)
+            seen_themes.add(theme)
+            
+            # Stop once we have 5 unique themes
+            if len(main_themes) >= 5:
+                break
     
     # Calculate overall energy score and identify best/challenging months
     total_score = 0
