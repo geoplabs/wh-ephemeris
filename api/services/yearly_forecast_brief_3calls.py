@@ -353,13 +353,30 @@ async def generate_eclipses_llm(raw_forecast: Dict[str, Any], req: Any, natal_co
             )
             
             if is_eclipse:
-                # Extract sign from transit_body (e.g., "Sun in Aries" -> "Aries")
-                sign = "Unknown"
+                # Extract sign from transit_body or note
+                sign = None
                 transit_body = event.get("transit_body", "")
+                
+                # Method 1: Extract from transit_body (e.g., "Sun in Aries" -> "Aries")
                 if " in " in transit_body:
                     parts = transit_body.split(" in ")
                     if len(parts) == 2:
                         sign = parts[1].strip()
+                
+                # Method 2: Check if event has "sign" field directly
+                if not sign and event.get("sign"):
+                    sign = event.get("sign")
+                
+                # Method 3: Extract from note if still not found
+                if not sign:
+                    # Look for pattern like "Eclipse in Pisces" or "in Aquarius"
+                    import re
+                    zodiac_signs = ["Aries", "Taurus", "Gemini", "Cancer", "Leo", "Virgo", 
+                                   "Libra", "Scorpio", "Sagittarius", "Capricorn", "Aquarius", "Pisces"]
+                    for zs in zodiac_signs:
+                        if zs.lower() in note:
+                            sign = zs
+                            break
                 
                 # Determine eclipse type
                 if "solar eclipse" in note or "sun" in transit_body.lower():
@@ -369,11 +386,20 @@ async def generate_eclipses_llm(raw_forecast: Dict[str, Any], req: Any, natal_co
                 else:
                     kind = "Eclipse"
                 
+                # Extract house - try multiple fields
+                house = event.get("section") or event.get("house") or event.get("natal_house")
+                if house and isinstance(house, str):
+                    # Parse house number from section like "5th House" or "House 5"
+                    import re
+                    house_match = re.search(r'(\d+)', house)
+                    if house_match:
+                        house = int(house_match.group(1))
+                
                 eclipse_events.append({
                     "date": event.get("date"),
                     "type": kind,
                     "sign": sign,
-                    "house": event.get("section"),
+                    "house": house,
                     "note": event.get("note", ""),
                 })
         
@@ -512,11 +538,25 @@ def build_response_from_llm_outputs(
     months_data = raw_forecast.get("months", {})
     top_events = raw_forecast.get("top_events", [])
     
-    # Build overview
-    main_themes = [
-        event.get("transit_body", "") + " to " + event.get("natal_body", "")
-        for event in top_events[:5]
-    ]
+    # Build overview - extract main themes from top events
+    main_themes = []
+    for event in top_events[:5]:
+        transit_body = event.get("transit_body", "")
+        natal_body = event.get("natal_body", "")
+        aspect = event.get("aspect", "")
+        
+        # Skip if natal_body is missing or placeholder
+        if natal_body and natal_body != "—":
+            theme = f"{transit_body} {aspect} {natal_body}"
+        else:
+            # Extract from note if natal_body is missing
+            note = event.get("note", "")
+            if note:
+                theme = note.split(".")[0][:50]  # First sentence, max 50 chars
+            else:
+                theme = f"{transit_body} {aspect}"
+        
+        main_themes.append(theme)
     
     # Calculate overall energy score
     total_score = 0
@@ -626,11 +666,21 @@ def build_response_from_llm_outputs(
     major_transits = []
     for event in top_events[:10]:
         if event.get("date"):
+            # Extract sign from transit_body (e.g., "Sun in Aries" -> "Aries")
+            transit_body = event.get("transit_body", "Planet")
+            sign = None
+            if " in " in transit_body:
+                parts = transit_body.split(" in ")
+                if len(parts) == 2:
+                    sign = parts[1].strip()
+                    transit_body = parts[0].strip()  # Clean planet name
+            
             major_transits.append(
                 BriefTransit(
-                    planet=event.get("transit_body", "Planet"),
+                    planet=transit_body,
                     event_type=event.get("aspect", "aspect"),
                     date=Date.fromisoformat(event.get("date")),
+                    sign=sign,
                     impact_summary=event.get("note", f"{event.get('transit_body')} {event.get('aspect')} {event.get('natal_body')}")[:100]
                 )
             )
@@ -665,13 +715,18 @@ def build_response_from_llm_outputs(
             
             llm_eclipse = llm_eclipses.get(eclipse.get("date"), {})
             
+            # Get sign and house from extracted eclipse data
+            # sign is required (not optional), so default to "Unknown" if not found
+            sign = eclipse.get("sign") or "Unknown"
+            house = eclipse.get("house")
+            
             eclipse_list.append(
                 BriefEclipse(
                     date=Date.fromisoformat(eclipse.get("date")),
                     type=ecl_type,
                     eclipse_kind=subtype,
-                    sign=eclipse.get("sign", "Unknown"),
-                    house=None,
+                    sign=sign,
+                    house=house,
                     brief_impact=llm_eclipse.get("brief_impact", eclipse.get("note", "Eclipse brings transformation"))[:200]
                 )
             )
