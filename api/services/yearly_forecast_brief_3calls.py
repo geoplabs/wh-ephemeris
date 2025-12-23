@@ -11,7 +11,60 @@ from typing import Any, Dict, List
 logger = logging.getLogger(__name__)
 
 
-async def generate_monthly_narratives_llm(raw_forecast: Dict[str, Any], req: Any) -> Dict[str, Any]:
+def _extract_natal_context(chart_input: Dict[str, Any]) -> Dict[str, Any]:
+    """
+    Extract natal chart context for personalization.
+    Calculates once upfront - no performance impact.
+    """
+    from .orchestrators.natal_full import _compute_core
+    
+    try:
+        natal = _compute_core(chart_input)
+        bodies = natal.get("bodies", [])
+        houses = natal.get("houses", {})
+        
+        # Extract key placements
+        sun = next((b for b in bodies if b["name"] == "Sun"), None)
+        moon = next((b for b in bodies if b["name"] == "Moon"), None)
+        asc = houses.get("asc", {})
+        
+        # Build signature
+        sun_sign = sun.get("sign", "?") if sun else "?"
+        sun_house = sun.get("house", "?") if sun else "?"
+        moon_sign = moon.get("sign", "?") if moon else "?"
+        moon_house = moon.get("house", "?") if moon else "?"
+        asc_sign = asc.get("sign", "?")
+        
+        # Core signature one-liner
+        signature = f"Sun in {sun_sign} (House {sun_house}), Moon in {moon_sign} (House {moon_house}), Ascendant {asc_sign}"
+        
+        # Extract all natal placements for reference
+        natal_positions = {}
+        for body in bodies:
+            name = body["name"]
+            natal_positions[name] = {
+                "sign": body.get("sign"),
+                "house": body.get("house"),
+                "degree": round(body.get("lon", 0) % 30, 2),  # degree within sign
+                "retrograde": body.get("retro", False)
+            }
+        
+        return {
+            "signature": signature,
+            "sun": {"sign": sun_sign, "house": sun_house},
+            "moon": {"sign": moon_sign, "house": moon_house},
+            "asc": {"sign": asc_sign},
+            "natal_positions": natal_positions
+        }
+    except Exception as e:
+        logger.warning(f"Failed to extract natal context: {e}")
+        return {
+            "signature": "Unable to calculate natal chart",
+            "natal_positions": {}
+        }
+
+
+async def generate_monthly_narratives_llm(raw_forecast: Dict[str, Any], req: Any, natal_context: Dict[str, Any]) -> Dict[str, Any]:
     """
     LLM Call 1: Generate rich narratives for ALL 12 months.
     Returns detailed themes and guidance for each month.
@@ -21,16 +74,31 @@ async def generate_monthly_narratives_llm(raw_forecast: Dict[str, Any], req: Any
     year = req.options.year
     months_data = raw_forecast.get("months", {})
     
-    # Build month summaries
+    # Extract birth chart information for personalization
+    birth_info = {
+        "birth_date": req.chart_input.date,
+        "birth_time": req.chart_input.time,
+        "location": f"Lat {req.chart_input.place.lat}, Lon {req.chart_input.place.lon}",
+        "system": req.chart_input.system,
+        "chart_signature": natal_context["signature"]
+    }
+    
+    # Build month summaries with detailed transit information
     month_summaries = []
     for month_key in sorted(months_data.keys()):
         events = months_data[month_key]
         high_events = [e for e in events if e.get("score", 0) > 0.5]
         caution_events = [e for e in events if e.get("score", 0) < -0.5]
         
+        # Get top transits with full details
+        top_events = sorted(events, key=lambda x: abs(x.get('score', 0)), reverse=True)[:5]
         top_transits = [
-            f"{e.get('transit_body')} {e.get('aspect')} {e.get('natal_body')}"
-            for e in sorted(events, key=lambda x: abs(x.get('score', 0)), reverse=True)[:3]
+            {
+                "transit": f"{e.get('transit_body')} {e.get('aspect')} natal {e.get('natal_body')}",
+                "date": e.get('date'),
+                "note": e.get('note', '')[:100]  # First 100 chars of interpretation
+            }
+            for e in top_events
         ]
         
         month_summaries.append({
@@ -43,13 +111,37 @@ async def generate_monthly_narratives_llm(raw_forecast: Dict[str, Any], req: Any
     
     system_prompt = """You are an expert astrologer creating rich, engaging monthly forecasts.
 
+CRITICAL: This forecast is for a SPECIFIC PERSON with a UNIQUE birth chart.
+- PERSONALIZE based on their natal placements being activated
+- Each person born on different dates will have DIFFERENT natal charts
+- The same transit affects different people in UNIQUE ways based on their natal chart
+
 TONE: Warm, empowering, specific
 FORMAT: Use markdown (### for headings, **bold** for emphasis)
 QUALITY: Detailed, personalized, actionable guidance
 
 Return ONLY valid JSON."""
 
-    user_prompt = f"""Generate detailed monthly highlights for all 12 months of {year}.
+    user_prompt = f"""Generate detailed monthly highlights for all 12 months of {year} for THIS SPECIFIC PERSON:
+
+NATAL CHART IDENTITY (This person's unique blueprint):
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+{birth_info['chart_signature']}
+Born: {birth_info['birth_date']} at {birth_info['birth_time']}
+Location: {birth_info['location']}
+System: {birth_info['system']}
+
+KEY NATAL POSITIONS:
+{json.dumps(natal_context['natal_positions'], indent=2)}
+
+CRITICAL INSTRUCTIONS:
+1. **Name natal placements**: When transiting Saturn squares natal Venus, say "YOUR natal Venus in [sign] in your [house] house"
+2. **Explain house meanings**: "This affects your 7th house of partnerships" or "activating your 10th house of career"
+3. **Interpret orbs**: Tight orbs (< 1°) = "exact, peak intensity", wider orbs = "building" or "separating"
+4. **Benefic/Malefic logic**: 
+   - Trines/Sextiles from Jupiter/Venus = naturally harmonious
+   - Squares/Oppositions from Saturn/Mars = challenging but growth-inducing
+5. **Transit meaning**: "Sun trine natal Jupiter" means transiting Sun is forming a trine TO this person's natal Jupiter at {natal_context['natal_positions'].get('Jupiter', {}).get('degree', '?')}° {natal_context['natal_positions'].get('Jupiter', {}).get('sign', '?')}
 
 MONTHLY DATA:
 {json.dumps(month_summaries, indent=2)}
@@ -104,7 +196,7 @@ Return ONLY the JSON, no markdown code blocks."""
         return {"monthly_highlights": []}
 
 
-async def generate_life_areas_llm(raw_forecast: Dict[str, Any], req: Any) -> Dict[str, Any]:
+async def generate_life_areas_llm(raw_forecast: Dict[str, Any], req: Any, natal_context: Dict[str, Any]) -> Dict[str, Any]:
     """
     LLM Call 2: Generate rich themes for ALL 6 life areas.
     Returns detailed yearly themes and guidance for each area.
@@ -114,16 +206,38 @@ async def generate_life_areas_llm(raw_forecast: Dict[str, Any], req: Any) -> Dic
     year = req.options.year
     months_data = raw_forecast.get("months", {})
     
+    # Extract birth chart information
+    birth_info = {
+        "birth_date": req.chart_input.date,
+        "birth_time": req.chart_input.time,
+        "system": req.chart_input.system,
+        "chart_signature": natal_context["signature"]
+    }
+    
     # Analyze event patterns across the year
     all_events = []
     for month_key, events in months_data.items():
         all_events.extend(events)
     
-    # Group events by type for context
-    career_events = [e for e in all_events if any(word in str(e.get("note", "")).lower() for word in ["career", "work", "profession", "midheaven"])]
-    love_events = [e for e in all_events if any(word in str(e.get("note", "")).lower() for word in ["love", "romance", "relationship", "venus"])]
+    # Group events by natal placements being activated
+    career_events = [e for e in all_events if any(word in str(e.get("note", "")).lower() for word in ["career", "work", "profession", "midheaven", "10th"])]
+    love_events = [e for e in all_events if any(word in str(e.get("note", "")).lower() for word in ["love", "romance", "relationship", "venus", "7th"])]
+    family_events = [e for e in all_events if any(word in str(e.get("note", "")).lower() for word in ["home", "family", "domestic", "4th house"])]
+    health_events = [e for e in all_events if any(word in str(e.get("note", "")).lower() for word in ["health", "wellness", "routine", "6th"])]
+    
+    # Sample some key natal placements being activated
+    unique_natal_bodies = set()
+    for e in all_events[:20]:  # Sample top 20 events
+        natal_body = e.get('natal_body', '')
+        if natal_body and natal_body != '—':
+            unique_natal_bodies.add(natal_body)
     
     system_prompt = """You are an expert astrologer creating rich, personalized yearly themes for life areas.
+
+CRITICAL: This is for a SPECIFIC PERSON with a UNIQUE birth chart.
+- The transits activate THEIR specific natal placements
+- Different birth dates = different natal charts = different experiences
+- Personalize based on which natal planets are being activated
 
 TONE: Warm, empowering, specific
 FORMAT: Use markdown (### for headings, **bold** for emphasis)
@@ -131,13 +245,32 @@ QUALITY: Detailed, personalized, forward-looking
 
 Return ONLY valid JSON."""
 
-    user_prompt = f"""Generate detailed yearly themes for all 6 life areas for {year}.
+    user_prompt = f"""Generate detailed yearly themes for all 6 life areas for {year} for THIS SPECIFIC PERSON:
 
-YEARLY CONTEXT:
+NATAL CHART IDENTITY:
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+{birth_info['chart_signature']}
+Born: {birth_info['birth_date']} at {birth_info['birth_time']}
+System: {birth_info['system']}
+
+KEY NATAL POSITIONS ACTIVATED:
+{json.dumps({k: v for k, v in natal_context['natal_positions'].items() if k in unique_natal_bodies}, indent=2)}
+
+INSTRUCTIONS:
+- Reference specific natal placements: "Your natal Jupiter in [sign] in [house]"
+- Explain house meanings: "activating your 2nd house of income and values"
+- Note benefic vs malefic energies
+- Interpret aspect quality (trine = flow, square = tension, etc.)
+
+YEARLY TRANSIT PATTERNS:
 - Total significant events: {len(all_events)}
-- Career-related events: {len(career_events)}
-- Love-related events: {len(love_events)}
-- System: {req.chart_input.system}
+- Career/10th house activations: {len(career_events)}
+- Love/7th house activations: {len(love_events)}
+- Home/4th house activations: {len(family_events)}
+- Health/6th house activations: {len(health_events)}
+
+IMPORTANT: These transits affect THIS PERSON'S natal chart specifically.
+Same transit affects different people differently based on their unique natal positions!
 
 For EACH of these 6 life areas, provide:
 1. **yearly_theme**: Rich, engaging theme with markdown formatting (2-3 sentences with astrological context)
@@ -191,7 +324,7 @@ Return ONLY the JSON, no markdown code blocks."""
         return {"life_areas": []}
 
 
-async def generate_eclipses_llm(raw_forecast: Dict[str, Any], req: Any) -> Dict[str, Any]:
+async def generate_eclipses_llm(raw_forecast: Dict[str, Any], req: Any, natal_context: Dict[str, Any]) -> Dict[str, Any]:
     """
     LLM Call 3: Generate rich interpretations for eclipses.
     Returns personalized eclipse impacts and guidance.
@@ -249,7 +382,15 @@ async def generate_eclipses_llm(raw_forecast: Dict[str, Any], req: Any) -> Dict[
             logger.warning("No eclipse events found in raw forecast")
             return {"eclipses": [], "raw_eclipse_events": []}
         
-        # Build eclipse context for LLM
+        # Extract birth chart information
+        birth_info = {
+            "birth_date": req.chart_input.date,
+            "birth_time": req.chart_input.time,
+            "system": req.chart_input.system,
+            "chart_signature": natal_context["signature"]
+        }
+        
+        # Build eclipse context for LLM with more details
         eclipse_data = []
         for eclipse in eclipse_events:
             eclipse_data.append({
@@ -257,9 +398,15 @@ async def generate_eclipses_llm(raw_forecast: Dict[str, Any], req: Any) -> Dict[
                 "type": eclipse.get("type", ""),
                 "sign": eclipse.get("sign", ""),
                 "house": eclipse.get("house"),
+                "note": eclipse.get("note", "")[:150]  # Include original interpretation
             })
         
         system_prompt = """You are an expert astrologer interpreting eclipses with depth and wisdom.
+
+CRITICAL: Eclipses affect each person UNIQUELY based on their birth chart.
+- Same eclipse affects different people in different life areas
+- The house placement and natal aspects make it personal
+- DIFFERENTIATE your interpretation for each individual
 
 TONE: Profound, empowering, specific
 QUALITY: Detailed, personalized interpretations
@@ -267,16 +414,37 @@ FORMAT: 2-3 sentences per eclipse
 
 Return ONLY valid JSON."""
 
-        user_prompt = f"""Generate rich, personalized interpretations for these {len(eclipse_events)} eclipses.
+        user_prompt = f"""Generate rich, personalized interpretations for these {len(eclipse_events)} eclipses for THIS SPECIFIC PERSON:
+
+NATAL CHART IDENTITY:
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+{birth_info['chart_signature']}
+Born: {birth_info['birth_date']} at {birth_info['birth_time']}
+- System: {birth_info['system']}
+
+KEY NATAL POSITIONS (for reference):
+{json.dumps(natal_context['natal_positions'], indent=2)}
 
 ECLIPSE DATA:
 {json.dumps(eclipse_data, indent=2)}
 
+CRITICAL INSTRUCTIONS:
+1. **Name natal placements**: If eclipse aspects natal Jupiter, say "YOUR natal Jupiter in [sign] in [house]"
+2. **Explain house meanings**: "This eclipse in your 5th house activates creativity, romance, and self-expression"
+3. **Eclipse house activation**: Explain which life area is illuminated (1st=self, 7th=relationships, 10th=career, etc.)
+4. **Degree precision**: If you know the eclipse degree, note if it's tight to any natal planets
+
+IMPORTANT: Each person experiences eclipses differently based on:
+- Which house the eclipse falls in THEIR chart
+- Which natal planets the eclipse activates
+- Their unique life circumstances
+
 For EACH eclipse, provide:
-**brief_impact**: A rich, personalized interpretation (2-3 sentences) that includes:
+**brief_impact**: A rich, PERSONALIZED interpretation (2-3 sentences) that includes:
 - Specific date and type
-- Impact based on the sign/house
-- Actionable guidance
+- Which house in THEIR chart is activated and what that means
+- How THIS PARTICULAR PERSON will experience it based on natal placements
+- Actionable guidance specific to their chart
 - Empowering perspective
 
 Return this EXACT JSON structure:

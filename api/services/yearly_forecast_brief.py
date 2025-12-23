@@ -65,13 +65,20 @@ async def generate_brief_yearly_forecast(
     step_time = time.time() - step_start
     logger.info(f"⏱️  [1/4] Raw forecast computed: {step_time:.2f}s")
     
+    # Step 1.5: Extract natal context for personalization (fast - <1 second)
+    step_start = time.time()
+    from .yearly_forecast_brief_3calls import _extract_natal_context
+    natal_context = _extract_natal_context(req.chart_input.model_dump())
+    step_time = time.time() - step_start
+    logger.info(f"⏱️  [1.5/4] Natal context extracted: {step_time:.2f}s - {natal_context['signature']}")
+    
     # Step 2: Make 3 PARALLEL LLM calls for quality content
     step_start = time.time()
     try:
-        # Run 3 focused LLM calls in parallel
-        monthly_task = generate_monthly_narratives_llm(raw_forecast, req)
-        life_areas_task = generate_life_areas_llm(raw_forecast, req)
-        eclipses_task = generate_eclipses_llm(raw_forecast, req)
+        # Run 3 focused LLM calls in parallel (WITH natal context for rich personalization)
+        monthly_task = generate_monthly_narratives_llm(raw_forecast, req, natal_context)
+        life_areas_task = generate_life_areas_llm(raw_forecast, req, natal_context)
+        eclipses_task = generate_eclipses_llm(raw_forecast, req, natal_context)
         
         # Execute all 3 calls in parallel
         monthly_narratives, life_areas_data, eclipses_data = await asyncio.gather(
