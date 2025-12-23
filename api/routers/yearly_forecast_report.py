@@ -4,8 +4,10 @@ from fastapi import APIRouter, Body, HTTPException
 
 from ..schemas.yearly_forecast_report import YearlyForecastReportResponse, YearlyForecastRequest
 from ..schemas.yearly_forecast_brief import BriefYearlyForecastResponse
+from ..schemas.yearly_forecast_summary import YearlyForecastSummaryResponse
 from ..services.yearly_forecast_report import generate_yearly_forecast_with_pdf
 from ..services.yearly_forecast_brief import generate_brief_yearly_forecast
+from ..services.yearly_forecast_summary import generate_yearly_forecast_summary
 from ..services.llm_client import LLMUnavailableError
 
 logger = logging.getLogger(__name__)
@@ -63,3 +65,44 @@ async def yearly_forecast_brief(req: YearlyForecastRequest = Body(...)):
         logger.error(f"YEARLY_FORECAST_BRIEF_ERROR: {exc}")
         logger.error(f"TRACEBACK: {traceback.format_exc()}")
         raise HTTPException(status_code=500, detail=f"Failed to generate brief yearly forecast: {str(exc)}") from exc
+
+
+@router.post("/summary", response_model=YearlyForecastSummaryResponse)
+async def yearly_forecast_summary(req: YearlyForecastRequest = Body(...)):
+    """
+    Generate FAST, FREE yearly forecast summary (NO LLM calls).
+    
+    This endpoint is optimized for:
+    - ⚡ Speed: <5 seconds response time
+    - 💰 Free tier: No LLM costs
+    - ✅ Personalization: Uses natal chart data
+    - 📊 High-level overview: Perfect teaser for premium /brief
+    
+    Response includes:
+    - Core natal chart signature (Sun, Moon, Ascendant)
+    - Yearly theme and energy level
+    - Top 3 best months
+    - Quick life area outlooks (template-based)
+    - Top 5 key transits
+    - Top opportunities and challenges
+    
+    Perfect for:
+    - Free tier users
+    - Quick previews before purchasing detailed reports
+    - Mobile apps needing fast responses
+    - Dashboard widgets
+    - Email summaries
+    
+    Upgrade to /brief for:
+    - AI-powered detailed narratives
+    - Monthly guidance for all 12 months
+    - In-depth life area themes
+    - Eclipse interpretations
+    - Personalized recommendations
+    """
+    try:
+        return await generate_yearly_forecast_summary(req)
+    except Exception as exc:  # pragma: no cover - unexpected runtime
+        logger.error(f"YEARLY_FORECAST_SUMMARY_ERROR: {exc}")
+        logger.error(f"TRACEBACK: {traceback.format_exc()}")
+        raise HTTPException(status_code=500, detail=f"Failed to generate yearly forecast summary: {str(exc)}") from exc
