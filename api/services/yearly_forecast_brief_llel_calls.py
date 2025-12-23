@@ -1,12 +1,10 @@
 """
 Service for generating brief yearly forecasts (JSON only, no PDF).
 Provides concise summaries suitable for mobile apps and quick previews.
-Uses 3 strategic LLM calls for high-quality content with fast performance.
 """
 
 import logging
 import time
-import asyncio
 from datetime import datetime, date as Date
 from typing import Any, Dict, List, Optional
 
@@ -19,14 +17,7 @@ from ..schemas.yearly_forecast_brief import (
     BriefEclipse,
 )
 from ..schemas.yearly_forecast_report import YearlyForecastRequest
-from .yearly_forecast_report import compute_yearly_forecast
-from .yearly_forecast_brief_3calls import (
-    generate_monthly_narratives_llm,
-    generate_life_areas_llm,
-    generate_eclipses_llm,
-    build_response_from_llm_outputs,
-)
-from .llm_client import LLMUnavailableError
+from .yearly_forecast_report import build_interpreted_yearly_report
 
 logger = logging.getLogger(__name__)
 
@@ -35,85 +26,33 @@ async def generate_brief_yearly_forecast(
     req: YearlyForecastRequest
 ) -> BriefYearlyForecastResponse:
     """
-    Generate a brief yearly forecast in JSON format with 3 STRATEGIC LLM calls.
+    Generate a brief yearly forecast in JSON format with LLM interpretation.
     
     This endpoint:
-    1. Computes raw forecast data (fast - ~5-10 seconds)
-    2. Makes 3 PARALLEL LLM calls for high-quality content:
-       - Call 1: All 12 monthly narratives
-       - Call 2: All 6 life area themes
-       - Call 3: Eclipse interpretations
-    3. Returns rich, detailed JSON (no PDF generation)
-    4. Balanced: ~16-20 seconds with excellent quality
+    1. Uses LLM to interpret the yearly forecast (personalized narratives)
+    2. Extracts and condenses the key information
+    3. Returns concise JSON (no PDF generation)
+    4. Suitable for mobile apps, API integrations, quick previews
     
     Args:
         req: YearlyForecastRequest (same as PDF endpoint)
         
     Returns:
-        BriefYearlyForecastResponse: Rich JSON forecast with AI-generated content
+        BriefYearlyForecastResponse: Concise JSON forecast with AI-generated content
     """
     
     start_time = time.time()
-    logger.info(f"🚀 Starting brief yearly forecast with 3 STRATEGIC LLM calls for year {req.options.year}")
+    logger.info(f"🚀 Starting brief yearly forecast with LLM for year {req.options.year}")
     
-    # Step 1: Get raw forecast data (fast - ~5-10 seconds)
+    # Get interpreted report data with LLM (includes AI-generated narratives)
+    # This skips PDF generation but includes all the LLM interpretation
     step_start = time.time()
-    raw_forecast = await compute_yearly_forecast(
-        req.chart_input.model_dump(), 
-        req.options.model_dump()
-    )
+    full_report = await build_interpreted_yearly_report(req)
     step_time = time.time() - step_start
-    logger.info(f"⏱️  [1/4] Raw forecast computed: {step_time:.2f}s")
+    logger.info(f"⏱️  [1/9] LLM interpretation completed: {step_time:.2f}s")
     
-    # Step 1.5: Extract natal context for personalization (fast - <1 second)
-    step_start = time.time()
-    from .yearly_forecast_brief_3calls import _extract_natal_context
-    natal_context = _extract_natal_context(req.chart_input.model_dump())
-    step_time = time.time() - step_start
-    logger.info(f"⏱️  [1.5/4] Natal context extracted: {step_time:.2f}s - {natal_context['signature']}")
-    
-    # Step 2: Make 3 PARALLEL LLM calls for quality content
-    step_start = time.time()
-    try:
-        # Run 3 focused LLM calls in parallel (WITH natal context for rich personalization)
-        monthly_task = generate_monthly_narratives_llm(raw_forecast, req, natal_context)
-        life_areas_task = generate_life_areas_llm(raw_forecast, req, natal_context)
-        eclipses_task = generate_eclipses_llm(raw_forecast, req, natal_context)
-        
-        # Execute all 3 calls in parallel
-        monthly_narratives, life_areas_data, eclipses_data = await asyncio.gather(
-            monthly_task,
-            life_areas_task,
-            eclipses_task
-        )
-        
-        step_time = time.time() - step_start
-        logger.info(f"⏱️  [2/4] 3 parallel LLM calls completed: {step_time:.2f}s")
-        
-    except LLMUnavailableError as e:
-        logger.error(f"❌ LLM unavailable: {e}")
-        raise
-    except Exception as e:
-        logger.error(f"❌ LLM calls failed: {e}")
-        # Re-raise as LLM error
-        raise LLMUnavailableError(f"Failed to generate LLM content: {str(e)}") from e
-    
-    # Step 3: Build structured response from LLM outputs
-    step_start = time.time()
-    response = build_response_from_llm_outputs(
-        monthly_narratives,
-        life_areas_data,
-        eclipses_data,
-        raw_forecast,
-        req
-    )
-    step_time = time.time() - step_start
-    logger.info(f"⏱️  [3/4] Response built: {step_time:.2f}s")
-    
-    total_time = time.time() - start_time
-    logger.info(f"✅ Total brief forecast generation time: {total_time:.2f}s")
-    
-    return response
+    # Extract birth date from request
+    birth_date = Date.fromisoformat(req.chart_input.date)
     
     # Build brief overview from LLM-interpreted report
     step_start = time.time()
@@ -508,3 +447,4 @@ def _build_recommendations(full_report: Any) -> Dict[str, List[str]]:
     }
     
     return recommendations
+
