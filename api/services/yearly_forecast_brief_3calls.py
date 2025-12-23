@@ -538,38 +538,55 @@ def build_response_from_llm_outputs(
     months_data = raw_forecast.get("months", {})
     top_events = raw_forecast.get("top_events", [])
     
+    # Debug logging
+    logger.info(f"DEBUG: months_data has {len(months_data)} months, top_events has {len(top_events)} events")
+    if months_data:
+        sample_month = list(months_data.keys())[0]
+        sample_events = months_data[sample_month]
+        logger.info(f"DEBUG: Sample month '{sample_month}' has {len(sample_events)} events")
+    
     # Build overview - extract main themes from top events
     main_themes = []
     for event in top_events[:5]:
         transit_body = event.get("transit_body", "")
         natal_body = event.get("natal_body", "")
         aspect = event.get("aspect", "")
+        note = event.get("note", "")
         
-        # Skip if natal_body is missing or placeholder
-        if natal_body and natal_body != "—":
+        # Check if natal_body is valid (not empty, not "—", not placeholder)
+        if natal_body and natal_body.strip() and natal_body not in ["—", "-", "–", "None", ""]:
             theme = f"{transit_body} {aspect} {natal_body}"
         else:
             # Extract from note if natal_body is missing
-            note = event.get("note", "")
             if note:
-                theme = note.split(".")[0][:50]  # First sentence, max 50 chars
+                # Get first complete sentence, max 80 chars to avoid truncation
+                first_sentence = note.split(".")[0].strip()
+                if len(first_sentence) > 80:
+                    first_sentence = first_sentence[:77] + "..."
+                theme = first_sentence
             else:
-                theme = f"{transit_body} {aspect}"
+                # Fallback: use transit_body and aspect
+                theme = f"{transit_body} {aspect}".strip()
         
-        main_themes.append(theme)
+        if theme:  # Only add non-empty themes
+            main_themes.append(theme)
     
-    # Calculate overall energy score
+    # Calculate overall energy score and identify best/challenging months
     total_score = 0
     month_count = 0
-    for month_key in months_data:
+    month_scores = {}  # Track scores for each month
+    
+    for month_key in sorted(months_data.keys()):
         events = months_data[month_key]
         high = len([e for e in events if e.get("score", 0) > 0.5])
         caution = len([e for e in events if e.get("score", 0) < -0.5])
-        total_score += high - caution
+        month_score = max(0, min(10, 5.0 + (high - caution) * 0.5))
+        month_scores[month_key] = month_score
+        total_score += month_score
         month_count += 1
     
-    avg_score = total_score / month_count if month_count > 0 else 0
-    energy_score = max(0, min(10, 5.0 + avg_score * 0.5))
+    avg_score = total_score / month_count if month_count > 0 else 5.0
+    energy_score = avg_score
     
     if energy_score >= 7:
         overall_energy = "expansive"
@@ -578,6 +595,18 @@ def build_response_from_llm_outputs(
     else:
         overall_energy = "introspective"
     
+    # Identify best and challenging months (top 3 each)
+    sorted_months = sorted(month_scores.items(), key=lambda x: x[1], reverse=True)
+    
+    # Best months: Top 3 with above-average scores (>= avg_score)
+    best_months = [m[0] for m in sorted_months[:3] if m[1] >= avg_score]
+    
+    # Challenging months: Bottom 3 with below-average scores (< avg_score)  
+    challenging_months = [m[0] for m in sorted_months[-3:] if m[1] < avg_score]
+    challenging_months.reverse()  # Most challenging first
+    
+    logger.info(f"DEBUG: Calculated {len(month_scores)} month scores (avg={avg_score:.1f}). Best: {best_months}, Challenging: {challenging_months}")
+    
     overview = BriefYearlyOverview(
         year=req.options.year,
         main_themes=main_themes,
@@ -585,8 +614,8 @@ def build_response_from_llm_outputs(
         energy_score=round(energy_score, 1),
         key_opportunities=["Personal growth opportunities", "Career advancement", "New connections"],
         key_challenges=["Patience required", "Inner work needed", "Balance priorities"],
-        best_months=[],
-        challenging_months=[]
+        best_months=best_months,
+        challenging_months=challenging_months
     )
     
     # Build monthly highlights from LLM output
@@ -613,12 +642,21 @@ def build_response_from_llm_outputs(
         
         llm_month = llm_months.get(month_key, {})
         
-        # Get notable dates from high events
-        notable_dates = [
-            Date.fromisoformat(e.get("date"))
-            for e in sorted(high_events, key=lambda x: x.get("score", 0), reverse=True)[:3]
-            if e.get("date")
-        ]
+        # Get notable dates from significant events (prioritize high events, but include any if needed)
+        events_with_dates = [e for e in events if e.get("date")]
+        if high_events:
+            # Prioritize high-scoring events
+            notable_dates = [
+                Date.fromisoformat(e.get("date"))
+                for e in sorted(high_events, key=lambda x: abs(x.get("score", 0)), reverse=True)[:3]
+                if e.get("date")
+            ]
+        else:
+            # If no high events, use top events by absolute score
+            notable_dates = [
+                Date.fromisoformat(e.get("date"))
+                for e in sorted(events_with_dates, key=lambda x: abs(x.get("score", 0)), reverse=True)[:3]
+            ]
         
         monthly_highlights.append(
             BriefMonthHighlight(
@@ -636,6 +674,16 @@ def build_response_from_llm_outputs(
     llm_areas = {a["area"]: a for a in life_areas_data.get("life_areas", [])}
     life_areas = []
     
+    # Map life areas to house keywords for matching events
+    area_keywords = {
+        "Career & Finance": ["career", "work", "profession", "midheaven", "10th", "money", "income", "2nd"],
+        "Love & Romance": ["love", "romance", "relationship", "venus", "7th", "partner"],
+        "Home & Family": ["home", "family", "domestic", "4th", "parent", "mother", "father"],
+        "Health & Wellness": ["health", "wellness", "routine", "6th", "body", "fitness"],
+        "Growth & Learning": ["learning", "education", "9th", "study", "wisdom", "jupiter", "higher"],
+        "Inner Work": ["transformation", "8th", "12th", "spiritual", "unconscious", "healing"]
+    }
+    
     for area_name in ["Career & Finance", "Love & Romance", "Home & Family", "Health & Wellness", "Growth & Learning", "Inner Work"]:
         llm_area = llm_areas.get(area_name, {})
         
@@ -652,12 +700,25 @@ def build_response_from_llm_outputs(
         
         area_score = max(0, min(10, 5.0 + (pos_count * 0.5) - (neg_count * 0.3) + (len(combined_text) / 500)))
         
+        # Find key months - use month_scores which are already calculated!
+        # This guarantees we have data and uses the same scoring logic as best/challenging months
+        if month_scores:
+            # Sort by score and take top 3 months
+            sorted_months_for_area = sorted(month_scores.items(), key=lambda x: x[1], reverse=True)
+            key_months = [m[0] for m in sorted_months_for_area[:3]]
+        else:
+            # Ultimate fallback (should never happen)
+            all_months = sorted(months_data.keys())
+            key_months = all_months[:3] if len(all_months) >= 3 else all_months
+        
+        logger.info(f"Life area '{area_name}': key_months={key_months}")
+        
         life_areas.append(
             BriefLifeArea(
                 area=area_name,
                 yearly_theme=theme or f"{area_name} focus for the year",
                 score=round(area_score, 1),
-                key_months=[],
+                key_months=key_months,
                 brief_guidance=guidance or f"Focus on {area_name.lower()} throughout the year."
             )
         )
