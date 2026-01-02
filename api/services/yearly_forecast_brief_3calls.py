@@ -671,21 +671,54 @@ def build_response_from_llm_outputs(
         
         llm_month = llm_months.get(month_key, {})
         
-        # Get notable dates from significant events (prioritize high events, but include any if needed)
+        # Get notable dates with context (prioritize significant events)
+        from ..schemas.yearly_forecast_brief import NotableDate
+        
         events_with_dates = [e for e in events if e.get("date")]
-        if high_events:
-            # Prioritize high-scoring events
-            notable_dates = [
-                Date.fromisoformat(e.get("date"))
-                for e in sorted(high_events, key=lambda x: abs(x.get("score", 0)), reverse=True)[:3]
-                if e.get("date")
-            ]
-        else:
-            # If no high events, use top events by absolute score
-            notable_dates = [
-                Date.fromisoformat(e.get("date"))
-                for e in sorted(events_with_dates, key=lambda x: abs(x.get("score", 0)), reverse=True)[:3]
-            ]
+        significant_events = sorted(events_with_dates, key=lambda x: abs(x.get("score", 0)), reverse=True)[:3]
+        
+        notable_dates = []
+        for event in significant_events:
+            score = event.get("score", 0)
+            transit_body = event.get("transit_body", "Planet")
+            natal_body = event.get("natal_body", "")
+            aspect = event.get("aspect", "")
+            note = event.get("note", "")
+            
+            # Determine type based on score and content
+            if "eclipse" in note.lower():
+                date_type = "eclipse"
+            elif score > 0.5:
+                date_type = "opportunity"
+            elif score < -0.5:
+                date_type = "caution"
+            else:
+                date_type = "major_transit"
+            
+            # Build event description
+            if natal_body and natal_body not in ["—", "-", "–", "None", ""]:
+                event_desc = f"{transit_body} {aspect} {natal_body}"
+            else:
+                event_desc = f"{transit_body} {aspect}".strip() or transit_body
+            
+            # Build brief note (use LLM note or generate from score)
+            if note:
+                brief_note = note.split(".")[0].strip()[:80]  # First sentence, max 80 chars
+            elif score > 0.5:
+                brief_note = "Favorable energy for growth and opportunities"
+            elif score < -0.5:
+                brief_note = "Challenging period requiring patience and adjustment"
+            else:
+                brief_note = "Significant transit to be aware of"
+            
+            notable_dates.append(
+                NotableDate(
+                    date=Date.fromisoformat(event.get("date")),
+                    type=date_type,
+                    event=event_desc,
+                    brief_note=brief_note
+                )
+            )
         
         monthly_highlights.append(
             BriefMonthHighlight(

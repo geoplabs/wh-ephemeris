@@ -11,6 +11,14 @@ from typing import Any, Dict, List, Optional
 from pydantic import BaseModel, Field
 
 
+class NotableDate(BaseModel):
+    """A notable date with context."""
+    date: Date
+    type: str  # "opportunity", "caution", "eclipse", "major_transit"
+    event: str  # What's happening (e.g., "Mars trine Jupiter", "Solar Eclipse")
+    brief_note: str  # Why it's notable (1 sentence)
+
+
 class BriefMonthHighlight(BaseModel):
     """Brief monthly highlight."""
     month: str  # "January", "February", etc.
@@ -18,7 +26,7 @@ class BriefMonthHighlight(BaseModel):
     key_theme: str  # Main theme for the month
     energy_score: float  # 0-10 scale
     energy_level: str  # "very favorable", "good", "balanced", "challenging", "difficult"
-    notable_dates: List[Date] = Field(default_factory=list)
+    notable_dates: List[NotableDate] = Field(default_factory=list)
     brief_guidance: str  # 1-2 sentences
 
 
@@ -112,6 +120,7 @@ __all__ = [
     "BriefLifeArea",
     "BriefTransit",
     "BriefEclipse",
+    "NotableDate",
     "YearlyForecastRequest",  # Re-export for convenience
 ]
 
