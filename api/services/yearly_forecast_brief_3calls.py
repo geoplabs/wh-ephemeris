@@ -671,13 +671,15 @@ def build_response_from_llm_outputs(
         
         llm_month = llm_months.get(month_key, {})
         
-        # Get notable dates with context (prioritize significant events)
+        # Get notable dates with context (prioritize significant AND diverse events)
         from ..schemas.yearly_forecast_brief import NotableDate
         
         events_with_dates = [e for e in events if e.get("date")]
-        significant_events = sorted(events_with_dates, key=lambda x: abs(x.get("score", 0)), reverse=True)[:3]
+        significant_events = sorted(events_with_dates, key=lambda x: abs(x.get("score", 0)), reverse=True)
         
         notable_dates = []
+        seen_transits = {}  # Track transits: key -> count (allow max 1 of each type)
+        
         for event in significant_events:
             score = event.get("score", 0)
             transit_body = event.get("transit_body", "Planet")
@@ -685,15 +687,12 @@ def build_response_from_llm_outputs(
             aspect = event.get("aspect", "")
             note = event.get("note", "")
             
-            # Determine type based on score and content
-            if "eclipse" in note.lower():
-                date_type = "eclipse"
-            elif score > 0.5:
-                date_type = "opportunity"
-            elif score < -0.5:
-                date_type = "caution"
-            else:
-                date_type = "major_transit"
+            # Create unique key for this transit type (to avoid showing same transit multiple times)
+            transit_key = f"{transit_body}:{aspect}:{natal_body}"
+            
+            # Skip if we've already added this exact transit type
+            if transit_key in seen_transits:
+                continue
             
             # Build event description
             if natal_body and natal_body not in ["—", "-", "–", "None", ""]:
@@ -711,6 +710,21 @@ def build_response_from_llm_outputs(
             else:
                 brief_note = "Significant transit to be aware of"
             
+            # Determine type based on BOTH score AND note content (note keywords override score)
+            note_lower = note.lower()
+            if "eclipse" in note_lower:
+                date_type = "eclipse"
+            elif any(word in note_lower for word in ["challenge", "challenges", "tension", "difficult", "friction", "pressure", "caution"]):
+                date_type = "caution"  # Note indicates challenge → caution
+            elif any(word in note_lower for word in ["opportunity", "opportunities", "growth", "favorable", "positive", "harmony", "support"]):
+                date_type = "opportunity"  # Note indicates opportunity
+            elif score > 0.5:
+                date_type = "opportunity"
+            elif score < -0.5:
+                date_type = "caution"
+            else:
+                date_type = "major_transit"
+            
             notable_dates.append(
                 NotableDate(
                     date=Date.fromisoformat(event.get("date")),
@@ -719,6 +733,17 @@ def build_response_from_llm_outputs(
                     brief_note=brief_note
                 )
             )
+            
+            seen_transits[transit_key] = 1
+            
+            # Stop at 3 unique notable dates per month
+            if len(notable_dates) >= 3:
+                break
+        
+        # If we have fewer than 3 and there are more events available, relax the deduplication
+        # This ensures months aren't left empty when they have significant activity
+        if len(notable_dates) < 3 and len(events_with_dates) > len(notable_dates):
+            logger.debug(f"Month {month_key}: Only {len(notable_dates)} unique events found from {len(events_with_dates)} total events")
         
         monthly_highlights.append(
             BriefMonthHighlight(
