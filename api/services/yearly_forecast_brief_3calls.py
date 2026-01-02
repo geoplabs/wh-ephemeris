@@ -545,15 +545,31 @@ def build_response_from_llm_outputs(
         sample_events = months_data[sample_month]
         logger.info(f"DEBUG: Sample month '{sample_month}' has {len(sample_events)} events")
     
-    # Build overview - extract main themes from top events (deduplicated)
+    # Build overview - extract main themes from top events (deduplicated with smart filtering)
     main_themes = []
     seen_themes = set()  # Track duplicates
+    transit_body_count = {}  # Track how many times each transit body appears
     
-    for event in top_events[:15]:  # Check more events to ensure we get 5 unique
+    # Prioritize eclipses and outer planets first
+    priority_bodies = ["Sun", "Moon", "Saturn", "Jupiter", "Uranus", "Neptune", "Pluto"]
+    priority_events = [e for e in top_events if any(body in e.get("transit_body", "") for body in priority_bodies) or "eclipse" in e.get("note", "").lower()]
+    other_events = [e for e in top_events if e not in priority_events]
+    reordered_events = priority_events + other_events
+    
+    for event in reordered_events[:20]:  # Check more events to ensure diversity
         transit_body = event.get("transit_body", "")
         natal_body = event.get("natal_body", "")
         aspect = event.get("aspect", "")
         note = event.get("note", "")
+        
+        # Extract the base transit body (e.g., "TrueNode" from "TrueNode in Aries")
+        base_transit_body = transit_body.split(" in ")[0].strip() if " in " in transit_body else transit_body
+        
+        # Limit repetitive transit bodies (max 1 TrueNode, 2 of any other body)
+        max_per_body = 1 if "Node" in base_transit_body else 2
+        body_count = transit_body_count.get(base_transit_body, 0)
+        if body_count >= max_per_body:
+            continue  # Skip this event
         
         # Check if natal_body is valid (not empty, not "—", not placeholder)
         if natal_body and natal_body.strip() and natal_body not in ["—", "-", "–", "None", ""]:
@@ -574,10 +590,15 @@ def build_response_from_llm_outputs(
         if theme and theme not in seen_themes:
             main_themes.append(theme)
             seen_themes.add(theme)
+            transit_body_count[base_transit_body] = body_count + 1
+            
+            logger.debug(f"Added main theme: {theme} (transit_body={base_transit_body}, count={body_count + 1})")
             
             # Stop once we have 5 unique themes
             if len(main_themes) >= 5:
                 break
+    
+    logger.info(f"Main themes diversity: {transit_body_count}")
     
     # Calculate overall energy score and identify best/challenging months
     total_score = 0
@@ -731,28 +752,61 @@ def build_response_from_llm_outputs(
             )
         )
     
-    # Extract major transits
+    # Extract major transits with smart filtering (avoid TrueNode dominance)
     major_transits = []
-    for event in top_events[:10]:
-        if event.get("date"):
-            # Extract sign from transit_body (e.g., "Sun in Aries" -> "Aries")
-            transit_body = event.get("transit_body", "Planet")
-            sign = None
-            if " in " in transit_body:
-                parts = transit_body.split(" in ")
-                if len(parts) == 2:
-                    sign = parts[1].strip()
-                    transit_body = parts[0].strip()  # Clean planet name
+    transit_count_by_body = {}
+    
+    # Prioritize eclipses and outer planets
+    priority_bodies = ["Sun", "Moon", "Saturn", "Jupiter", "Uranus", "Neptune", "Pluto"]
+    priority_transits = [e for e in top_events if any(body in e.get("transit_body", "") for body in priority_bodies) or "eclipse" in e.get("note", "").lower()]
+    other_transits = [e for e in top_events if e not in priority_transits]
+    reordered_transits = priority_transits + other_transits
+    
+    for event in reordered_transits[:20]:  # Check more events for diversity
+        if not event.get("date"):
+            continue
             
-            major_transits.append(
-                BriefTransit(
-                    planet=transit_body,
-                    event_type=event.get("aspect", "aspect"),
-                    date=Date.fromisoformat(event.get("date")),
-                    sign=sign,
-                    impact_summary=event.get("note", f"{event.get('transit_body')} {event.get('aspect')} {event.get('natal_body')}")[:100]
-                )
+        # Extract sign from transit_body (e.g., "Sun in Aries" -> "Aries")
+        transit_body_full = event.get("transit_body", "Planet")
+        sign = None
+        if " in " in transit_body_full:
+            parts = transit_body_full.split(" in ")
+            if len(parts) == 2:
+                sign = parts[1].strip()
+                transit_body = parts[0].strip()  # Clean planet name
+        else:
+            transit_body = transit_body_full
+        
+        # Limit repetitive bodies: max 1 Node transit, 2 of others
+        max_per_body = 1 if "Node" in transit_body else 2
+        body_count = transit_count_by_body.get(transit_body, 0)
+        if body_count >= max_per_body:
+            continue  # Skip
+        
+        # Include natal body in summary for clarity (e.g., "TrueNode trine your Mars")
+        natal_body = event.get("natal_body", "")
+        if natal_body and natal_body not in ["—", "-", "–", "None", ""]:
+            summary = f"{event.get('transit_body')} {event.get('aspect')} your {natal_body}"
+        else:
+            summary = event.get("note", f"{event.get('transit_body')} {event.get('aspect')}")
+        
+        major_transits.append(
+            BriefTransit(
+                planet=transit_body,
+                event_type=event.get("aspect", "aspect"),
+                date=Date.fromisoformat(event.get("date")),
+                sign=sign,
+                impact_summary=summary[:150]  # Longer summary with natal context
             )
+        )
+        
+        transit_count_by_body[transit_body] = body_count + 1
+        
+        # Stop at 10 diverse transits
+        if len(major_transits) >= 10:
+            break
+    
+    logger.info(f"Major transits diversity: {transit_count_by_body}")
     
     # Build eclipses from LLM output
     llm_eclipses = {e["date"]: e for e in eclipses_data.get("eclipses", [])}
