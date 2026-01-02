@@ -687,11 +687,16 @@ def build_response_from_llm_outputs(
             aspect = event.get("aspect", "")
             note = event.get("note", "")
             
+            # Extract base transit body (strip sign info like "in Pisces")
+            base_transit_body = transit_body.split(" in ")[0].strip() if " in " in transit_body else transit_body
+            
             # Create unique key for this transit type (to avoid showing same transit multiple times)
-            transit_key = f"{transit_body}:{aspect}:{natal_body}"
+            # Use base_transit_body to ensure "TrueNode in Pisces" and "TrueNode in Aries" are treated as same
+            transit_key = f"{base_transit_body}:{aspect}:{natal_body}"
             
             # Skip if we've already added this exact transit type
             if transit_key in seen_transits:
+                logger.debug(f"Skipping duplicate transit: {transit_key} on {event.get('date')}")
                 continue
             
             # Build event description
