@@ -15,8 +15,15 @@ from .forecasts import (
     DailyTemplatedResponse,
 )
 from .compatibility import (
-    CompatibilityComputeRequest,
-    CompatibilityComputeResponse,
+    BasicCompatibilityRequest,
+    BasicCompatibilityResponse,
+    AdvancedCompatibilityRequest,
+    AdvancedCompatibilityResponse,
+    CompatibilityScore,
+    ElementCompatibility,
+    ModalityCompatibility,
+    AspectAnalysis,
+    HouseOverlay,
 )
 from .remedies import RemediesComputeRequest, RemediesComputeResponse
 
