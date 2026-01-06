@@ -32,6 +32,11 @@ from .compatibility_helpers import (
     calculate_planet_sign_compatibility,
 )
 from .llm_client import generate_section_text, LLMUnavailableError as LLMError
+from .compatibility_qa_editor import (
+    qa_edit_basic_compatibility_response,
+    qa_edit_advanced_compatibility_response,
+    validate_response_completeness,
+)
 from ..schemas.compatibility import (
     BasicCompatibilityRequest,
     BasicCompatibilityResponse,
@@ -588,33 +593,38 @@ COMPATIBILITY SCORES:
 
 Based on this astrological data, provide a comprehensive {comp_type} compatibility analysis focusing on {relationship_focus}.
 
+**IMPORTANT: Use markdown formatting for emphasis:**
+- Use **bold** (`**text**`) for key astrological terms, planet names, signs, and important concepts
+- Use *italic* (`*text*`) for subtle emphasis, nuances, or secondary points
+- This helps highlight the most important insights for readers
+
 Please provide:
 
-1. **Summary** (2-3 sentences): High-level overview of the compatibility.
+1. **Summary** (2-3 sentences): High-level overview of the compatibility. Use **bold** for key strengths or challenges.
 
 2. **Detailed Analysis** (3-4 paragraphs): Deep dive into how these energies interact, including:
-   - How their elements and modalities work together
-   - Key dynamics based on their Sun signs
+   - How their elements and modalities work together (use **bold** for element/modality names)
+   - Key dynamics based on their Sun signs (use **bold** for zodiac signs)
    - Specific areas of harmony and friction
    - How the compatibility scores reflect in real-life interactions
 
-3. **Strengths** (3-5 bullet points): Key strengths of this pairing.
+3. **Strengths** (3-5 bullet points): Key strengths of this pairing. Use **bold** for the main strength in each point.
 
-4. **Challenges** (3-5 bullet points): Main challenges they may face.
+4. **Challenges** (3-5 bullet points): Main challenges they may face. Use **bold** for the main challenge in each point.
 
-5. **Advice** (3-4 bullet points): Practical advice for making this {comp_type} work.
+5. **Advice** (3-4 bullet points): Practical advice for making this {comp_type} work. Use **bold** for key action words.
 
-{"6. **Relationship Dynamics** (1 paragraph): Describe the day-to-day dynamics." if aspects else ""}
+{"6. **Relationship Dynamics** (1 paragraph): Describe the day-to-day dynamics. Use **bold** for planet names and aspects." if aspects else ""}
 
-{"7. **Long-term Potential** (1 paragraph): Assess the long-term viability." if aspects else ""}
+{"7. **Long-term Potential** (1 paragraph): Assess the long-term viability. Use **bold** for key factors." if aspects else ""}
 
 Format your response as JSON with these exact keys: "summary", "detailed_analysis", "strengths" (array), "challenges" (array), "advice" (array){', "relationship_dynamics", "long_term_potential"' if aspects else ''}.
 
-Be specific, personalized, and insightful. Avoid generic statements.
+Be specific, personalized, and insightful. Avoid generic statements. Remember to use markdown formatting (**bold** and *italic*) throughout your text.
 """
     
     try:
-        system_prompt = "You are an expert astrologer specializing in relationship compatibility analysis. Provide detailed, personalized insights based on astrological data. Return ONLY valid JSON with no additional text."
+        system_prompt = "You are an expert astrologer specializing in relationship compatibility analysis. Provide detailed, personalized insights based on astrological data. IMPORTANT: Use markdown formatting (**bold** for key terms, *italic* for emphasis) throughout your text to highlight important concepts. Return ONLY valid JSON with no additional text."
         
         # P1: Use configurable model and max_tokens
         response = await generate_section_text(
@@ -842,7 +852,8 @@ async def analyze_basic_compatibility(
             modality_analysis
         )
     
-    return BasicCompatibilityResponse(
+    # Build response
+    response = BasicCompatibilityResponse(
         person1_sign=sign1,
         person2_sign=sign2,
         compatibility_type=req.compatibility_type,
@@ -857,6 +868,18 @@ async def analyze_basic_compatibility(
         detailed_analysis=narrative.get("detailed_analysis", ""),
         generated_at=datetime.utcnow().isoformat() + "Z"
     )
+    
+    # Apply QA editing to polish the response
+    response_dict = response.model_dump()
+    edited_dict = qa_edit_basic_compatibility_response(response_dict)
+    
+    # Validate response completeness
+    warnings = validate_response_completeness(edited_dict, "basic")
+    if warnings:
+        logger.warning(f"Basic compatibility response validation warnings: {warnings}")
+    
+    # Return polished response
+    return BasicCompatibilityResponse(**edited_dict)
 
 
 async def analyze_advanced_compatibility(
@@ -1076,7 +1099,8 @@ Key Planet Compatibility:
             modality_analysis
         )
     
-    return AdvancedCompatibilityResponse(
+    # Build response
+    response = AdvancedCompatibilityResponse(
         person1_name=req.person1.name,
         person2_name=req.person2.name,
         compatibility_type=req.compatibility_type,
@@ -1100,4 +1124,16 @@ Key Planet Compatibility:
         detailed_analysis=narrative.get("detailed_analysis", ""),
         generated_at=datetime.utcnow().isoformat() + "Z"
     )
+    
+    # Apply QA editing to polish the response
+    response_dict = response.model_dump()
+    edited_dict = qa_edit_advanced_compatibility_response(response_dict)
+    
+    # Validate response completeness
+    warnings = validate_response_completeness(edited_dict, "advanced")
+    if warnings:
+        logger.warning(f"Advanced compatibility response validation warnings: {warnings}")
+    
+    # Return polished response
+    return AdvancedCompatibilityResponse(**edited_dict)
 
