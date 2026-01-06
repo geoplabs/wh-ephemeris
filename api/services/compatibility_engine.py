@@ -134,11 +134,22 @@ def get_pair_weight(p1: str, p2: str) -> float:
     """
     return PAIR_WEIGHTS.get(_norm_pair(p1, p2), 1.0)
 
-def normalize_context(context: str) -> str:
+def normalize_context(context: str, *, strict: bool = False) -> str:
     """
     Normalize and validate context string with alias support.
+    
+    Args:
+        context: Raw context string
+        strict: If True, raise ValueError on invalid context instead of defaulting to "generic"
+    
+    Returns:
+        Normalized context: "love" | "friendship" | "business" | "generic"
+    
+    Raises:
+        ValueError: If strict=True and context is invalid
+    
     FIX #3: Prevents silent rule failures from typos like "Love" or "dating".
-    Now supports aliases: "dating" → "love", "work" → "business", etc.
+    P1 FIX: Strict mode available to catch client bugs in production.
     """
     ctx = (context or "generic").lower().strip()
     
@@ -147,7 +158,17 @@ def normalize_context(context: str) -> str:
         return CONTEXT_ALIASES[ctx]
     
     # Then check valid contexts
-    return ctx if ctx in VALID_CONTEXTS else "generic"
+    if ctx in VALID_CONTEXTS:
+        return ctx
+    
+    # P1 FIX: Strict mode raises on invalid context
+    if strict:
+        valid_list = sorted(VALID_CONTEXTS | set(CONTEXT_ALIASES.keys()))
+        raise ValueError(
+            f"Invalid context '{context}'. Must be one of: {', '.join(valid_list)}"
+        )
+    
+    return "generic"
 
 def angle_diff(lon1: float, lon2: float) -> float:
     """
@@ -265,7 +286,9 @@ def _set_mult(p1: str, p2: str, aspect: str, ctx: str, val: float) -> None:
 def seed_overrides() -> None:
     """
     Seed high-impact overrides for planetary combinations.
-    FIX #4: Guarded to prevent multiple seeding.
+    
+    P1 FIX: Now lazy-loaded on first call instead of import-time side effect.
+    Idempotent: safe to call multiple times.
     """
     global _OVERRIDES_SEEDED
     if _OVERRIDES_SEEDED:
@@ -300,8 +323,9 @@ def seed_overrides() -> None:
     
     _OVERRIDES_SEEDED = True
 
-# Initialize overrides at module load (idempotent)
-seed_overrides()
+def _ensure_overrides_seeded() -> None:
+    """P1 FIX: Lazy initialization - seed overrides on first use."""
+    seed_overrides()
 
 # -----------------------------
 # Pair-Aware Aspect Weighting
@@ -316,6 +340,7 @@ def get_aspect_base(planet1: str, planet2: str, aspect_type: str, context: str =
     3. Rule-based defaults using pair_class
     4. Baseline ASPECT_AFFECTION
     """
+    _ensure_overrides_seeded()  # P1 FIX: Lazy init
     p1, p2 = _norm_pair(planet1, planet2)
     context = normalize_context(context)  # FIX #3: Validate context
     
@@ -387,7 +412,11 @@ def get_aspect_multiplier(planet1: str, planet2: str, aspect_type: str, context:
     2. Explicit override for (pair, aspect, "generic")
     3. Rule-based defaults using pair_class
     4. 1.0 (neutral)
+    
+    P1 NOTE: Overrides can exceed the [0.5, 1.5] clamp (up to [0.1, 3.0]).
+    This is intentional - overrides are for exceptional cases that need stronger weighting.
     """
+    _ensure_overrides_seeded()  # P1 FIX: Lazy init
     p1, p2 = _norm_pair(planet1, planet2)
     context = normalize_context(context)  # FIX #3: Validate context
     
@@ -428,14 +457,19 @@ def get_aspect_multiplier(planet1: str, planet2: str, aspect_type: str, context:
 # -----------------------------
 # Ephemeris Integration
 # -----------------------------
-def natal_positions(chart_input: Dict[str, Any]) -> Dict[str, Dict[str, float]]:
+def natal_positions(chart_input: Dict[str, Any], *, strict_system: bool = True) -> Dict[str, Dict[str, float]]:
     """
     Calculate natal positions from chart input.
     
     PUBLIC API - stable interface for computing planetary positions.
     
+    Args:
+        chart_input: Chart data with system, date, time, place
+        strict_system: If True, raise on invalid system (not "western" or "vedic")
+    
     FIX #4: Validates required fields to prevent cryptic KeyErrors in production.
     PRODUCTION FIX #4: Wraps ephem failures with clear error messages.
+    P1 FIX: Validates system field to catch configuration errors early.
     """
     # FIX #4: Input validation
     required_fields = ["system", "date", "time", "place"]
@@ -446,9 +480,14 @@ def natal_positions(chart_input: Dict[str, Any]) -> Dict[str, Dict[str, float]]:
     if "tz" not in chart_input.get("place", {}):
         raise ValueError("chart_input.place missing required field: 'tz'")
     
+    # P1 FIX: Validate system
+    system = chart_input["system"]
+    if strict_system and system not in {"western", "vedic"}:
+        raise ValueError(f"Invalid system '{system}'. Must be 'western' or 'vedic'")
+    
     # PRODUCTION FIX #4: Wrap ephem calls for better error messages
     try:
-        sidereal = chart_input["system"] == "vedic"
+        sidereal = system == "vedic"
         ayan = ((chart_input.get("options") or {}).get("ayanamsha", "lahiri") if sidereal else None)
         jd = ephem.to_jd_utc(chart_input["date"], chart_input["time"], chart_input["place"]["tz"])
         return ephem.positions_ecliptic(jd, sidereal=sidereal, ayanamsha=ayan)
@@ -501,7 +540,17 @@ def synastry(
     the best_per_pair logic to track a list instead of a single dict.
     """
     # PRODUCTION FIX #1: Validate aspect_types
-    if aspect_types is None or len(aspect_types) == 0:
+    # P1 FIX: Handle string passed as aspect_types (common mistake)
+    if aspect_types is None:
+        aspect_types = list(aspects_svc.MAJOR.keys())
+    elif isinstance(aspect_types, str):
+        raise TypeError(
+            f"aspect_types must be a list/set of strings, got string '{aspect_types}'. "
+            f"Did you mean: ['{aspect_types}']?"
+        )
+    elif not hasattr(aspect_types, '__iter__'):
+        raise TypeError(f"aspect_types must be iterable, got {type(aspect_types).__name__}")
+    elif len(aspect_types) == 0:
         aspect_types = list(aspects_svc.MAJOR.keys())
     
     # PRODUCTION FIX #2: Validate orb_model
@@ -534,6 +583,8 @@ def synastry(
     aspect_types_set = set(aspect_types) if not isinstance(aspect_types, set) else aspect_types
     
     # FIX #1: Track best aspect per pair (prevents duplicate/overcount with large orbs)
+    # P0 FIX: Use directional key (A-planet, B-planet) not normalized pair
+    # Sun(A)→Moon(B) is different from Moon(A)→Sun(B) in synastry!
     best_per_pair: Dict[Tuple[str, str], Dict[str, Any]] = {}
     
     # PRODUCTION FIX #3: Deterministic iteration order (use PLANET_ORDER)
@@ -556,7 +607,9 @@ def synastry(
                 continue
             
             d = angle_diff(a_pos["lon"], b_pos["lon"])
-            pair_key = _norm_pair(a_name, b_name)
+            # P0 FIX: Directional key - don't normalize!
+            # (Sun_A, Moon_B) ≠ (Moon_A, Sun_B) in synastry
+            pair_key = (a_name, b_name)
             
             for t, exact in aspects_svc.MAJOR.items():
                 if t not in aspect_types_set:

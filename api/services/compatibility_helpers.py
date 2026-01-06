@@ -202,7 +202,8 @@ def calculate_planet_sign_compatibility(sign1: str, sign2: str, element1: str, e
         base = 45.0
     
     # Element boost
-    from .compatibility_service import ELEMENT_COMPATIBILITY
+    # FIX: Import from constants module to avoid circular import
+    from .compatibility_constants import ELEMENT_COMPATIBILITY
     elem_key = (element1, element2) if (element1, element2) in ELEMENT_COMPATIBILITY else (element2, element1)
     if elem_key in ELEMENT_COMPATIBILITY:
         elem_compat = ELEMENT_COMPATIBILITY[elem_key][0]
