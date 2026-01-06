@@ -3,15 +3,27 @@ Comprehensive compatibility analysis service with LLM integration.
 Supports love, friendship, and business compatibility for both basic (sign-only)
 and advanced (full natal chart) analysis.
 
-FIXED: Uses proper zodiac wheel relationships, ruling planets, and Moon/Venus/Mars weighting.
+PRODUCTION READY:
+- P0-1: Context passed to synastry for proper type-specific weighting
+- P0-2: Uses public natal_positions API (not private _natal_positions)
+- P0-3: Guards against missing bodies with clear error messages
+- P0-4: Deterministic sorting (handled in engine)
+- P1: Configurable LLM model/max_tokens
+- P1: Robust JSON extraction with incremental parsing
+- P1: No sensitive data in error logs
 """
 
 import asyncio
 import logging
+import os
 from datetime import datetime
 from typing import Dict, Any, List, Tuple, Optional
 
-from .compatibility_engine import synastry, aggregate_score, _natal_positions
+# P1: Configurable LLM settings (can be overridden via env vars)
+DEFAULT_LLM_MODEL = os.getenv("COMPATIBILITY_LLM_MODEL", "gpt-4o-mini")
+DEFAULT_LLM_MAX_TOKENS = int(os.getenv("COMPATIBILITY_LLM_MAX_TOKENS", "2000"))
+
+from .compatibility_engine import synastry, aggregate_score, natal_positions
 from .compatibility_helpers import (
     get_sign_relationship,
     get_sign_polarity,
@@ -543,9 +555,17 @@ async def _generate_compatibility_narrative_llm(
     person1_name: Optional[str] = None,
     person2_name: Optional[str] = None,
     person1_pronouns: Optional[str] = None,
-    person2_pronouns: Optional[str] = None
+    person2_pronouns: Optional[str] = None,
+    model: Optional[str] = None,  # P1: Configurable model (defaults to env var or gpt-4o-mini)
+    max_tokens: Optional[int] = None  # P1: Configurable token limit (defaults to env var or 2000)
 ) -> Dict[str, str]:
     """Generate personalized compatibility narrative using LLM."""
+    
+    # P1: Apply defaults for model and max_tokens
+    if model is None:
+        model = DEFAULT_LLM_MODEL
+    if max_tokens is None:
+        max_tokens = DEFAULT_LLM_MAX_TOKENS
     
     # FIX H: Use pronouns and names for better narrative (default to neutral)
     p1_label = person1_name or "Person 1"
@@ -631,27 +651,51 @@ Be specific, personalized, and insightful. Avoid generic statements.
     try:
         system_prompt = "You are an expert astrologer specializing in relationship compatibility analysis. Provide detailed, personalized insights based on astrological data. Return ONLY valid JSON with no additional text."
         
+        # P1: Use configurable model and max_tokens
         response = await generate_section_text(
             system_prompt=system_prompt,
             user_prompt=prompt,
-            max_tokens=2000,
-            model="gpt-4o-mini"
+            max_tokens=max_tokens,
+            model=model
         )
         
         import json
         import re
         
-        # FIX F: Robust JSON extraction from potentially messy LLM response
+        # P1 FIX: Robust JSON extraction with incremental parsing
+        result = None
         try:
             # Try parsing directly first
             result = json.loads(response)
         except json.JSONDecodeError:
-            # Extract JSON from text (find first { to last })
-            match = re.search(r'\{.*\}', response, re.DOTALL)
-            if match:
-                result = json.loads(match.group(0))
-            else:
-                raise ValueError("No valid JSON found in LLM response")
+            # Find first { and attempt incremental parsing for valid JSON object
+            start_idx = response.find('{')
+            if start_idx == -1:
+                raise ValueError("No JSON object found in LLM response")
+            
+            # Try to find matching closing brace
+            brace_count = 0
+            end_idx = start_idx
+            for i in range(start_idx, len(response)):
+                if response[i] == '{':
+                    brace_count += 1
+                elif response[i] == '}':
+                    brace_count -= 1
+                    if brace_count == 0:
+                        end_idx = i + 1
+                        break
+            
+            if end_idx > start_idx:
+                try:
+                    result = json.loads(response[start_idx:end_idx])
+                except json.JSONDecodeError:
+                    # Last resort: regex extract and try again
+                    match = re.search(r'\{[^{}]*(?:\{[^{}]*\}[^{}]*)*\}', response, re.DOTALL)
+                    if match:
+                        result = json.loads(match.group(0))
+            
+            if result is None:
+                raise ValueError("Failed to extract valid JSON from LLM response")
         
         # Ensure all required keys exist
         result.setdefault("summary", "Compatibility analysis based on astrological factors.")
@@ -872,12 +916,27 @@ async def analyze_advanced_compatibility(
         "options": {"ayanamsha": "lahiri"} if req.system == "vedic" else {}
     }
     
-    # Calculate natal positions
-    natal1 = await asyncio.to_thread(_natal_positions, person1_chart)
-    natal2 = await asyncio.to_thread(_natal_positions, person2_chart)
+    # Calculate natal positions with error handling (P0-3: Guard missing bodies)
+    try:
+        natal1 = await asyncio.to_thread(natal_positions, person1_chart)
+        natal2 = await asyncio.to_thread(natal_positions, person2_chart)
+    except (ValueError, KeyError) as e:
+        # P1: Don't log sensitive birth data - only log error type
+        logger.error(f"Natal position calculation failed: {type(e).__name__}")
+        raise ValueError(f"Invalid birth data provided. Please check date, time, and location accuracy.") from e
     
-    # Extract Sun signs
+    # P0-3: Validate critical bodies exist (Sun and Moon are essential)
     from .constants import sign_name_from_lon
+    
+    if "Sun" not in natal1 or "lon" not in natal1.get("Sun", {}):
+        raise ValueError("Person 1: Unable to calculate Sun position from provided birth data")
+    if "Sun" not in natal2 or "lon" not in natal2.get("Sun", {}):
+        raise ValueError("Person 2: Unable to calculate Sun position from provided birth data")
+    if "Moon" not in natal1 or "lon" not in natal1.get("Moon", {}):
+        raise ValueError("Person 1: Unable to calculate Moon position from provided birth data")
+    if "Moon" not in natal2 or "lon" not in natal2.get("Moon", {}):
+        raise ValueError("Person 2: Unable to calculate Moon position from provided birth data")
+    
     sun1_sign = sign_name_from_lon(natal1["Sun"]["lon"])
     sun2_sign = sign_name_from_lon(natal2["Sun"]["lon"])
     moon1_sign = sign_name_from_lon(natal1["Moon"]["lon"])
@@ -904,14 +963,17 @@ async def analyze_advanced_compatibility(
         description=mod_desc
     )
     
-    # Calculate synastry aspects
+    # Calculate synastry aspects with context-aware weighting
+    # P0-1 FIX: Explicitly pass context AND orb_model for proper weighting
     aspect_types = ["conjunction", "trine", "sextile", "square", "opposition"]
     synastry_aspects = await asyncio.to_thread(
         synastry,
         person1_chart,
         person2_chart,
         aspect_types,
-        8.0  # orb
+        8.0,  # orb
+        context=req.compatibility_type,  # Pass love/friendship/business context
+        orb_model="quadratic"  # Tight aspects preferred (explicit choice)
     )
     
     # Extract Venus and Mars signs for type-specific weighting (with safety checks)
