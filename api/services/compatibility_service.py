@@ -597,9 +597,14 @@ COMPATIBILITY SCORES:
 
 Based on this astrological data, provide a comprehensive {comp_type} compatibility analysis focusing on {relationship_focus}.
 
-**IMPORTANT: Write naturally and use markdown formatting:**
+**IMPORTANT: Write naturally and use CORRECT markdown formatting:**
 - Use **bold** (`**text**`) for key astrological terms, planet names, signs, and important concepts
-- Use *italic* (`*text*`) for subtle emphasis, nuances, or secondary points
+  - CORRECT: `**Aquarius**`, `**bold text**`
+  - WRONG: `*Aquarius**`, `**Aquarius*`, `*bold text**`
+- Use *italic* (`*text*`) ONLY for subtle emphasis (single asterisk on both sides)
+  - CORRECT: `*subtle point*`
+  - WRONG: `*italic text**`, `**italic text*`
+- **For list items (strengths, challenges, advice): Use ONLY bold (`**keyword**`), NOT italic**
 - Write as if speaking directly to real people in a conversational, professional tone
 - Use natural pronouns and references (their names if provided, or "both partners", "this couple", etc.)
 - AVOID robotic phrases like "Person 1", "the first person", "the second person"
@@ -622,15 +627,21 @@ Please provide:
    - Example format: "First paragraph text here.\\n\\nSecond paragraph text here.\\n\\nThird paragraph text here."
 
 3. **Strengths** (3-5 bullet points): Key strengths of this pairing.
-   - Start each with **bold** keyword (e.g., "**Mutual respect** and understanding")
+   - Start each with **bold** keyword using CORRECT syntax: `**keyword**` (double asterisks on BOTH sides)
+   - Example: "**Mutual respect** and understanding" or "**Strong communication** builds trust"
+   - NEVER mix: NO `*keyword**` or `**keyword*`
    - Write in a warm, encouraging tone
 
 4. **Challenges** (3-5 bullet points): Main challenges they may face.
-   - Start each with **bold** keyword (e.g., "**Different pacing** in decision-making")
+   - Start each with **bold** keyword using CORRECT syntax: `**keyword**` (double asterisks on BOTH sides)
+   - Example: "**Different pacing** in decision-making" or "**Communication styles** may clash"
+   - NEVER mix: NO `*keyword**` or `**keyword*`
    - Be honest but constructive
 
 5. **Advice** (3-4 bullet points): Practical advice for making this {comp_type} work.
-   - Start with **bold** action verb (e.g., "**Communicate** openly about needs")
+   - Start with **bold** action verb using CORRECT syntax: `**verb**` (double asterisks on BOTH sides)
+   - Example: "**Communicate** openly about needs" or "**Practice** active listening"
+   - NEVER mix: NO `*verb**` or `**verb*`
    - Make it actionable and specific
 
 {"6. **Relationship Dynamics** (1 paragraph): Describe the day-to-day dynamics naturally. Single paragraph, no \\n\\n." if aspects else ""}

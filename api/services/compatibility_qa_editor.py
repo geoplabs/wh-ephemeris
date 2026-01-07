@@ -78,6 +78,14 @@ _BULLET_MARKERS = re.compile(r'^[•\-\*\d+\.]\s*')
 _BOLD_PATTERN = re.compile(r'\*\*\w+.*?\*\*')
 _ITALIC_PATTERN = re.compile(r'(?<!\*)\*(?!\*)\w+.*?\*(?!\*)')
 
+# Malformed markdown patterns (LLM mistakes)
+# Pattern to match *text** (single asterisk start, double asterisk end)
+_MALFORMED_BOLD_START = re.compile(r'(?<!\*)\*([^*]+?)\*\*')  # *text** → **text**
+# Pattern to match **text* (double asterisk start, single asterisk end)
+_MALFORMED_BOLD_END = re.compile(r'\*\*([^*]+?)\*(?!\*)')    # **text* → **text**
+# Pattern to match *** or more
+_TRIPLE_ASTERISK = re.compile(r'\*{3,}')  # *** → **
+
 # Placeholder detection patterns (compiled once for validation)
 _PLACEHOLDER_PATTERNS = [
     re.compile(r'\[.*?\]', re.IGNORECASE),
@@ -177,6 +185,31 @@ def polish_compatibility_text(
     return text.strip()
 
 
+def _fix_malformed_markdown(text: str) -> str:
+    """Fix malformed markdown that LLMs sometimes generate.
+    
+    Common LLM mistakes:
+    - *text** (starts with single, ends with double) → **text**
+    - **text* (starts with double, ends with single) → **text**
+    - *** or more (triple asterisks) → **
+    
+    PERFORMANCE: Uses pre-compiled regex patterns.
+    """
+    if not text:
+        return text
+    
+    # Fix *text** → **text** (starts with single asterisk, ends with double)
+    text = _MALFORMED_BOLD_START.sub(r'**\1**', text)
+    
+    # Fix **text* → **text** (starts with double asterisk, ends with single)
+    text = _MALFORMED_BOLD_END.sub(r'**\1**', text)
+    
+    # Fix triple or more asterisks → **
+    text = _TRIPLE_ASTERISK.sub('**', text)
+    
+    return text
+
+
 def _improve_readability(text: str) -> str:
     """Improve text readability.
     
@@ -186,9 +219,13 @@ def _improve_readability(text: str) -> str:
     - Fix awkward phrasing
     - Ensure proper punctuation
     - Normalize special characters
+    - Fix malformed markdown
     """
     # Normalize special characters and Unicode issues
     text = _normalize_special_characters(text)
+    
+    # Fix malformed markdown syntax
+    text = _fix_malformed_markdown(text)
     
     # Fix common LLM artifacts (use pre-compiled patterns)
     text = _WHITESPACE_PATTERN.sub(' ', text)
