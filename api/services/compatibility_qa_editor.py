@@ -80,9 +80,11 @@ _ITALIC_PATTERN = re.compile(r'(?<!\*)\*(?!\*)\w+.*?\*(?!\*)')
 
 # Malformed markdown patterns (LLM mistakes)
 # Pattern to match *text** (single asterisk start, double asterisk end)
-_MALFORMED_BOLD_START = re.compile(r'(?<!\*)\*([^*]+?)\*\*')  # *text** → **text**
+# Requires at least one letter to avoid matching punctuation like *...**
+_MALFORMED_BOLD_START = re.compile(r'(?<!\*)\*([^*]*[A-Za-z][^*]*?)\*\*')  # *text** → **text**
 # Pattern to match **text* (double asterisk start, single asterisk end)
-_MALFORMED_BOLD_END = re.compile(r'\*\*([^*]+?)\*(?!\*)')    # **text* → **text**
+# Requires at least one letter to avoid matching punctuation like **...*
+_MALFORMED_BOLD_END = re.compile(r'\*\*([^*]*?[A-Za-z][^*]*)\*(?!\*)')    # **text* → **text**
 # Pattern to match *** or more
 _TRIPLE_ASTERISK = re.compile(r'\*{3,}')  # *** → **
 
