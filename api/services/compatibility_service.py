@@ -598,12 +598,16 @@ COMPATIBILITY SCORES:
 Based on this astrological data, provide a comprehensive {comp_type} compatibility analysis focusing on {relationship_focus}.
 
 **IMPORTANT: Write naturally and use CORRECT markdown formatting:**
-- Use **bold** (`**text**`) for key astrological terms, planet names, signs, and important concepts
-  - CORRECT: `**Aquarius**`, `**bold text**`
-  - WRONG: `*Aquarius**`, `**Aquarius*`, `*bold text**`
-- Use *italic* (`*text*`) ONLY for subtle emphasis (single asterisk on both sides)
-  - CORRECT: `*subtle point*`
-  - WRONG: `*italic text**`, `**italic text*`
+- Use **bold** (`**text**`) ONLY for: zodiac signs, planet names, elements, modalities, and astrological houses
+  - CORRECT: `**Aquarius**`, `**Mars**`, `**Fire**`, `**Fixed**`, `**7th house**`
+  - WRONG: `**tend to**`, `**may find**`, `**especially**` (these should be italic!)
+- Use *italic* (`*text*`) for: qualifiers, soft emphasis, transitional phrases, and nuanced points
+  - REQUIRED ITALIC PHRASES: `*tend to*`, `*may*`, `*might*`, `*can*`, `*often*`, `*sometimes*`, `*particularly*`, `*especially*`, `*generally*`
+  - Example: "**Aquarius** and **Sagittarius** *tend to* create a vibrant connection"
+  - Example: "They *may sometimes* struggle with **communication**, *especially when* emotions run high"
+  - NEVER use bold for these qualifiers - always italic!
+- **MIXING RULE: In paragraph text, use BOTH `**bold**` for astrological terms AND `*italic*` for qualifiers in the same sentence**
+  - Example: "**Venus** in **Taurus** *typically* values stability, *while* **Mars** in **Aries** *tends to* seek excitement"
 - **For list items (strengths, challenges, advice): Use ONLY bold (`**keyword**`), NOT italic**
 - Write as if speaking directly to real people in a conversational, professional tone
 - Use natural pronouns and references (their names if provided, or "both partners", "this couple", etc.)
@@ -615,6 +619,7 @@ Please provide:
 1. **Summary** (2-3 sentences): High-level overview of the compatibility. 
    - Start with the zodiac signs or names (e.g., "**{sign1}** and **{sign2}** create a vibrant connection...")
    - Use **bold** for key zodiac signs and important concepts
+   - Use *italic* for gentle qualifiers (e.g., "They *tend to* complement each other well")
    - Be warm and direct
    - Single continuous paragraph (no line breaks within summary)
 
@@ -624,6 +629,7 @@ Please provide:
    - Refer to them naturally as "{sign1} and {sign2}" or "both partners" or by their names
    - Use **bold** for elements (**{element_analysis.person1_element}**, **{element_analysis.person2_element}**)
    - Use **bold** for modalities (**{modality_analysis.person1_modality}**, **{modality_analysis.person2_modality}**)
+   - Use *italic* for softer emphasis: "They *may find* that **communication** flows naturally"
    - Explain harmony and friction in practical, relatable terms
    - In JSON, use \\n\\n to separate paragraphs: "First paragraph.\\n\\nSecond paragraph.\\n\\nThird paragraph."
 
@@ -653,7 +659,7 @@ Format your response as JSON with these exact keys: "summary", "detailed_analysi
 
 **REMEMBER: In JSON format, use \\n\\n (escaped newlines) to separate paragraphs in "detailed_analysis" field ONLY.** All other text fields should be single continuous paragraphs or arrays of strings.
 
-Be specific, personalized, warm, and insightful. Use natural, conversational language. Remember markdown formatting (**bold** and *italic*).
+Be specific, personalized, warm, and insightful. Use natural, conversational language. Remember to use BOTH **bold** for key terms AND *italic* for softer emphasis throughout your text.
 """
     
     try:

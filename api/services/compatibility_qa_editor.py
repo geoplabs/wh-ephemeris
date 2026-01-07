@@ -184,6 +184,9 @@ def polish_compatibility_text(
     # Fix common compatibility text issues
     text = _fix_compatibility_specific_issues(text)
     
+    # Convert qualifier words from bold to italic (LLM often bolds these by mistake)
+    text = _convert_qualifiers_to_italic(text)
+    
     return text.strip()
 
 
@@ -208,6 +211,50 @@ def _fix_malformed_markdown(text: str) -> str:
     
     # Fix triple or more asterisks → **
     text = _TRIPLE_ASTERISK.sub('**', text)
+    
+    return text
+
+
+# Qualifier words that should be italic, not bold
+_QUALIFIER_WORDS = [
+    'tend to', 'tends to', 'may', 'might', 'can', 'could', 'often', 'sometimes',
+    'particularly', 'especially', 'generally', 'typically', 'usually', 'frequently',
+    'occasionally', 'rarely', 'seldom', 'perhaps', 'possibly', 'likely', 'probably',
+    'mainly', 'mostly', 'largely', 'primarily', 'chiefly', 'predominantly'
+]
+
+
+def _convert_qualifiers_to_italic(text: str) -> str:
+    """Convert qualifier words from bold to italic.
+    
+    The LLM sometimes bolds qualifier words when they should be italicized.
+    This function fixes that by converting **qualifier** → *qualifier*.
+    Also fixes malformed patterns like **qualifier* or *qualifier** for qualifiers.
+    
+    Args:
+        text: Text with potential bold qualifiers
+        
+    Returns:
+        Text with qualifiers converted to italic
+    """
+    if not text:
+        return text
+    
+    # Convert each qualifier from bold to italic (and fix malformed versions)
+    for qualifier in _QUALIFIER_WORDS:
+        escaped = re.escape(qualifier)
+        
+        # Match **qualifier** and convert to *qualifier*
+        pattern1 = re.compile(r'\*\*(' + escaped + r')\*\*', re.IGNORECASE)
+        text = pattern1.sub(r'*\1*', text)
+        
+        # Match **qualifier* (double start, single end) and convert to *qualifier*
+        pattern2 = re.compile(r'\*\*(' + escaped + r')\*(?!\*)', re.IGNORECASE)
+        text = pattern2.sub(r'*\1*', text)
+        
+        # Match *qualifier** (single start, double end) and convert to *qualifier*
+        pattern3 = re.compile(r'(?<!\*)\*(' + escaped + r')\*\*', re.IGNORECASE)
+        text = pattern3.sub(r'*\1*', text)
     
     return text
 
