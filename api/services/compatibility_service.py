@@ -543,9 +543,6 @@ async def _generate_compatibility_narrative_llm(
     p1_pronouns = person1_pronouns or "they/them"
     p2_pronouns = person2_pronouns or "they/them"
     
-    # Newline representation for prompts (can't use backslashes in f-strings)
-    nl = "\\n\\n"
-    
     # Build context for LLM
     context = f"""
 You are an expert astrologer providing {comp_type} compatibility analysis.
@@ -611,7 +608,7 @@ Based on this astrological data, provide a comprehensive {comp_type} compatibili
 - Write as if speaking directly to real people in a conversational, professional tone
 - Use natural pronouns and references (their names if provided, or "both partners", "this couple", etc.)
 - AVOID robotic phrases like "Person 1", "the first person", "the second person"
-- **CRITICAL: Separate paragraphs with {nl} (double newline) for proper formatting**
+- **CRITICAL: In the detailed_analysis field, insert TWO newline characters between paragraphs for proper formatting**
 
 Please provide:
 
@@ -619,15 +616,16 @@ Please provide:
    - Start with the zodiac signs or names (e.g., "**{sign1}** and **{sign2}** create a vibrant connection...")
    - Use **bold** for key zodiac signs and important concepts
    - Be warm and direct
-   - Single paragraph (no {nl} within summary)
+   - Single continuous paragraph (no line breaks within summary)
 
 2. **Detailed Analysis** (3-4 paragraphs): Deep dive into how these energies interact:
-   - **MUST separate each paragraph with {nl}** for readability
+   - **CRITICAL: You MUST insert two newline characters (\\n\\n in JSON) between each paragraph**
+   - Write 3-4 distinct paragraphs separated by double newlines
    - Refer to them naturally as "{sign1} and {sign2}" or "both partners" or by their names
    - Use **bold** for elements (**{element_analysis.person1_element}**, **{element_analysis.person2_element}**)
    - Use **bold** for modalities (**{modality_analysis.person1_modality}**, **{modality_analysis.person2_modality}**)
    - Explain harmony and friction in practical, relatable terms
-   - Example format: "First paragraph text here.{nl}Second paragraph text here.{nl}Third paragraph text here."
+   - In JSON, use \\n\\n to separate paragraphs: "First paragraph.\\n\\nSecond paragraph.\\n\\nThird paragraph."
 
 3. **Strengths** (3-5 bullet points): Key strengths of this pairing.
    - Start each with **bold** keyword using CORRECT syntax: `**keyword**` (double asterisks on BOTH sides)
@@ -647,19 +645,19 @@ Please provide:
    - NEVER mix: NO `*verb**` or `**verb*`
    - Make it actionable and specific
 
-{"6. **Relationship Dynamics** (1 paragraph): Describe the day-to-day dynamics naturally. Single paragraph, no " + nl + "." if aspects else ""}
+{"6. **Relationship Dynamics** (1 paragraph): Describe the day-to-day dynamics naturally. Single continuous paragraph." if aspects else ""}
 
-{"7. **Long-term Potential** (1 paragraph): Assess long-term viability with warmth and insight. Single paragraph, no " + nl + "." if aspects else ""}
+{"7. **Long-term Potential** (1 paragraph): Assess long-term viability with warmth and insight. Single continuous paragraph." if aspects else ""}
 
 Format your response as JSON with these exact keys: "summary", "detailed_analysis", "strengths" (array), "challenges" (array), "advice" (array){', "relationship_dynamics", "long_term_potential"' if aspects else ''}.
 
-**REMEMBER: Use {nl} to separate paragraphs in "detailed_analysis" ONLY.** Other fields should be single paragraphs or arrays.
+**REMEMBER: In JSON format, use \\n\\n (escaped newlines) to separate paragraphs in "detailed_analysis" field ONLY.** All other text fields should be single continuous paragraphs or arrays of strings.
 
 Be specific, personalized, warm, and insightful. Use natural, conversational language. Remember markdown formatting (**bold** and *italic*).
 """
     
     try:
-        system_prompt = f"You are an expert astrologer specializing in relationship compatibility analysis. Provide detailed, personalized insights based on astrological data. IMPORTANT: Use markdown formatting (**bold** for key terms, *italic* for emphasis) throughout your text. CRITICAL: In the 'detailed_analysis' field, separate paragraphs with {nl} for proper formatting. Return ONLY valid JSON with no additional text."
+        system_prompt = "You are an expert astrologer specializing in relationship compatibility analysis. Provide detailed, personalized insights based on astrological data. IMPORTANT: Use markdown formatting (**bold** for key terms, *italic* for emphasis) throughout your text. CRITICAL: In the 'detailed_analysis' field, you MUST separate paragraphs with \\n\\n (two newline characters escaped in JSON). Return ONLY valid JSON with no additional text."
         
         # P1: Use configurable model and max_tokens
         response = await generate_section_text(
