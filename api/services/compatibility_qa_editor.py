@@ -338,6 +338,7 @@ def _polish_list_item(text: str, max_length: int = 150) -> str:
     
     PERFORMANCE: Uses pre-compiled pattern and early returns for O(1) string ops.
     
+    - Fix malformed markdown
     - Ensure it's concise
     - Starts with capital letter
     - No trailing punctuation for bullets (unless it's a full sentence)
@@ -345,6 +346,9 @@ def _polish_list_item(text: str, max_length: int = 150) -> str:
     text = text.strip()
     if not text:  # Early return
         return text
+    
+    # Fix malformed markdown first (critical for LLM outputs)
+    text = _fix_malformed_markdown(text)
     
     # Remove bullet markers if present (use pre-compiled pattern)
     text = _BULLET_MARKERS.sub('', text)
@@ -473,6 +477,14 @@ def qa_edit_advanced_compatibility_response(response: Dict[str, Any]) -> Dict[st
             context=compatibility_type,
             ensure_readable=True
         )
+    
+    # Polish list items (strengths, challenges, advice)
+    for field in ['strengths', 'challenges', 'advice']:
+        if field in edited and isinstance(edited[field], list):
+            edited[field] = [
+                polish_compatibility_text(item, context=compatibility_type, check_length=False)
+                for item in edited[field]
+            ]
     
     # Polish sign compatibility descriptions
     for field in ['sun_sign_compatibility', 'moon_sign_compatibility', 
