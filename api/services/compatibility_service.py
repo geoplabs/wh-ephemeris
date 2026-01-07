@@ -603,6 +603,7 @@ Based on this astrological data, provide a comprehensive {comp_type} compatibili
 - Write as if speaking directly to real people in a conversational, professional tone
 - Use natural pronouns and references (their names if provided, or "both partners", "this couple", etc.)
 - AVOID robotic phrases like "Person 1", "the first person", "the second person"
+- **CRITICAL: Separate paragraphs with \\n\\n (double newline) for proper formatting**
 
 Please provide:
 
@@ -610,12 +611,15 @@ Please provide:
    - Start with the zodiac signs or names (e.g., "**{sign1}** and **{sign2}** create a vibrant connection...")
    - Use **bold** for key zodiac signs and important concepts
    - Be warm and direct
+   - Single paragraph (no \\n\\n within summary)
 
 2. **Detailed Analysis** (3-4 paragraphs): Deep dive into how these energies interact:
+   - **MUST separate each paragraph with \\n\\n** for readability
    - Refer to them naturally as "{sign1} and {sign2}" or "both partners" or by their names
    - Use **bold** for elements (**{element_analysis.person1_element}**, **{element_analysis.person2_element}**)
    - Use **bold** for modalities (**{modality_analysis.person1_modality}**, **{modality_analysis.person2_modality}**)
    - Explain harmony and friction in practical, relatable terms
+   - Example format: "First paragraph text here.\\n\\nSecond paragraph text here.\\n\\nThird paragraph text here."
 
 3. **Strengths** (3-5 bullet points): Key strengths of this pairing.
    - Start each with **bold** keyword (e.g., "**Mutual respect** and understanding")
@@ -629,17 +633,19 @@ Please provide:
    - Start with **bold** action verb (e.g., "**Communicate** openly about needs")
    - Make it actionable and specific
 
-{"6. **Relationship Dynamics** (1 paragraph): Describe the day-to-day dynamics naturally." if aspects else ""}
+{"6. **Relationship Dynamics** (1 paragraph): Describe the day-to-day dynamics naturally. Single paragraph, no \\n\\n." if aspects else ""}
 
-{"7. **Long-term Potential** (1 paragraph): Assess long-term viability with warmth and insight." if aspects else ""}
+{"7. **Long-term Potential** (1 paragraph): Assess long-term viability with warmth and insight. Single paragraph, no \\n\\n." if aspects else ""}
 
 Format your response as JSON with these exact keys: "summary", "detailed_analysis", "strengths" (array), "challenges" (array), "advice" (array){', "relationship_dynamics", "long_term_potential"' if aspects else ''}.
+
+**REMEMBER: Use \\n\\n to separate paragraphs in "detailed_analysis" ONLY.** Other fields should be single paragraphs or arrays.
 
 Be specific, personalized, warm, and insightful. Use natural, conversational language. Remember markdown formatting (**bold** and *italic*).
 """
     
     try:
-        system_prompt = "You are an expert astrologer specializing in relationship compatibility analysis. Provide detailed, personalized insights based on astrological data. IMPORTANT: Use markdown formatting (**bold** for key terms, *italic* for emphasis) throughout your text to highlight important concepts. Return ONLY valid JSON with no additional text."
+        system_prompt = "You are an expert astrologer specializing in relationship compatibility analysis. Provide detailed, personalized insights based on astrological data. IMPORTANT: Use markdown formatting (**bold** for key terms, *italic* for emphasis) throughout your text. CRITICAL: In the 'detailed_analysis' field, separate paragraphs with \\n\\n for proper formatting. Return ONLY valid JSON with no additional text."
         
         # P1: Use configurable model and max_tokens
         response = await generate_section_text(

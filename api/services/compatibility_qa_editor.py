@@ -22,10 +22,11 @@ logger = logging.getLogger(__name__)
 # =====================================================================
 
 # Readability patterns
-_WHITESPACE_PATTERN = re.compile(r'\s+')
+# NOTE: Only collapse horizontal whitespace (spaces/tabs), preserve newlines
+_WHITESPACE_PATTERN = re.compile(r'[ \t]+')
 _MULTIPLE_PERIODS = re.compile(r'\.\.+')
 _DOUBLED_COMMAS = re.compile(r',\s*,')
-_PUNCT_SPACING = re.compile(r'\s+([.,!?;:])')
+_PUNCT_SPACING = re.compile(r'[ \t]+([.,!?;:])')
 
 # Special character patterns
 _EM_DASH_RANGE = re.compile(r'(\d+)\s*—\s*(\d+)')
