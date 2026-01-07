@@ -71,8 +71,8 @@ _VAGUE_PHRASE_PATTERNS = {
 
 _REPETITIVE_COMPAT = re.compile(r'(\bcompatibility\b.*?){3,}', re.IGNORECASE)
 
-# Bullet marker pattern
-_BULLET_MARKERS = re.compile(r'^[•\-\*\d+\.]\s*')
+# Bullet marker pattern (requires space after asterisk to avoid matching markdown)
+_BULLET_MARKERS = re.compile(r'^([•\-]|[\*]\s|\d+\.)\s*')
 
 # Markdown detection patterns
 _BOLD_PATTERN = re.compile(r'\*\*\w+.*?\*\*')
@@ -347,11 +347,11 @@ def _polish_list_item(text: str, max_length: int = 150) -> str:
     if not text:  # Early return
         return text
     
-    # Fix malformed markdown first (critical for LLM outputs)
-    text = _fix_malformed_markdown(text)
+    # Remove bullet markers FIRST (before markdown fixing to avoid conflicts)
+    text = _BULLET_MARKERS.sub('', text).strip()
     
-    # Remove bullet markers if present (use pre-compiled pattern)
-    text = _BULLET_MARKERS.sub('', text)
+    # Fix malformed markdown (critical for LLM outputs)
+    text = _fix_malformed_markdown(text)
     
     # Truncate if too long
     if len(text) > max_length:
