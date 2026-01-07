@@ -215,9 +215,15 @@ def _fix_malformed_markdown(text: str) -> str:
     return text
 
 
-# Qualifier words that should be italic, not bold
+# Qualifier words and phrases that should be italic, not bold
 _QUALIFIER_WORDS = [
-    'tend to', 'tends to', 'may', 'might', 'can', 'could', 'often', 'sometimes',
+    # Two-word phrases (check these first)
+    'tend to', 'tends to', 'may find', 'may sometimes', 'may encounter', 'may prefer',
+    'may enjoy', 'can be', 'could be', 'might be', 'may be', 'may also', 'can also',
+    'might also', 'could also', 'often find', 'sometimes feel', 'particularly when',
+    'especially when', 'especially if', 'particularly if',
+    # Single words
+    'may', 'might', 'can', 'could', 'often', 'sometimes',
     'particularly', 'especially', 'generally', 'typically', 'usually', 'frequently',
     'occasionally', 'rarely', 'seldom', 'perhaps', 'possibly', 'likely', 'probably',
     'mainly', 'mostly', 'largely', 'primarily', 'chiefly', 'predominantly'
