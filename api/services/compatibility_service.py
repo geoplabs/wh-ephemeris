@@ -538,8 +538,8 @@ async def _generate_compatibility_narrative_llm(
         max_tokens = DEFAULT_LLM_MAX_TOKENS
     
     # FIX H: Use pronouns and names for better narrative (default to neutral)
-    p1_label = person1_name or "Person 1"
-    p2_label = person2_name or "Person 2"
+    p1_label = person1_name or sign1
+    p2_label = person2_name or sign2
     p1_pronouns = person1_pronouns or "they/them"
     p2_pronouns = person2_pronouns or "they/them"
     
@@ -550,7 +550,11 @@ You are an expert astrologer providing {comp_type} compatibility analysis.
 PERSON 1: {p1_label} ({sign1} Sun) - Pronouns: {p1_pronouns}
 PERSON 2: {p2_label} ({sign2} Sun) - Pronouns: {p2_pronouns}
 
-When referring to the individuals in your analysis, use their names and pronouns naturally.
+IMPORTANT: When writing your analysis:
+- If names are provided, use them naturally (e.g., "Sarah and Emma")
+- If no names, refer to them as "{sign1}" and "{sign2}", or "both partners", "you two", "this couple/pair"
+- NEVER use "Person 1" or "Person 2" or "the first person" or "the second person"
+- Write naturally as if speaking to real people
 
 ELEMENT COMPATIBILITY:
 - Person 1 Element: {element_analysis.person1_element}
@@ -593,34 +597,45 @@ COMPATIBILITY SCORES:
 
 Based on this astrological data, provide a comprehensive {comp_type} compatibility analysis focusing on {relationship_focus}.
 
-**IMPORTANT: Use markdown formatting for emphasis:**
+**IMPORTANT: Write naturally and use markdown formatting:**
 - Use **bold** (`**text**`) for key astrological terms, planet names, signs, and important concepts
 - Use *italic* (`*text*`) for subtle emphasis, nuances, or secondary points
-- This helps highlight the most important insights for readers
+- Write as if speaking directly to real people in a conversational, professional tone
+- Use natural pronouns and references (their names if provided, or "both partners", "this couple", etc.)
+- AVOID robotic phrases like "Person 1", "the first person", "the second person"
 
 Please provide:
 
-1. **Summary** (2-3 sentences): High-level overview of the compatibility. Use **bold** for key strengths or challenges.
+1. **Summary** (2-3 sentences): High-level overview of the compatibility. 
+   - Start with the zodiac signs or names (e.g., "**{sign1}** and **{sign2}** create a vibrant connection...")
+   - Use **bold** for key zodiac signs and important concepts
+   - Be warm and direct
 
-2. **Detailed Analysis** (3-4 paragraphs): Deep dive into how these energies interact, including:
-   - How their elements and modalities work together (use **bold** for element/modality names)
-   - Key dynamics based on their Sun signs (use **bold** for zodiac signs)
-   - Specific areas of harmony and friction
-   - How the compatibility scores reflect in real-life interactions
+2. **Detailed Analysis** (3-4 paragraphs): Deep dive into how these energies interact:
+   - Refer to them naturally as "{sign1} and {sign2}" or "both partners" or by their names
+   - Use **bold** for elements (**{element_analysis.person1_element}**, **{element_analysis.person2_element}**)
+   - Use **bold** for modalities (**{modality_analysis.person1_modality}**, **{modality_analysis.person2_modality}**)
+   - Explain harmony and friction in practical, relatable terms
 
-3. **Strengths** (3-5 bullet points): Key strengths of this pairing. Use **bold** for the main strength in each point.
+3. **Strengths** (3-5 bullet points): Key strengths of this pairing.
+   - Start each with **bold** keyword (e.g., "**Mutual respect** and understanding")
+   - Write in a warm, encouraging tone
 
-4. **Challenges** (3-5 bullet points): Main challenges they may face. Use **bold** for the main challenge in each point.
+4. **Challenges** (3-5 bullet points): Main challenges they may face.
+   - Start each with **bold** keyword (e.g., "**Different pacing** in decision-making")
+   - Be honest but constructive
 
-5. **Advice** (3-4 bullet points): Practical advice for making this {comp_type} work. Use **bold** for key action words.
+5. **Advice** (3-4 bullet points): Practical advice for making this {comp_type} work.
+   - Start with **bold** action verb (e.g., "**Communicate** openly about needs")
+   - Make it actionable and specific
 
-{"6. **Relationship Dynamics** (1 paragraph): Describe the day-to-day dynamics. Use **bold** for planet names and aspects." if aspects else ""}
+{"6. **Relationship Dynamics** (1 paragraph): Describe the day-to-day dynamics naturally." if aspects else ""}
 
-{"7. **Long-term Potential** (1 paragraph): Assess the long-term viability. Use **bold** for key factors." if aspects else ""}
+{"7. **Long-term Potential** (1 paragraph): Assess long-term viability with warmth and insight." if aspects else ""}
 
 Format your response as JSON with these exact keys: "summary", "detailed_analysis", "strengths" (array), "challenges" (array), "advice" (array){', "relationship_dynamics", "long_term_potential"' if aspects else ''}.
 
-Be specific, personalized, and insightful. Avoid generic statements. Remember to use markdown formatting (**bold** and *italic*) throughout your text.
+Be specific, personalized, warm, and insightful. Use natural, conversational language. Remember markdown formatting (**bold** and *italic*).
 """
     
     try:

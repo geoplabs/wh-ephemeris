@@ -59,6 +59,10 @@ _EM_DASH_MID_SENTENCE = re.compile(r'\s+—[.,;:]?\s+')
 _VAGUE_PHRASE_PATTERNS = {
     'person_1': re.compile(r'\bperson 1\b', re.IGNORECASE),
     'person_2': re.compile(r'\bperson 2\b', re.IGNORECASE),
+    'the_first_person': re.compile(r'\bthe first person\b', re.IGNORECASE),
+    'the_second_person': re.compile(r'\bthe second person\b', re.IGNORECASE),
+    'first_person_s': re.compile(r'\bthe first person\'s\b', re.IGNORECASE),
+    'second_person_s': re.compile(r'\bthe second person\'s\b', re.IGNORECASE),
     'these_two': re.compile(r'\bthese two\b', re.IGNORECASE),
     'this_pairing': re.compile(r'\bthis pairing\b', re.IGNORECASE),
     'this_match': re.compile(r'\bthis match\b', re.IGNORECASE),
@@ -91,11 +95,15 @@ _CONTEXT_MAP = {
     "generic": "general"
 }
 
-# Vague phrase replacements (constant dictionary)
+# Vague phrase replacements (constant dictionary) - more natural language
 _VAGUE_REPLACEMENTS = {
-    'person_1': 'the first person',
-    'person_2': 'the second person',
-    'these_two': 'you two',
+    'person_1': 'one partner',
+    'person_2': 'the other partner',
+    'the_first_person': 'one partner',
+    'the_second_person': 'the other partner',
+    'first_person_s': 'one partner\'s',
+    'second_person_s': 'the other partner\'s',
+    'these_two': 'both partners',
     'this_pairing': 'this relationship',
     'this_match': 'this connection',
 }
